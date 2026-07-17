@@ -201,11 +201,17 @@ let device=null,chOut=null,linked=false,recording=false;
 
 /* log */
 const logEl=$('log');
-$('logToggle').onclick=()=>{logEl.classList.toggle('open');
-  $('logToggle').textContent=(logEl.classList.contains('open')?'▾':'▸')+' PROTOCOL LOG';};
+$('logToggle').onclick=()=>{
+  logEl.classList.toggle('open');
+  $('logToggle').textContent=(logEl.classList.contains('open')?'▾':'▸')+' PROTOCOL LOG';
+  if(logEl.classList.contains('open')) setTimeout(()=>logEl.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+};
 function log(cls,msg){const d=document.createElement('div');d.className=cls;d.textContent=msg;
   logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
   while(logEl.childNodes.length>100)logEl.removeChild(logEl.firstChild);}
+window.addEventListener('error',e=>log('err','JS: '+e.message+' @'+(e.lineno||'?')));
+window.addEventListener('unhandledrejection',e=>log('err','ASYNC: '+(e.reason&&e.reason.message||e.reason)));
+log('tx','RIG v1.1 ready — '+new Date().toLocaleTimeString());
 const hex=u8=>[...u8].map(b=>b.toString(16).padStart(2,'0')).join(' ');
 
 /* packets */
