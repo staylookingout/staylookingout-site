@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>RIG — STAYLOOKINGOUT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0B; --panel:#121214; --panel-2:rgba(14,14,16,.92); --line:#232326;
+    --txt:#E9E9EA; --muted:#6E6E76;
+    --amber:#E8A33D; --teal:#3DC9C2; --rec:#E14B3A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;overscroll-behavior:none}
+  body{font-family:'Inter',system-ui,sans-serif}
+  button,select{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+  /* ---------- top strip ---------- */
+  #top{
+    position:fixed;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;gap:12px;
+    padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;
+    background:linear-gradient(rgba(10,10,11,.9), transparent);
+    font-family:'JetBrains Mono';font-size:10px;letter-spacing:.12em;color:var(--muted);
+    transition:opacity .25s;
+  }
+  #top.hidden{opacity:0;pointer-events:none}
+  .brand{font-family:'Space Grotesk';font-weight:700;font-size:13px;letter-spacing:.12em;color:var(--txt)}
+  .brand span{color:var(--amber)}
+  #tc{font-weight:700;font-size:15px;letter-spacing:.06em;color:var(--txt);font-variant-numeric:tabular-nums;margin-left:auto}
+  #tc .fr{color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:5px;vertical-align:1px}
+  .dot.on{background:var(--teal);box-shadow:0 0 8px rgba(61,201,194,.6)}
+  #feedMeta b{color:var(--teal);font-weight:600}
+
+  /* ---------- stage ---------- */
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #gl{max-width:100%;max-height:100%;display:none}
+  video{display:none}
+  #tally{position:fixed;inset:0;pointer-events:none;border:3px solid transparent;z-index:15;transition:border-color .2s}
+  body.rec #tally{border-color:var(--rec)}
+  #standby{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    color:var(--muted);text-align:center;padding:24px;
+  }
+  #standby .big{font-family:'Space Grotesk';font-weight:700;font-size:15px;letter-spacing:.2em;color:var(--txt)}
+  #standby p{font-size:12px;line-height:1.6;max-width:300px}
+  #errBox{font-family:'JetBrains Mono';font-size:10px;color:var(--rec);max-width:320px;line-height:1.7;display:none;
+    border:1px solid var(--rec);border-radius:6px;padding:10px;background:rgba(225,75,58,.08);white-space:pre-wrap;word-break:break-word;text-align:left}
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
+    background:linear-gradient(transparent, rgba(10,10,11,.95) 30%);
+    transition:opacity .25s, transform .25s;
+    max-height:72vh;display:flex;flex-direction:column;gap:8px;
+  }
+  #hud.hidden{opacity:0;transform:translateY(10px);pointer-events:none}
+  .row{display:flex;gap:6px}
+  .chip{
+    font-family:'JetBrains Mono';font-size:11px;letter-spacing:.06em;
+    padding:11px 12px;text-align:center;
+    border:1px solid var(--line);border-radius:6px;background:var(--panel-2);color:var(--muted);
+    transition:all .12s;white-space:nowrap;
+  }
+  .chip:active{color:var(--txt)}
+  .chip.grow{flex:1}
+  .chip.sel{border-color:var(--amber);color:var(--amber);background:rgba(232,163,61,.1)}
+  .chip.teal{border-color:var(--teal);color:var(--teal)}
+  #recBtn{
+    flex:1.4;font-family:'Space Grotesk';font-weight:700;font-size:13px;letter-spacing:.2em;
+    border:1px solid var(--line);border-radius:6px;background:var(--panel-2);color:var(--muted);padding:14px 0;
+  }
+  body.linked #recBtn{color:var(--txt);border-color:#3A3A3E}
+  body.rec #recBtn{background:var(--rec);border-color:var(--rec);color:#fff}
+
+  /* settings drawer */
+  #drawer{display:none;flex-direction:column;gap:12px;overflow-y:auto;padding-top:4px}
+  #drawer.open{display:flex}
+  .eyebrow{
+    display:flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono';font-size:9px;letter-spacing:.3em;color:var(--muted);
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  .seg{display:grid;gap:5px}
+  .c6{grid-template-columns:repeat(6,1fr)}
+  .c5{grid-template-columns:repeat(5,1fr)}
+  .c4{grid-template-columns:repeat(4,1fr)}
+  .c3{grid-template-columns:repeat(3,1fr)}
+  .seg button{
+    font-family:'JetBrains Mono';font-size:11px;padding:10px 0;
+    border:1px solid var(--line);border-radius:5px;background:var(--panel-2);color:var(--muted);
+  }
+  .seg button.sel{border-color:var(--amber);color:var(--amber);background:rgba(232,163,61,.08)}
+  .slider-row{display:flex;align-items:center;gap:12px}
+  .slider-row label{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.14em;color:var(--muted);width:56px}
+  .slider-row output{font-family:'JetBrains Mono';font-size:11px;color:var(--txt);width:40px;text-align:right}
+  input[type=range]{flex:1;appearance:none;-webkit-appearance:none;height:26px;background:transparent}
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--panel);border:2px solid var(--amber);margin-top:-10px}
+  input[type=range]::-moz-range-track{height:2px;background:var(--line)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--panel);border:2px solid var(--amber)}
+  select{
+    font-family:'JetBrains Mono';font-size:10px;border:1px solid var(--line);border-radius:5px;
+    background:var(--panel-2);color:var(--muted);padding:10px;appearance:none;width:100%;
+  }
+  #log{
+    display:none;font-family:'JetBrains Mono';font-size:9px;line-height:1.7;color:var(--muted);
+    border:1px solid var(--line);border-radius:5px;background:rgba(10,10,11,.9);
+    padding:8px;max-height:110px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+  }
+  #log.open{display:block}
+  #log .tx{color:var(--teal)} #log .rx{color:var(--amber)} #log .err{color:var(--rec)}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <video id="vid" playsinline muted autoplay></video>
+  <div id="standby">
+    <div class="big">RIG<span style="color:var(--amber)">·</span>STANDBY</div>
+    <p>FEED starts the HDMI picture (dongle → USB-C). LINK pairs the camera over Bluetooth. Each side works without the other.</p>
+    <div id="errBox"></div>
+  </div>
+</div>
+<div id="tally"></div>
+
+<header id="top">
+  <span class="brand">RIG<span>·</span>6KPRO</span>
+  <span id="linkTxt"><span class="dot" id="dot"></span>NO LINK</span>
+  <span id="feedMeta">NO FEED</span>
+  <span id="tc">--:--:--<span class="fr">:--</span></span>
+</header>
+
+<div id="hud">
+  <div class="row">
+    <button class="chip teal grow" id="linkBtn">LINK CAMERA</button>
+    <button class="chip grow" id="feedBtn">START FEED</button>
+    <button class="chip" id="fsBtn" aria-label="Fullscreen">⛶</button>
+  </div>
+  <div class="row">
+    <button id="recBtn">REC</button>
+    <button class="chip" id="stillBtn">STILL</button>
+    <button class="chip" id="afBtn">AF</button>
+    <button class="chip" id="drawerBtn">SETTINGS ▾</button>
+  </div>
+  <div class="row" id="assistRow">
+    <button class="chip grow sel" data-mode="0">CLEAN</button>
+    <button class="chip grow" data-mode="1">PEAK</button>
+    <button class="chip grow" data-mode="2">ZEBRA</button>
+    <button class="chip grow" data-mode="3">FALSE C</button>
+  </div>
+
+  <div id="drawer">
+    <div class="eyebrow">EXPOSURE — ISO</div>
+    <div class="seg c6" id="isoSeg"></div>
+    <div class="eyebrow">EXPOSURE — SHUTTER ANGLE</div>
+    <div class="seg c6" id="shSeg"></div>
+    <div class="eyebrow">COLOR — WHITE BALANCE</div>
+    <div class="seg c5" id="wbSeg"></div>
+    <div class="eyebrow">DISPLAY LUT</div>
+    <div class="seg c3" id="lutSeg"></div>
+    <div class="eyebrow">LENS</div>
+    <div class="slider-row">
+      <label>IRIS</label><input type="range" id="iris" min="0" max="1000" value="0"><output id="irisVal">—</output>
+    </div>
+    <div class="slider-row">
+      <label>FOCUS</label><input type="range" id="focus" min="0" max="1000" value="500"><output id="focusVal">—</output>
+    </div>
+    <div class="eyebrow">MONITOR</div>
+    <div class="slider-row">
+      <label>ZEBRA IRE</label><input type="range" id="zebraTh" min="70" max="100" value="95"><output id="zebraOut">95</output>
+    </div>
+    <select id="devSel" aria-label="Video source"><option>FEED SOURCE — start feed first</option></select>
+    <button class="chip" id="logToggle">▸ PROTOCOL LOG</button>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BLUETOOTH — Blackmagic Camera Service (control channel)
+   ============================================================ */
+const SVC='291d567a-6d75-11e6-8b77-86f30ca893d3';
+const CH_OUT='5dd3465f-1aee-4299-8493-d2eca2f8e1bb';
+const CH_IN ='b864e140-76a0-416a-bf30-5876504537d9';
+const CH_TC ='6d8f2110-86f1-41bf-9afb-451d87e976c8';
+const CH_STATUS='7fe8691d-95dc-4fc5-8abd-ca74339b51b9';
+const CH_DEVNAME='ffac0c52-c9fb-41a0-b063-cc76282eb89c';
+const DIS=0x180A, CH_MODEL=0x2A24;
+const T_VOID=0,T_INT8=1,T_INT16=2,T_INT32=3,T_FIXED16=128,OP_ASSIGN=0;
+
+const $=id=>document.getElementById(id);
+let device=null,chOut=null,linked=false,recording=false;
+
+/* log */
+const logEl=$('log');
+$('logToggle').onclick=()=>{logEl.classList.toggle('open');
+  $('logToggle').textContent=(logEl.classList.contains('open')?'▾':'▸')+' PROTOCOL LOG';};
+function log(cls,msg){const d=document.createElement('div');d.className=cls;d.textContent=msg;
+  logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
+  while(logEl.childNodes.length>100)logEl.removeChild(logEl.firstChild);}
+const hex=u8=>[...u8].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+
+/* packets */
+function packet(cat,param,type,op,data){
+  const cmdLen=4+data.length,total=8+Math.ceil(data.length/4)*4;
+  const p=new Uint8Array(total);p.set([255,cmdLen,0,0,cat,param,type,op],0);p.set(data,8);return p;
+}
+const le16=v=>{v&=0xFFFF;return[v&255,(v>>8)&255]};
+const le32=v=>{v>>>=0;return[v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255]};
+const fixed16=f=>le16(Math.round(f*2048));
+let chain=Promise.resolve();
+function send(p,label){
+  if(!chOut){log('err','TX dropped — no link');return;}
+  chain=chain.then(async()=>{try{
+    await (chOut.writeValueWithResponse?chOut.writeValueWithResponse(p):chOut.writeValue(p));
+    log('tx','TX '+(label?label+'  ':'')+hex(p));
+  }catch(e){log('err','TX fail: '+e.message);}});
+}
+const cmdTransport=m=>packet(10,1,T_INT8,OP_ASSIGN,[m,0,0,0,0]);
+const cmdISO=v=>packet(1,14,T_INT32,OP_ASSIGN,le32(v));
+const cmdShutter=d=>packet(1,11,T_INT32,OP_ASSIGN,le32(Math.round(d*100)));
+const cmdWB=(k,t)=>packet(1,2,T_INT16,OP_ASSIGN,[...le16(k),...le16(t)]);
+const cmdIris=f=>packet(0,3,T_FIXED16,OP_ASSIGN,fixed16(f));
+const cmdFocus=f=>packet(0,0,T_FIXED16,OP_ASSIGN,fixed16(f));
+const cmdAF=()=>packet(0,1,T_VOID,OP_ASSIGN,[]);
+const cmdStill=()=>packet(10,3,T_VOID,OP_ASSIGN,[]);
+const cmdLUT=(sel,en)=>packet(1,15,T_INT8,OP_ASSIGN,[sel,en]); // sel: 0 none, 1 custom, 2 film→video, 3 film→ext video
+
+/* connect */
+$('linkBtn').onclick=async()=>{
+  if(!navigator.bluetooth){bleErr('❌ No Web Bluetooth in this browser. Must use Chrome on Android over https://');return;}
+  try{
+    $('linkBtn').textContent='SCANNING…';
+    log('tx','BLE: requesting device with acceptAllDevices...');
+    // Start permissive to debug service advertising issues
+    device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[SVC,DIS]
+    });
+    log('tx','BLE: device selected: '+device.name);
+    device.addEventListener('gattserverdisconnected',onBleDrop);
+    $('linkBtn').textContent='CONNECTING…';
+    const server=await device.gatt.connect();
+    log('tx','BLE: GATT server connected');
+    const svc=await server.getPrimaryService(SVC);
+    log('tx','BLE: Blackmagic service found');
+    chOut=await svc.getCharacteristic(CH_OUT);
+    try{const dn=await svc.getCharacteristic(CH_DEVNAME);
+      await dn.writeValue(new TextEncoder().encode('STAYLOOKINGOUT'));}catch(e){}
+    try{const cin=await svc.getCharacteristic(CH_IN);await cin.startNotifications();
+      cin.addEventListener('characteristicvaluechanged',e=>onControlMsg(new Uint8Array(e.target.value.buffer)));
+    }catch(e){log('err','control notify: '+e.message);}
+    try{const tcc=await svc.getCharacteristic(CH_TC);await tcc.startNotifications();
+      tcc.addEventListener('characteristicvaluechanged',e=>onTimecode(e.target.value));
+    }catch(e){log('err','timecode notify: '+e.message);}
+    try{const st=await svc.getCharacteristic(CH_STATUS);await st.startNotifications();
+      st.addEventListener('characteristicvaluechanged',e=>log('rx','STATUS 0x'+e.target.value.getUint8(0).toString(16)));
+    }catch(e){}
+    let model=device.name||'CAMERA';
+    try{const dis=await server.getPrimaryService(DIS);
+      model=new TextDecoder().decode(await (await dis.getCharacteristic(CH_MODEL)).readValue());}catch(e){}
+    linked=true;document.body.classList.add('linked');
+    $('dot').classList.add('on');$('linkTxt').innerHTML='<span class="dot on"></span>'+model.toUpperCase();
+    $('linkBtn').textContent='LINKED';log('tx','connected: '+model);
+  }catch(e){
+    $('linkBtn').textContent='LINK CAMERA';
+    let msg='❌ '+e.name+': '+e.message;
+    if(e.name==='NotFoundError') msg='❌ No Bluetooth devices found. Check:\n• Camera Bluetooth is ON (Setup menu)\n• Camera is not already paired elsewhere\n• Phone Bluetooth is ON';
+    else if(e.name==='NetworkError') msg='❌ Connection lost. Camera may have disconnected or Bluetooth is off.';
+    else if(e.name==='SecurityError') msg='❌ Bluetooth permission denied. Check phone Bluetooth settings.';
+    else if(e.name==='InvalidStateError') msg='❌ GATT error. Try:\n• Forget camera in Android Bluetooth settings\n• Restart camera\n• Restart Chrome';
+    else if(e.message.includes('GATT')) msg='❌ Service not found. Camera firmware may need update, or Bluetooth module is not responding.';
+    bleErr(msg);
+    log('err',e.name+': '+e.message);
+  }
+};
+function onBleDrop(){
+  linked=false;chOut=null;recording=false;
+  document.body.classList.remove('linked','rec');
+  $('dot').classList.remove('on');$('linkTxt').innerHTML='<span class="dot"></span>NO LINK';
+  $('linkBtn').textContent='LINK CAMERA';$('recBtn').textContent='REC';
+  log('err','link lost');
+}
+function bleErr(msg){const el=$('errBox');el.style.display='block';el.textContent=msg;log('err',msg);}
+
+/* incoming control packets — may arrive concatenated, each padded to 4B */
+function onControlMsg(u8){
+  let i=0;
+  while(i+8<=u8.length){
+    const cmdLen=u8[i+1]; if(cmdLen<4) break;
+    handleParam(u8[i+4],u8[i+5],u8.slice(i+8,i+4+cmdLen));
+    i += 4 + Math.ceil(cmdLen/4)*4;
+  }
+}
+function handleParam(cat,param,d){
+  const dv=new DataView(d.buffer,d.byteOffset,d.byteLength);
+  if(cat===10&&param===1&&d.length>=1){
+    recording=(d[0]===2);
+    document.body.classList.toggle('rec',recording);
+    $('recBtn').textContent=recording?'STOP':'REC';
+    log('rx','RX transport mode='+d[0]);
+  }else if(cat===1&&param===14&&d.length>=4){selectSeg(isoSeg,String(dv.getInt32(0,true)));}
+  else if(cat===1&&param===11&&d.length>=4){const a=dv.getInt32(0,true)/100;selectSeg(shSeg,(a%1?a.toFixed(1):String(a)));}
+  else if(cat===1&&param===2&&d.length>=2){selectSeg(wbSeg,String(dv.getInt16(0,true)));}
+  else if(cat===1&&param===15&&d.length>=2){
+    const sel=d[0],en=d[1];
+    selectSeg(lutSeg,String(en===0?0:sel));
+    log('rx','RX LUT sel='+sel+' enabled='+en);
+  }
+  else if(cat===0&&param===3&&d.length>=2){const f=dv.getInt16(0,true)/2048;
+    $('iris').value=Math.round(f*1000);$('irisVal').textContent=(f*100|0)+'%';}
+  else if(cat===0&&param===0&&d.length>=2){const f=dv.getInt16(0,true)/2048;
+    $('focus').value=Math.round(f*1000);$('focusVal').textContent=(f*100|0)+'%';}
+  else log('rx','RX ['+cat+','+param+'] '+hex(d));
+}
+function onTimecode(dv){
+  const v=dv.getUint32(0,true);
+  const bcd=x=>x.toString(16).padStart(2,'0');
+  $('tc').innerHTML=bcd((v>>>24)&0x3F)+':'+bcd((v>>>16)&0xFF)+':'+bcd((v>>>8)&0xFF)+'<span class="fr">:'+bcd(v&0xFF)+'</span>';
+}
+
+/* transport controls */
+$('recBtn').onclick=()=>{
+  if(!linked) return;
+  recording=!recording;
+  document.body.classList.toggle('rec',recording);
+  $('recBtn').textContent=recording?'STOP':'REC';
+  send(cmdTransport(recording?2:0),recording?'REC':'STOP');
+};
+$('stillBtn').onclick=()=>send(cmdStill(),'STILL');
+$('afBtn').onclick=()=>send(cmdAF(),'AF');
+
+/* segments */
+function buildSeg(el,values,fmt,onPick){
+  values.forEach(v=>{const b=document.createElement('button');
+    b.textContent=fmt?fmt(v):v;b.dataset.v=String(v);
+    b.onclick=()=>{selectSeg(el,String(v));onPick(v);};el.appendChild(b);});
+}
+function selectSeg(el,v){[...el.children].forEach(b=>b.classList.toggle('sel',b.dataset.v===v));}
+const isoSeg=$('isoSeg'),shSeg=$('shSeg'),wbSeg=$('wbSeg');
+buildSeg(isoSeg,[200,400,800,1250,3200,6400],null,v=>send(cmdISO(v),'ISO '+v));
+buildSeg(shSeg,[45,90,172.8,180,270,360],v=>String(v),v=>send(cmdShutter(v),'SH '+v));
+buildSeg(wbSeg,[3200,4600,5600,6500,7500],v=>(v/100|0)/10+'K',v=>send(cmdWB(v,0),'WB '+v));
+const lutSeg=$('lutSeg');
+const LUT_NAMES={0:'NO LUT',1:'B/W',3:'COLOR'};
+buildSeg(lutSeg,[0,1,3],v=>LUT_NAMES[v],v=>send(cmdLUT(v, v===0?0:1),'LUT '+LUT_NAMES[v]));
+function bindSlider(el,valEl,cmd,label){
+  let t=0,pending=null;
+  const fire=f=>send(cmd(f),label+' '+(f*100|0)+'%');
+  el.addEventListener('input',()=>{
+    const f=el.value/1000;valEl.textContent=(f*100|0)+'%';
+    const now=Date.now();
+    if(now-t>120){t=now;fire(f);}
+    else{clearTimeout(pending);pending=setTimeout(()=>fire(el.value/1000),140);}
+  });
+}
+bindSlider($('iris'),$('irisVal'),cmdIris,'IRIS');
+bindSlider($('focus'),$('focusVal'),cmdFocus,'FOCUS');
+
+/* ============================================================
+   FEED — UVC capture via getUserMedia + WebGL assists
+   ============================================================ */
+const vid=$('vid'),cnv=$('gl');
+let stream=null,mode=0,zebra=.95,gl=null,uni={},tex=null,pumping=false;
+
+$('feedBtn').onclick=()=>startFeed();
+async function startFeed(deviceId){
+  try{
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{deviceId:deviceId?{exact:deviceId}:undefined,
+        width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:60}},
+      audio:false});
+    vid.srcObject=stream;await vid.play();
+    $('standby').style.display='none';cnv.style.display='block';
+    initGL();if(!pumping){pump();pumping=true;}
+    listDevices();$('feedBtn').textContent='FEED LIVE';
+    try{await navigator.wakeLock.request('screen');}catch(e){}
+    const s=stream.getVideoTracks()[0].getSettings();
+    $('feedMeta').innerHTML='<b>'+(s.width||'?')+'×'+(s.height||'?')+'</b>';
+  }catch(e){
+    const el=$('errBox');el.style.display='block';
+    el.textContent=(e.name==='NotFoundError'||e.name==='OverconstrainedError')
+      ?'No video source found. If the dongle is plugged in, this Chrome build may not expose external USB cameras — check chrome://flags or use a native UVC viewer.'
+      :e.name+': '+e.message;
+  }
+}
+async function listDevices(){
+  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+  const sel=$('devSel');sel.innerHTML='';
+  devs.forEach((d,i)=>{const o=document.createElement('option');
+    o.value=d.deviceId;o.textContent=(d.label||('SOURCE '+(i+1))).toUpperCase();
+    if(stream&&stream.getVideoTracks()[0].getSettings().deviceId===d.deviceId)o.selected=true;
+    sel.appendChild(o);});
+  sel.onchange=()=>startFeed(sel.value);
+}
+if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)
+  navigator.mediaDevices.addEventListener('devicechange',()=>{if(stream)listDevices();});
+
+const VS=`attribute vec2 p;varying vec2 uv;
+void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision mediump float;
+varying vec2 uv;uniform sampler2D t;uniform int mode;uniform float zeb;uniform vec2 px;
+float luma(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+void main(){
+  vec3 c=texture2D(t,uv).rgb;
+  if(mode==1){
+    float l00=luma(texture2D(t,uv+px*vec2(-1.,-1.)).rgb),l10=luma(texture2D(t,uv+px*vec2(0.,-1.)).rgb),l20=luma(texture2D(t,uv+px*vec2(1.,-1.)).rgb);
+    float l01=luma(texture2D(t,uv+px*vec2(-1.,0.)).rgb),l21=luma(texture2D(t,uv+px*vec2(1.,0.)).rgb);
+    float l02=luma(texture2D(t,uv+px*vec2(-1.,1.)).rgb),l12=luma(texture2D(t,uv+px*vec2(0.,1.)).rgb),l22=luma(texture2D(t,uv+px*vec2(1.,1.)).rgb);
+    float gx=-l00-2.*l01-l02+l20+2.*l21+l22;
+    float gy=-l00-2.*l10-l20+l02+2.*l12+l22;
+    float edge=smoothstep(.28,.6,length(vec2(gx,gy)));
+    c=mix(c,vec3(.91,.64,.24),edge);
+  }else if(mode==2){
+    if(luma(c)>=zeb){
+      float s=step(.5,fract((gl_FragCoord.x+gl_FragCoord.y)/12.));
+      c=mix(c,vec3(1.),s*.85);
+    }
+  }else if(mode==3){
+    float l=luma(c);vec3 fc;
+    if(l<.05)fc=vec3(.31,.12,.65);
+    else if(l<.15)fc=vec3(.15,.30,.85);
+    else if(l<.35)fc=vec3(.20,.65,.75);
+    else if(l<.45)fc=vec3(.30,.70,.30);
+    else if(l<.55)fc=vec3(.55,.75,.35);
+    else if(l<.70)fc=vec3(.85,.75,.30);
+    else if(l<.85)fc=vec3(.95,.55,.20);
+    else if(l<.95)fc=vec3(.95,.30,.15);
+    else fc=vec3(1.,.05,.05);
+    c=fc;
+  }
+  gl_FragColor=vec4(c,1.);
+}`;
+function initGL(){
+  if(gl)return resize();
+  gl=cnv.getContext('webgl',{antialias:false});
+  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);
+    if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x;};
+  const pr=gl.createProgram();
+  gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(pr);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pr,'p');
+  gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  ['mode','zeb','px'].forEach(n=>uni[n]=gl.getUniformLocation(pr,n));
+  resize();
+}
+function resize(){
+  if(!gl)return;
+  const w=vid.videoWidth||1920,h=vid.videoHeight||1080;
+  cnv.width=w;cnv.height=h;
+  const ar=w/h,vw=innerWidth,vh=innerHeight;
+  if(vw/vh>ar){cnv.style.height=vh+'px';cnv.style.width=(vh*ar)+'px';}
+  else{cnv.style.width=vw+'px';cnv.style.height=(vw/ar)+'px';}
+  gl.viewport(0,0,w,h);gl.uniform2f(uni.px,1/w,1/h);
+}
+addEventListener('resize',resize);
+vid.addEventListener('loadedmetadata',resize);
+function draw(){
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,vid);}catch(e){}
+  gl.uniform1i(uni.mode,mode);gl.uniform1f(uni.zeb,zebra);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+function pump(){
+  if(vid.requestVideoFrameCallback){
+    const cb=()=>{draw();vid.requestVideoFrameCallback(cb);};
+    vid.requestVideoFrameCallback(cb);
+  }else{
+    const cb=()=>{if(vid.readyState>=2)draw();requestAnimationFrame(cb);};
+    requestAnimationFrame(cb);
+  }
+}
+
+/* assists */
+document.querySelectorAll('#assistRow .chip').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#assistRow .chip').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');mode=+b.dataset.mode;
+  };
+});
+$('zebraTh').oninput=e=>{zebra=e.target.value/100;$('zebraOut').textContent=e.target.value;};
+
+/* ============================================================
+   Shell: HUD auto-hide, drawer, fullscreen
+   ============================================================ */
+$('drawerBtn').onclick=()=>{
+  const d=$('drawer');d.classList.toggle('open');
+  $('drawerBtn').textContent=d.classList.contains('open')?'SETTINGS ▴':'SETTINGS ▾';
+};
+$('fsBtn').onclick=()=>{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+};
+const hud=$('hud'),topBar=$('top');
+let hudTimer=null;
+function showHUD(){
+  hud.classList.remove('hidden');topBar.classList.remove('hidden');
+  clearTimeout(hudTimer);
+  hudTimer=setTimeout(()=>{
+    if(!$('drawer').classList.contains('open')){hud.classList.add('hidden');topBar.classList.add('hidden');}
+    else showHUD();
+  },5000);
+}
+$('stage').addEventListener('click',()=>{
+  hud.classList.contains('hidden')?showHUD():(hud.classList.add('hidden'),topBar.classList.add('hidden'));
+});
+hud.addEventListener('click',e=>{e.stopPropagation();showHUD();});
+topBar.addEventListener('click',e=>e.stopPropagation());
+showHUD();
+</script>
+</body>
+</html>
