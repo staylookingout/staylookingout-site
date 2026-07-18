@@ -531,6 +531,7 @@ function handleParam(cat,param,d){
   else if(cat===1&&param===10&&d.length>=1){selectSeg(aeSeg,String(d[0]));log('rx','RX AE mode='+d[0]);}
   else if(cat===1&&param===15&&d.length>=2){
     const sel=d[0],en=d[1];
+    if(sel>0)lastLutSel=sel;
     selectSeg(lutSeg,String(en===0?0:sel));
     log('rx','RX LUT sel='+sel+' enabled='+en);
   }
@@ -649,7 +650,16 @@ bindSlider($('focus'),$('focusVal'),f=>cmdFocus(f),'FOCUS');
 /* ---------- LOOK ---------- */
 const lutSeg=$('lutSeg');
 const LUT_NAMES={0:'NO LUT',1:'B/W',3:'COLOR'};
-buildSeg(lutSeg,[0,1,3],v=>LUT_NAMES[v],v=>send(cmdLUT(v, v===0?0:1),'LUT '+LUT_NAMES[v]));
+let lastLutSel=1;
+buildSeg(lutSeg,[0,1,3],v=>LUT_NAMES[v],v=>{
+  if(v===0){ send(cmdLUT(lastLutSel,0),'LUT DISABLE'); }
+  else{
+    lastLutSel=v;
+    /* two-step, mirroring the camera UI: select first, then activate */
+    send(cmdLUT(v,0),'LUT SELECT '+LUT_NAMES[v]);
+    send(cmdLUT(v,1),'LUT ENABLE '+LUT_NAMES[v]);
+  }
+});
 const num2=f=>f.toFixed(2);
 bindSlider($('ccSat'),$('ccSatVal'),f=>cmdColorAdj($('ccHue').value/100,f),'SAT',num2);
 bindSlider($('ccHue'),$('ccHueVal'),f=>cmdColorAdj(f,$('ccSat').value/100),'HUE',num2);
