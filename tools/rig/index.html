@@ -229,10 +229,8 @@
     <div id="tabs">
       <button class="sel" data-page="expo">EXPO</button>
       <button data-page="lens">LENS</button>
-      <button data-page="look">LOOK</button>
       <button data-page="speed">SPEED</button>
       <button data-page="audio">AUDIO</button>
-      <button data-page="slate">SLATE</button>
       <button data-page="mon">MONITOR</button>
     </div>
     <div class="pages">
@@ -271,31 +269,6 @@
       </div>
     </div>
 
-    <!-- LOOK -->
-    <div class="page" id="page-look">
-      <div class="eyebrow">DISPLAY LUT</div>
-      <div class="seg c3" id="lutSeg"></div>
-      <div class="eyebrow">COLOR CORRECTION</div>
-      <div class="slider-row">
-        <label>SAT</label><input type="range" id="ccSat" min="0" max="200" value="100"><output id="ccSatVal">1.00</output>
-      </div>
-      <div class="slider-row">
-        <label>HUE</label><input type="range" id="ccHue" min="-100" max="100" value="0"><output id="ccHueVal">0.00</output>
-      </div>
-      <div class="slider-row">
-        <label>CONTRAST</label><input type="range" id="ccCon" min="0" max="200" value="100"><output id="ccConVal">1.00</output>
-      </div>
-      <div class="slider-row">
-        <label>PIVOT</label><input type="range" id="ccPiv" min="0" max="100" value="50"><output id="ccPivVal">0.50</output>
-      </div>
-      <div class="slider-row">
-        <label>LUMA MIX</label><input type="range" id="ccLum" min="0" max="100" value="100"><output id="ccLumVal">1.00</output>
-      </div>
-      <div class="seg c2">
-        <button class="bmd" id="ccReset">RESET COLOR</button>
-      </div>
-    </div>
-
     <!-- SPEED -->
     <div class="page" id="page-speed">
       <div class="eyebrow">RECORDING FORMAT</div>
@@ -325,20 +298,6 @@
       <div class="seg c2">
         <button class="bmd" id="phantomBtn">PHANTOM 48V: ?</button>
       </div>
-    </div>
-
-    <!-- SLATE -->
-    <div class="page" id="page-slate">
-      <div class="eyebrow">TAKE</div>
-      <div class="takeRow">
-        <button class="bmd" id="takeMinus">−</button>
-        <span id="takeNum">1</span>
-        <button class="bmd" id="takePlus">+</button>
-      </div>
-      <div class="seg c2">
-        <button class="bmd" id="goodTake">★ GOOD TAKE</button>
-      </div>
-      <div class="note">Take number writes to clip metadata; GOOD TAKE flags the last recorded clip.</div>
     </div>
 
     <!-- MONITOR -->
@@ -396,7 +355,7 @@ function log(cls,msg){const d=document.createElement('div');d.className=cls;d.te
   while(logEl.childNodes.length>300)logEl.removeChild(logEl.firstChild);}
 window.addEventListener('error',e=>log('err','JS: '+e.message+' @'+(e.lineno||'?')));
 window.addEventListener('unhandledrejection',e=>log('err','ASYNC: '+(e.reason&&e.reason.message||e.reason)));
-log('tx','RIG v2.1 ready — '+new Date().toLocaleTimeString());
+log('tx','RIG v2.2 ready — '+new Date().toLocaleTimeString());
 const hex=u8=>[...u8].map(b=>b.toString(16).padStart(2,'0')).join(' ');
 
 /* ---------- packets ---------- */
@@ -427,7 +386,7 @@ const cmdIris=f=>packet(0,3,T_FIXED16,OP_ASSIGN,fixed16(f));
 const cmdFocus=f=>packet(0,0,T_FIXED16,OP_ASSIGN,fixed16(f));
 const cmdAF=()=>packet(0,1,T_VOID,OP_ASSIGN,[]);
 const cmdStill=()=>packet(10,3,T_VOID,OP_ASSIGN,[]);
-const cmdLUT=(sel,en)=>packet(1,15,T_INT8,OP_ASSIGN,[sel,en]);
+const cmdLUT=null; /* removed — LUT selection over BLE not accepted by this firmware */
 const cmdND=stops=>packet(1,16,T_FIXED16,OP_ASSIGN,fixed16(stops));
 const cmdFormat=(ffps,sfps,w,h,flags)=>packet(1,9,T_INT16,OP_ASSIGN,[...le16(ffps),...le16(sfps),...le16(w),...le16(h),...le16(flags)]);
 const cmdHP=f=>packet(2,1,T_FIXED16,OP_ASSIGN,fixed16(f));
@@ -436,12 +395,6 @@ const cmdInputLevels=(a,b)=>packet(2,5,T_FIXED16,OP_ASSIGN,[...fixed16(a),...fix
 const cmdPhantom=on=>packet(2,6,T_VOID,OP_ASSIGN,[on?1:0]);
 const cmdBars=sec=>packet(4,4,T_INT8,OP_ASSIGN,[sec]);
 const cmdFocusAssist=(method,color)=>packet(4,5,T_INT8,OP_ASSIGN,[method,color]);
-const cmdContrast=(piv,adj)=>packet(8,4,T_FIXED16,OP_ASSIGN,[...fixed16(piv),...fixed16(adj)]);
-const cmdLumaMix=f=>packet(8,5,T_FIXED16,OP_ASSIGN,fixed16(f));
-const cmdColorAdj=(hue,sat)=>packet(8,6,T_FIXED16,OP_ASSIGN,[...fixed16(hue),...fixed16(sat)]);
-const cmdCCReset=()=>packet(8,7,T_VOID,OP_ASSIGN,[]);
-const cmdTake=(n,tags)=>packet(12,3,T_INT8,OP_ASSIGN,[n,tags]);
-const cmdGoodTake=()=>packet(12,4,T_VOID,OP_ASSIGN,[]);
 
 /* ---------- HUD readout ---------- */
 const ro={fps:$('roFps'),sh:$('roSh'),iris:$('roIris'),iso:$('roISO'),wb:$('roWB'),tint:$('roTint')};
@@ -472,13 +425,18 @@ $('linkBtn').onclick=async()=>{
     }catch(e){log('err','timecode notify: '+e.message);}
     try{const st=await svc.getCharacteristic(CH_STATUS);await st.startNotifications();
       st.addEventListener('characteristicvaluechanged',e=>log('rx','STATUS 0x'+e.target.value.getUint8(0).toString(16)));
-    }catch(e){}
+      /* write 0x01 = power/awake: forces bonding (PIN prompt) and asks the camera to dump its full current state */
+      await st.writeValue(new Uint8Array([1]));
+      log('tx','STATUS ← 0x01 (request state / trigger pairing)');
+    }catch(e){log('err','status: '+e.message);}
     let model=device.name||'CAMERA';
     try{const dis=await server.getPrimaryService(DIS);
       model=new TextDecoder().decode(await (await dis.getCharacteristic(CH_MODEL)).readValue());}catch(e){}
     linked=true;document.body.classList.add('linked');
     $('dot').classList.add('on');$('linkTxt').textContent=model.toUpperCase().replace('POCKET CINEMA CAMERA','PCC');
     $('linkBtn').textContent='LINKED';log('tx','connected: '+model);
+    /* pairing trigger backup: first secure write forces the PIN prompt if the status write didn't */
+    send(cmdStill(),'STILL (pairing trigger)');
   }catch(e){
     $('linkBtn').textContent='LINK CAMERA';
     let msg='❌ '+e.name+': '+e.message;
@@ -508,7 +466,7 @@ function onControlMsg(u8){
     i += 4 + Math.ceil(cmdLen/4)*4;
   }
 }
-let curWB=5600,curTint=0,curFmt=null,curTake=1,phantom=null;
+let curWB=5600,curTint=0,curFmt=null,phantom=null;
 function handleParam(cat,param,d){
   const dv=new DataView(d.buffer,d.byteOffset,d.byteLength);
   const f16=off=>dv.getInt16(off,true)/2048;
@@ -529,12 +487,6 @@ function handleParam(cat,param,d){
     log('rx','RX WB '+curWB+'K tint '+curTint);
   }
   else if(cat===1&&param===10&&d.length>=1){selectSeg(aeSeg,String(d[0]));log('rx','RX AE mode='+d[0]);}
-  else if(cat===1&&param===15&&d.length>=2){
-    const sel=d[0],en=d[1];
-    if(sel>0)lastLutSel=sel;
-    selectSeg(lutSeg,String(en===0?0:sel));
-    log('rx','RX LUT sel='+sel+' enabled='+en);
-  }
   else if(cat===1&&param===16&&d.length>=2){
     const stops=Math.round(f16(0));
     selectSeg(ndSeg,String(stops));
@@ -559,16 +511,6 @@ function handleParam(cat,param,d){
   else if(cat===2&&param===1&&d.length>=2){$('hp').value=Math.round(f16(0)*1000);$('hpVal').textContent=(f16(0)*100|0)+'%';paint($('hp'));}
   else if(cat===2&&param===4&&d.length>=1){selectSeg(inSeg,String(d[0]));log('rx','RX input type='+d[0]);}
   else if(cat===2&&param===6&&d.length>=1){phantom=!!d[0];$('phantomBtn').textContent='PHANTOM 48V: '+(phantom?'ON':'OFF');log('rx','RX phantom='+d[0]);}
-  else if(cat===8&&param===4&&d.length>=4){
-    $('ccPiv').value=Math.round(f16(0)*100);$('ccPivVal').textContent=f16(0).toFixed(2);paint($('ccPiv'));
-    $('ccCon').value=Math.round(f16(2)*100);$('ccConVal').textContent=f16(2).toFixed(2);paint($('ccCon'));
-  }
-  else if(cat===8&&param===5&&d.length>=2){$('ccLum').value=Math.round(f16(0)*100);$('ccLumVal').textContent=f16(0).toFixed(2);paint($('ccLum'));}
-  else if(cat===8&&param===6&&d.length>=4){
-    $('ccHue').value=Math.round(f16(0)*100);$('ccHueVal').textContent=f16(0).toFixed(2);paint($('ccHue'));
-    $('ccSat').value=Math.round(f16(2)*100);$('ccSatVal').textContent=f16(2).toFixed(2);paint($('ccSat'));
-  }
-  else if(cat===12&&param===3&&d.length>=1){curTake=d[0];$('takeNum').textContent=curTake;log('rx','RX take='+curTake);}
   else if(cat===9&&param===0&&d.length>=4){
     const mv=dv.getInt16(0,true), pct=dv.getInt16(2,true);
     $('batt').textContent=pct+'%';
@@ -647,31 +589,6 @@ $('awbBtn').onclick=()=>send(cmdAWB(),'AUTO WB');
 bindSlider($('iris'),$('irisVal'),f=>cmdIris(f),'IRIS');
 bindSlider($('focus'),$('focusVal'),f=>cmdFocus(f),'FOCUS');
 
-/* ---------- LOOK ---------- */
-const lutSeg=$('lutSeg');
-const LUT_NAMES={0:'NO LUT',1:'B/W',3:'COLOR'};
-let lastLutSel=1;
-buildSeg(lutSeg,[0,1,3],v=>LUT_NAMES[v],v=>{
-  if(v===0){ send(cmdLUT(lastLutSel,0),'LUT DISABLE'); }
-  else{
-    lastLutSel=v;
-    /* two-step, mirroring the camera UI: select first, then activate */
-    send(cmdLUT(v,0),'LUT SELECT '+LUT_NAMES[v]);
-    send(cmdLUT(v,1),'LUT ENABLE '+LUT_NAMES[v]);
-  }
-});
-const num2=f=>f.toFixed(2);
-bindSlider($('ccSat'),$('ccSatVal'),f=>cmdColorAdj($('ccHue').value/100,f),'SAT',num2);
-bindSlider($('ccHue'),$('ccHueVal'),f=>cmdColorAdj(f,$('ccSat').value/100),'HUE',num2);
-bindSlider($('ccCon'),$('ccConVal'),f=>cmdContrast($('ccPiv').value/100,f),'CONTRAST',num2);
-bindSlider($('ccPiv'),$('ccPivVal'),f=>cmdContrast(f,$('ccCon').value/100),'PIVOT',num2);
-bindSlider($('ccLum'),$('ccLumVal'),f=>cmdLumaMix(f),'LUMA MIX',num2);
-$('ccReset').onclick=()=>{
-  send(cmdCCReset(),'CC RESET');
-  const rs=[['ccSat',100,'1.00'],['ccHue',0,'0.00'],['ccCon',100,'1.00'],['ccPiv',50,'0.50'],['ccLum',100,'1.00']];
-  rs.forEach(([id,v,txt])=>{$(id).value=v;$(id+'Val').textContent=txt;paint($(id));});
-};
-
 /* ---------- SPEED ---------- */
 const fpsSeg=$('fpsSeg');
 const OFFSPEED_FLAG=0x02; /* sensor off-speed bit — verify via RX format flags in LOG */
@@ -698,11 +615,6 @@ $('phantomBtn').onclick=()=>{
   $('phantomBtn').textContent='PHANTOM 48V: '+(phantom?'ON':'OFF');
   send(cmdPhantom(phantom),'PHANTOM '+(phantom?'ON':'OFF'));
 };
-
-/* ---------- SLATE ---------- */
-$('takeMinus').onclick=()=>{curTake=Math.max(1,curTake-1);$('takeNum').textContent=curTake;send(cmdTake(curTake,0xFF),'TAKE '+curTake);};
-$('takePlus').onclick=()=>{curTake=curTake+1;$('takeNum').textContent=curTake;send(cmdTake(curTake,0xFF),'TAKE '+curTake);};
-$('goodTake').onclick=()=>send(cmdGoodTake(),'GOOD TAKE');
 
 /* ---------- MONITOR (camera screen) ---------- */
 let barsOn=false,faOn=false,faColor=0;
