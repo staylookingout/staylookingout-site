@@ -1,2 +1,3 @@
-# staylookingout-site
-STAYLOOKINGOUT - web tools site
+# staylookingout-terminal
+STAYLOOKINGOUT
+web tools site
