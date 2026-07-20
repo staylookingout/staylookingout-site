@@ -76,7 +76,7 @@
     line-height:1;
     letter-spacing:0.5px;
     color:#f2f0f8;
-    margin-bottom:14px;
+    margin-bottom:2px;
     user-select:none;
     display:block;
     animation: breathe 4.5s ease-in-out infinite;
@@ -155,18 +155,30 @@
   var PAL = { pink:'#ff7edb', cyan:'#36f9f6', orange:'#ff9a4d', red:'#fe5f75', green:'#72f1b8', yellow:'#fede5d', purple:'#b893e6', dim:'#6d6a86', fg:'#e6e2f0' };
   var COLORS = ['#ff7edb','#36f9f6','#ff9a4d','#72f1b8','#fede5d','#b893e6','#fe5f75'];
   var GLYPHS = '!<>-_\\/[]{}=+*^?#@%&';
-  var PROMPT_LABEL = 'user:/tools';
+  var promptPath = 'tools';
+  var promptPathColor = PAL.yellow;
   var TEMPO = 130;
   var BEAT_GLOW = true;
 
   // Edit this list to point your real tools at real URLs.
   var PAGES = [
-    { name:'home',    url:'https://staylookingout.com/',       desc:'front door' },
-    { name:'tools',   url:'https://staylookingout.com/tools/', desc:'instruments built in-house' },
-    { name:'bmpcc',   url:'https://www.staylookingout.com/tools/bmpcc.html', desc:'BMPCC camera control app' },
-    { name:'tool_02', url:'#', desc:'// drop URL here' },
-    { name:'tool_03', url:'#', desc:'// drop URL here' }
+    { name:'chop',      url:'https://staylookingout.com/',       desc:'in/out point' },
+    { name:'bpmkey',    url:'https://staylookingout.com/tools/bpmkey.html', desc:'BPM / key detection tool' },
+    { name:'varispeed', url:'https://staylookingout.com/tools/', desc:'pitch/time stretch' },
+    { name:'retune',    url:'#', desc:'any song' },
+    { name:'record',    url:'#', desc:'anything playing', color:'#fe5f75' },
+    { name:'playlist',  url:'#', desc:'play/filter songs' },
+    { name:'bmpcc',     url:'https://staylookingout.github.io/staylookingout-site/tools/rig/', desc:'BMPCC camera control app' }
   ];
+
+  // Shown instead of PAGES when the prompt is sitting in user:/read
+  var READ_PAGES = [
+    { name:'character', url:'#', desc:'people in religious text' },
+    { name:'parable',   url:'#', desc:'lessons from around the world' },
+    { name:'waves',     url:'#', desc:'light/audio relationship' }
+  ];
+
+  function currentPages(){ return promptPath === 'read' ? READ_PAGES : PAGES; }
 
   var root = document.getElementById('root');
   var linesEl = document.getElementById('lines');
@@ -182,12 +194,14 @@
     typed: '',
     phase: 'glitch',
     sel: -1,
+    activeListGen: -1,
     muted: false,
     showPrompt: false,
     ranOnce: false,
     out: false
   };
 
+  var listGen = 0;
   var timers = [];
   var audioLoop = null;
   var ac = null, master = null, delay = null, prog = [], arp = [], step = 0;
@@ -206,7 +220,16 @@
   // ---------- rendering ----------
   function renderPromptRow(){
     promptRow.classList.toggle('hidden', !state.showPrompt);
-    promptLabelEl.textContent = PROMPT_LABEL + ' ';
+    promptLabelEl.innerHTML = '';
+    var prefixSpan = document.createElement('span');
+    prefixSpan.textContent = 'user:/';
+    prefixSpan.style.color = PAL.green;
+    var pathSpan = document.createElement('span');
+    pathSpan.textContent = promptPath;
+    pathSpan.style.color = promptPathColor;
+    promptLabelEl.appendChild(prefixSpan);
+    promptLabelEl.appendChild(pathSpan);
+    promptLabelEl.appendChild(document.createTextNode(' '));
     typedTextEl.textContent = state.typed;
     ghostEl.textContent = (state.typed === '' && !state.ranOnce) ? "  type 'list' + \u21B5" : '';
   }
@@ -227,7 +250,7 @@
 
   function setSelHighlight(newSel){
     state.lines.forEach(function(ln){
-      if (ln.pageIdx === undefined) return;
+      if (ln.pageIdx === undefined || ln.list !== state.activeListGen) return;
       if (ln.pageIdx === newSel) ln.el.style.background = 'rgba(54,249,246,0.09)';
       else ln.el.style.background = 'transparent';
     });
@@ -284,13 +307,18 @@
     linesEl.innerHTML = '';
     state.lines = [];
     state.sel = -1;
+    state.activeListGen = -1;
   }
 
   // ---------- boot sequence ----------
   function boot(){
     var seq = [
       [90,  function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
-      [230, function(){ pushLine(colorize('import Nav from "./core/stay";'), null, true); }],
+      [230, function(){
+        var spans = colorize('import Read from "./core/stay";');
+        spans.forEach(function(sp){ if (sp.t === 'Read') sp.c = PAL.purple; });
+        pushLine(spans, null, true);
+      }],
       [120, function(){ pushLine(colorize('import Tools from "./tools/index";'), null, true); }],
       [120, function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
       [120, function(){ pushLine(colorize('link staylookingout.com ........ OK'), null, true); }],
@@ -315,7 +343,7 @@
 
   function onKey(e){
     if (state.phase !== 'ready' || state.out || e.metaKey || e.ctrlKey || e.altKey) return;
-    var linkLines = state.lines.filter(function(l){ return l.pageIdx !== undefined; });
+    var linkLines = state.lines.filter(function(l){ return l.pageIdx !== undefined && l.list === state.activeListGen; });
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
       if (!linkLines.length) return;
       e.preventDefault();
@@ -344,7 +372,11 @@
 
   // ---------- commands ----------
   function echoCmd(cmd){
-    pushLine([{ t: PROMPT_LABEL + ' ', c:PAL.green }, { t:cmd, c:PAL.fg }]);
+    pushLine([
+      { t:'user:/', c:PAL.green },
+      { t:promptPath + ' ', c:promptPathColor },
+      { t:cmd, c:PAL.fg }
+    ]);
   }
 
   function run(raw){
@@ -356,12 +388,23 @@
     var arg = rest.join(' ');
     var P = PAL;
     var num = parseInt(cmd, 10);
-    var byName = PAGES.findIndex(function(p){
+    var byName = currentPages().findIndex(function(p){
       return p.name === cmd || (p.name === arg && (head === 'open' || head === 'cd' || head === 'go'));
     });
 
+    if (cmd === 'home' || cmd === 'cls') {
+      sys('reloading reality...', P.orange);
+      setTimeout(function(){ location.reload(); }, 600);
+      return;
+    }
+    if (cmd === 'tools') {
+      promptPath = 'tools';
+      promptPathColor = PAL.yellow;
+      renderPromptRow();
+      return;
+    }
     if (cmd === 'list' || cmd === 'ls' || cmd === 'dir') return showList();
-    if (!isNaN(num) && num >= 1 && num <= PAGES.length && String(num) === cmd) return openPage(num - 1);
+    if (!isNaN(num) && num >= 1 && num <= currentPages().length && String(num) === cmd) return openPage(num - 1);
     if (byName >= 0) return openPage(byName);
 
     switch (head){
@@ -383,6 +426,11 @@
         pushLine([{ t:'signal \u25B8 ', c:P.dim }, { t:'stay@staylookingout.com', c:P.cyan, sh:'0 0 10px rgba(54,249,246,0.4)' }],
           { click:function(){ location.href = 'mailto:stay@staylookingout.com'; }, cursor:'pointer' });
         return;
+      case 'read':
+        promptPath = 'read';
+        promptPathColor = PAL.purple;
+        renderPromptRow();
+        return;
       case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
       case 'sudo': return sys('permission denied. nice try, root.', P.red);
       case 'stay': return arg === 'looking out' ? lookingOut() : sys('stay what?', P.pink);
@@ -399,6 +447,13 @@
       case 'matrix': return sys('wake up... this terminal IS the matrix.', P.green);
       case 'music':
         if (arg === 'off'){ setMute(true); return sys('music: off', P.dim); }
+        if (arg === 'new'){
+          initAudio();
+          regenerateMelody();
+          setMute(false);
+          return sys('music: new melody \u266A', P.cyan);
+        }
+        if (arg === 'save'){ saveMelody(); return; }
         initAudio(); setMute(false); return sys('music: on \u266A', P.cyan);
       case 'open': case 'cd': case 'go':
         return sys('no page called "' + arg + '" \u2014 type list', P.red);
@@ -411,20 +466,22 @@
   }
 
   function showList(){
+    var gen = ++listGen;
     sys('\u2500\u2500 pages \u2500\u2500', PAL.purple);
-    PAGES.forEach(function(p, i){
+    currentPages().forEach(function(p, i){
       pushLine([
         { t:'  ' + (i+1) + '  ', c:PAL.dim },
-        { t:p.name.padEnd(10), c:COLORS[i % COLORS.length], w:500 },
+        { t:p.name.padEnd(10), c:p.color || COLORS[i % COLORS.length], w:500 },
         { t:p.desc, c:PAL.dim }
-      ], { pageIdx:i, click:function(){ openPage(i); }, cursor:'pointer' });
+      ], { pageIdx:i, list:gen, click:function(){ openPage(i); }, cursor:'pointer' });
     });
     sys('\u2191\u2193 + enter, click, or type a name / number', PAL.dim);
+    state.activeListGen = gen;
     setSelHighlight(0);
   }
 
   function openPage(i){
-    var p = PAGES[i];
+    var p = currentPages()[i];
     if (!p) return;
     if (p.url === '#') return sys('// "' + p.name + '" is an empty slot \u2014 give me its URL', PAL.orange);
     sys('> jacking into ' + p.name + ' ...', PAL.cyan);
@@ -434,6 +491,15 @@
   }
 
   // ---------- generative synth audio ----------
+  function regenerateMelody(){
+    var roots = [0, -2, -4, 3, -7, 5];
+    prog = Array.from({ length:4 }, function(){ return roots[Math.floor(Math.random()*roots.length)]; });
+    prog[0] = 0;
+    var minor = [0, 3, 7, 10, 12, 15];
+    arp = Array.from({ length:16 }, function(){ return Math.random() < 0.25 ? null : minor[Math.floor(Math.random()*minor.length)]; });
+    step = 0;
+  }
+
   function initAudio(){
     if (ac) return;
     try { ac = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -448,19 +514,15 @@
     var wet = ac.createGain(); wet.gain.value = 0.3;
     delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
 
-    var roots = [0, -2, -4, 3, -7, 5];
-    prog = Array.from({ length:4 }, function(){ return roots[Math.floor(Math.random()*roots.length)]; });
-    prog[0] = 0;
-    var minor = [0, 3, 7, 10, 12, 15];
-    arp = Array.from({ length:16 }, function(){ return Math.random() < 0.25 ? null : minor[Math.floor(Math.random()*minor.length)]; });
-    step = 0;
+    regenerateMelody();
 
     audioLoop = setInterval(tick, 60000 / TEMPO / 4);
     updateMusicLabel();
   }
 
-  function voice(type, freq, when, dur, vol, cutoff, toDelay){
-    var o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+  function voice(type, freq, when, dur, vol, cutoff, toDelay, tCtx, tMaster, tDelay){
+    tCtx = tCtx || ac; tMaster = tMaster || master; tDelay = tDelay || delay;
+    var o = tCtx.createOscillator(), g = tCtx.createGain(), f = tCtx.createBiquadFilter();
     o.type = type; o.frequency.value = freq;
     f.type = 'lowpass';
     f.frequency.setValueAtTime(cutoff, when);
@@ -469,43 +531,122 @@
     g.gain.setValueAtTime(0.0001, when);
     g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
     g.gain.exponentialRampToValueAtTime(0.001, when + dur);
-    o.connect(f); f.connect(g); g.connect(master);
-    if (toDelay) g.connect(delay);
+    o.connect(f); f.connect(g); g.connect(tMaster);
+    if (toDelay) g.connect(tDelay);
     o.start(when); o.stop(when + dur + 0.05);
   }
 
-  function tick(){
-    var t = ac.currentTime + 0.03, s = step;
+  // One 16th-step of the pattern. Drives live playback (ac/master/delay) or
+  // an offline render (tCtx/tMaster/tDelay) using the same prog/arp data.
+  function scheduleStep(s, t, tCtx, tMaster, tDelay){
+    tCtx = tCtx || ac; tMaster = tMaster || master; tDelay = tDelay || delay;
     var bar = Math.floor(s/16) % 4, root = prog[bar];
     function rf(semi, base){ return base * Math.pow(2, (root+semi)/12); }
 
     if (s % 16 === 0){
       var barDur = (60000/TEMPO/4)*16/1000;
-      voice('sawtooth', rf(0,110)*0.997, t, barDur, 0.05, 500, true);
-      voice('sawtooth', rf(3,110)*1.004, t, barDur, 0.04, 420, true);
+      voice('sawtooth', rf(0,110)*0.997, t, barDur, 0.05, 500, true, tCtx, tMaster, tDelay);
+      voice('sawtooth', rf(3,110)*1.004, t, barDur, 0.04, 420, true, tCtx, tMaster, tDelay);
     }
-    if (s % 8 === 0) voice('sawtooth', rf(0,55), t, 0.9, 0.32, 240, false);
+    if (s % 8 === 0) voice('sawtooth', rf(0,55), t, 0.9, 0.32, 240, false, tCtx, tMaster, tDelay);
     if (s % 4 === 0){
-      var o = ac.createOscillator(), g = ac.createGain();
+      var o = tCtx.createOscillator(), g = tCtx.createGain();
       o.type = 'sine';
       o.frequency.setValueAtTime(110, t);
       o.frequency.exponentialRampToValueAtTime(38, t + 0.14);
       g.gain.setValueAtTime(0.5, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.25);
+      o.connect(g); g.connect(tMaster); o.start(t); o.stop(t + 0.25);
     }
     var a = arp[s % 16];
-    if (a !== null) voice('square', rf(a,110), t, 0.22, 0.07, 750, true);
+    if (a !== null) voice('square', rf(a,110), t, 0.22, 0.07, 750, true, tCtx, tMaster, tDelay);
     if (s % 8 === 6){
-      var b = ac.createBuffer(1, 900, ac.sampleRate), d = b.getChannelData(0);
+      var b = tCtx.createBuffer(1, 900, tCtx.sampleRate), d = b.getChannelData(0);
       for (var i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
-      var src = ac.createBufferSource(), g2 = ac.createGain(), f2 = ac.createBiquadFilter();
+      var src = tCtx.createBufferSource(), g2 = tCtx.createGain(), f2 = tCtx.createBiquadFilter();
       f2.type = 'lowpass'; f2.frequency.value = 5000;
       src.buffer = b; g2.gain.value = 0.07;
-      src.connect(f2); f2.connect(g2); g2.connect(master); src.start(t);
+      src.connect(f2); f2.connect(g2); g2.connect(tMaster); src.start(t);
     }
+  }
+
+  function tick(){
+    var t = ac.currentTime + 0.03, s = step;
+    scheduleStep(s, t);
     if (s % 4 === 0) onBeat();
     step++;
+  }
+
+  // ---------- render current melody to a downloadable WAV ----------
+  function renderMelodyToWav(numBars, done){
+    var OfflineCtor = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OfflineCtor) { done(null); return; }
+    var stepDur = 60 / TEMPO / 4;
+    var totalSteps = numBars * 16;
+    var tailSec = 1.5; // let the delay/feedback trail ring out
+    var totalDur = totalSteps * stepDur + tailSec;
+    var sampleRate = 44100;
+    var offlineCtx = new OfflineCtor(2, Math.ceil(totalDur * sampleRate), sampleRate);
+
+    var oMaster = offlineCtx.createGain();
+    oMaster.gain.value = 0.16;
+    oMaster.connect(offlineCtx.destination);
+    var oDelay = offlineCtx.createDelay(1); oDelay.delayTime.value = 0.38;
+    var oFb = offlineCtx.createGain(); oFb.gain.value = 0.38;
+    var oWet = offlineCtx.createGain(); oWet.gain.value = 0.3;
+    oDelay.connect(oFb); oFb.connect(oDelay); oDelay.connect(oWet); oWet.connect(oMaster);
+
+    for (var s = 0; s < totalSteps; s++){
+      scheduleStep(s, s * stepDur + 0.05, offlineCtx, oMaster, oDelay);
+    }
+
+    offlineCtx.startRendering().then(function(buffer){ done(buffer); }).catch(function(){ done(null); });
+  }
+
+  function audioBufferToWav(buffer){
+    var numChannels = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
+    var bytesPerSample = 2, blockAlign = numChannels * bytesPerSample;
+    var dataLength = buffer.length * blockAlign;
+    var arrBuf = new ArrayBuffer(44 + dataLength);
+    var view = new DataView(arrBuf);
+    function writeStr(offset, str){ for (var i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
+    writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLength, true); writeStr(8, 'WAVE');
+    writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true); view.setUint16(32, blockAlign, true); view.setUint16(34, 16, true);
+    writeStr(36, 'data'); view.setUint32(40, dataLength, true);
+
+    var channels = [];
+    for (var c = 0; c < numChannels; c++) channels.push(buffer.getChannelData(c));
+    var offset = 44;
+    for (var i = 0; i < buffer.length; i++){
+      for (var c2 = 0; c2 < numChannels; c2++){
+        var sample = Math.max(-1, Math.min(1, channels[c2][i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+    return new Blob([arrBuf], { type:'audio/wav' });
+  }
+
+  function downloadBlob(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function saveMelody(){
+    if (!prog.length) regenerateMelody();
+    sys('rendering melody to wav...', PAL.cyan);
+    renderMelodyToWav(8, function(buffer){
+      if (!buffer){ sys('rendering failed \u2014 try a different browser', PAL.red); return; }
+      var blob = audioBufferToWav(buffer);
+      var filename = 'staylookingout-melody-' + Date.now() + '.wav';
+      downloadBlob(blob, filename);
+      sys('saved: ' + filename, PAL.green);
+    });
   }
 
   function onBeat(){
