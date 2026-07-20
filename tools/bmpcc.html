@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>RIG — STAYLOOKINGOUT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#31A8E0; --blue-dk:#2286B8;
+    --bg:#000; --menu:#141618; --panel:#232629;
+    --btn-hi:#4E545A; --btn-lo:#3A3F44;
+    --btn-sel-hi:#83898F; --btn-sel-lo:#5E646A;
+    --txt:#F2F4F5; --muted:#9AA0A6; --dim:#5F656B;
+    --rec:#E13B2F; --grn:#3AC94C; --yel:#E0C931;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;overscroll-behavior:none}
+  body{font-family:'Open Sans',system-ui,sans-serif}
+  button,select{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+  /* ================= CAMERA HUD (top readout strip) ================= */
+  #top{
+    position:fixed;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:flex-start;gap:4px;
+    padding:calc(env(safe-area-inset-top) + 6px) 10px 14px;
+    background:linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,.35) 70%, transparent);
+    transition:opacity .25s;overflow-x:auto;scrollbar-width:none;
+  }
+  #top::-webkit-scrollbar{display:none}
+  #top.hidden{opacity:0;pointer-events:none}
+  .ro{min-width:56px;text-align:left;padding:2px 8px;flex:0 0 auto}
+  .ro .lbl{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(242,244,245,.75);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  .ro .val{font-size:17px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.9);white-space:nowrap}
+  #roTC{flex:1 1 auto;text-align:center;min-width:150px}
+  #roTC .val{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  body.rec #roTC .val{color:var(--rec)}
+  #roLink .val{font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;margin-top:4px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block}
+  .dot.on{background:var(--blue);box-shadow:0 0 8px rgba(49,168,224,.8)}
+
+  /* ================= stage ================= */
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #gl{max-width:100%;max-height:100%;display:none}
+  video{display:none}
+  #tally{position:fixed;inset:0;pointer-events:none;border:3px solid transparent;z-index:15;transition:border-color .2s}
+  body.rec #tally{border-color:var(--rec)}
+  body.playing #tally{border-color:var(--blue)}
+  #standby{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    color:var(--muted);text-align:center;padding:24px;
+  }
+  #standby .big{font-weight:800;font-size:16px;letter-spacing:.24em;color:var(--txt)}
+  #standby .big b{color:var(--blue)}
+  #standby p{font-size:12px;line-height:1.6;max-width:300px}
+  #errBox{font-family:'JetBrains Mono';font-size:10px;color:#FF7A6E;max-width:320px;line-height:1.7;display:none;
+    border:1px solid var(--rec);border-radius:6px;padding:10px;background:rgba(225,59,47,.1);white-space:pre-wrap;word-break:break-word;text-align:left}
+
+  /* ================= bottom deck ================= */
+  #hud{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    padding:8px 10px calc(env(safe-area-inset-bottom) + 10px);
+    background:linear-gradient(transparent, rgba(0,0,0,.88) 26%);
+    transition:opacity .25s, transform .25s;
+    max-height:78vh;display:flex;flex-direction:column;gap:8px;
+  }
+  #hud.hidden{opacity:0;transform:translateY(10px);pointer-events:none}
+  .row{display:flex;gap:6px;align-items:center}
+
+  /* BMD-style buttons: silver gradient, blue underline when selected */
+  .bmd{
+    font-weight:700;font-size:12px;letter-spacing:.04em;
+    padding:12px 12px;text-align:center;border-radius:4px;
+    background:linear-gradient(180deg,var(--btn-hi),var(--btn-lo));
+    color:var(--txt);box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.5);
+    transition:filter .1s;white-space:nowrap;
+  }
+  .bmd:active{filter:brightness(1.15)}
+  .bmd.grow{flex:1}
+  .bmd.sel{
+    background:linear-gradient(180deg,var(--btn-sel-hi),var(--btn-sel-lo));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), inset 0 -4px 0 var(--blue), 0 1px 2px rgba(0,0,0,.5);
+  }
+  .bmd.blue{background:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .bmd.blue:active{filter:brightness(1.1)}
+
+  /* circular record button */
+  #recBtn{
+    width:58px;height:58px;border-radius:50%;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 42%, #EDEFF1, #B9BEC3 68%, #8E9499);
+    box-shadow:0 2px 6px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.6);
+    position:relative;
+  }
+  #recBtn::after{
+    content:"";position:absolute;inset:14px;border-radius:50%;
+    background:radial-gradient(circle at 50% 40%, #FF6A57, var(--rec) 70%);
+    box-shadow:0 1px 3px rgba(0,0,0,.4);
+    transition:box-shadow .2s;
+  }
+  body.rec #recBtn::after{box-shadow:0 0 16px rgba(225,59,47,.9), 0 1px 3px rgba(0,0,0,.4);animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 4px rgba(225,59,47,.4)}}
+  @media (prefers-reduced-motion:reduce){body.rec #recBtn::after{animation:none}}
+
+  /* ================= menu (drawer) — Blackmagic OS style ================= */
+  #drawer{display:none;flex-direction:column;min-height:0;border-radius:8px;overflow:hidden;
+    background:var(--menu);box-shadow:0 -4px 24px rgba(0,0,0,.6)}
+  #drawer.open{display:flex}
+  #tabs{display:flex;gap:0;background:#0C0D0E;padding:6px 6px 0;overflow-x:auto;scrollbar-width:none}
+  #tabs::-webkit-scrollbar{display:none}
+  #tabs button{
+    flex:1 0 auto;font-weight:700;font-size:11px;letter-spacing:.14em;color:var(--txt);
+    padding:12px 14px 11px;border-radius:5px 5px 0 0;
+  }
+  #tabs button.sel{background:var(--blue)}
+  .pages{padding:14px 12px 8px;display:flex;flex-direction:column;min-height:0}
+  .page{display:none;flex-direction:column;gap:13px;overflow-y:auto;min-height:0}
+  .page.on{display:flex}
+  .eyebrow{font-size:10px;font-weight:800;letter-spacing:.18em;color:var(--muted)}
+  .seg{display:grid;gap:6px}
+  .c6{grid-template-columns:repeat(6,1fr)}
+  .c5{grid-template-columns:repeat(5,1fr)}
+  .c4{grid-template-columns:repeat(4,1fr)}
+  .c3{grid-template-columns:repeat(3,1fr)}
+  .c2{grid-template-columns:repeat(2,1fr)}
+  .seg .bmd{padding:13px 4px;font-size:12px}
+
+  .slider-row{display:flex;align-items:center;gap:12px}
+  .slider-row label{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--muted);width:64px}
+  .slider-row output{font-size:14px;font-weight:700;color:var(--txt);width:52px;text-align:right;white-space:nowrap}
+  input[type=range]{
+    flex:1;appearance:none;-webkit-appearance:none;height:26px;background:transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:5px;border-radius:3px;
+    background:var(--track, linear-gradient(90deg,var(--blue) 50%, #3A3F44 50%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:24px;height:24px;border-radius:50%;margin-top:-9.5px;
+    background:radial-gradient(circle at 50% 38%, #FFF, #D8DCE0 70%, #AEB4B9);
+    box-shadow:0 1px 4px rgba(0,0,0,.6);
+  }
+  input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:#3A3F44}
+  input[type=range]::-moz-range-progress{height:5px;border-radius:3px;background:var(--blue)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;border:none;
+    background:radial-gradient(circle at 50% 38%, #FFF, #D8DCE0 70%, #AEB4B9);box-shadow:0 1px 4px rgba(0,0,0,.6)}
+
+  select{
+    font-weight:700;font-size:11px;letter-spacing:.06em;border-radius:4px;
+    background:linear-gradient(180deg,var(--btn-hi),var(--btn-lo));color:var(--txt);
+    padding:12px;appearance:none;width:100%;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .note{font-size:10px;line-height:1.7;color:var(--dim)}
+  .takeRow{display:flex;align-items:center;gap:8px}
+  .takeRow .bmd{padding:12px 20px;font-size:16px}
+  #takeNum{font-weight:800;font-size:26px;flex:1;text-align:center;font-variant-numeric:tabular-nums}
+
+  #dots{display:flex;justify-content:center;gap:7px;padding:10px 0 6px}
+  #dots span{width:7px;height:7px;border-radius:50%;background:#3A3F44}
+  #dots span.on{background:var(--blue)}
+
+  /* ================= LOG overlay ================= */
+  #logOverlay{
+    position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
+    background:rgba(0,0,0,.96);
+    padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
+  #logOverlay.open{display:flex}
+  .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .log-head h2{font-weight:800;font-size:13px;letter-spacing:.2em}
+  #log{
+    flex:1;font-family:'JetBrains Mono';font-size:10px;line-height:1.8;color:var(--muted);
+    border:1px solid #26292C;border-radius:6px;background:#0A0B0C;
+    padding:10px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;
+  }
+  #log .tx{color:var(--blue)} #log .rx{color:var(--yel)} #log .err{color:#FF7A6E}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <video id="vid" playsinline muted autoplay></video>
+  <div id="standby">
+    <div class="big">RIG<b>·</b>6K PRO</div>
+    <p>FEED starts the HDMI picture (dongle → USB-C). LINK pairs the camera over Bluetooth. Each side works without the other.</p>
+    <div id="errBox"></div>
+  </div>
+</div>
+<div id="tally"></div>
+
+<!-- camera-style HUD readout -->
+<header id="top">
+  <div class="ro" id="roLink"><div class="lbl">&nbsp;</div><div class="val"><span class="dot" id="dot"></span><span id="linkTxt">NO LINK</span></div></div>
+  <div class="ro"><div class="lbl">FPS</div><div class="val" id="roFps">—</div></div>
+  <div class="ro"><div class="lbl">SHUTTER</div><div class="val" id="roSh">—</div></div>
+  <div class="ro"><div class="lbl">IRIS</div><div class="val" id="roIris">—</div></div>
+  <div class="ro" id="roTC"><div class="lbl">&nbsp;</div><div class="val" id="tc">00:00:00:00</div></div>
+  <div class="ro"><div class="lbl">ISO</div><div class="val" id="roISO">—</div></div>
+  <div class="ro"><div class="lbl">WB</div><div class="val" id="roWB">—</div></div>
+  <div class="ro"><div class="lbl">TINT</div><div class="val" id="roTint">—</div></div>
+  <div class="ro"><div class="lbl">BAT</div><div class="val" id="batt">—</div></div>
+</header>
+
+<div id="hud">
+  <div class="row">
+    <button class="bmd blue grow" id="linkBtn">LINK CAMERA</button>
+    <button class="bmd grow" id="feedBtn">START FEED</button>
+    <button class="bmd" id="logBtn">LOG</button>
+    <button class="bmd" id="fsBtn" aria-label="Fullscreen">⛶</button>
+  </div>
+  <div class="row">
+    <button class="bmd grow" id="stillBtn">STILL</button>
+    <button class="bmd grow" id="playBtn">PLAY</button>
+    <button id="recBtn" aria-label="Record"></button>
+    <button class="bmd grow" id="afBtn">AF</button>
+    <button class="bmd grow" id="drawerBtn">MENU</button>
+  </div>
+  <div class="row" id="assistRow">
+    <button class="bmd grow sel" data-mode="0">CLEAN</button>
+    <button class="bmd grow" data-mode="1">PEAK</button>
+    <button class="bmd grow" data-mode="2">ZEBRA</button>
+    <button class="bmd grow" data-mode="3">FALSE C</button>
+  </div>
+
+  <div id="drawer">
+    <div id="tabs">
+      <button class="sel" data-page="expo">EXPO</button>
+      <button data-page="lens">LENS</button>
+      <button data-page="speed">SPEED</button>
+      <button data-page="audio">AUDIO</button>
+      <button data-page="mon">MONITOR</button>
+    </div>
+    <div class="pages">
+
+    <!-- EXPO -->
+    <div class="page on" id="page-expo">
+      <div class="eyebrow">ISO</div>
+      <div class="seg c6" id="isoSeg"></div>
+      <div class="eyebrow">SHUTTER ANGLE</div>
+      <div class="seg c6" id="shSeg"></div>
+      <div class="eyebrow">ND FILTER</div>
+      <div class="seg c4" id="ndSeg"></div>
+      <div class="eyebrow">WHITE BALANCE</div>
+      <div class="seg c5" id="wbSeg"></div>
+      <div class="slider-row">
+        <label>TINT</label><input type="range" id="tint" min="-50" max="50" value="0"><output id="tintVal">0</output>
+      </div>
+      <div class="seg c2">
+        <button class="bmd" id="awbBtn">AUTO WB</button>
+      </div>
+      <div class="eyebrow">AUTO EXPOSURE</div>
+      <div class="seg c5" id="aeSeg"></div>
+    </div>
+
+    <!-- LENS -->
+    <div class="page" id="page-lens">
+      <div class="eyebrow">LENS</div>
+      <div class="slider-row">
+        <label>IRIS</label><input type="range" id="iris" min="0" max="1000" value="0"><output id="irisVal">—</output>
+      </div>
+      <div class="slider-row">
+        <label>FOCUS</label><input type="range" id="focus" min="0" max="1000" value="500"><output id="focusVal">—</output>
+      </div>
+      <div class="seg c2">
+        <button class="bmd" id="afBtn2">AUTOFOCUS</button>
+      </div>
+    </div>
+
+    <!-- SPEED -->
+    <div class="page" id="page-speed">
+      <div class="eyebrow">RECORDING FORMAT</div>
+      <div class="note" id="fmtInfo">Waiting for camera format… link the camera and this fills in.</div>
+      <div class="eyebrow">SENSOR FPS (OFF-SPEED)</div>
+      <div class="seg c5" id="fpsSeg"></div>
+      <div class="seg c2">
+        <button class="bmd" id="fpsSync">SYNC TO PROJECT</button>
+      </div>
+      <div class="note">Off-speed resends the camera's current recording format with a new sensor rate. SYNC returns sensor fps to the project rate.</div>
+    </div>
+
+    <!-- AUDIO -->
+    <div class="page" id="page-audio">
+      <div class="eyebrow">INPUT TYPE</div>
+      <div class="seg c4" id="inSeg"></div>
+      <div class="eyebrow">LEVELS</div>
+      <div class="slider-row">
+        <label>CH 1</label><input type="range" id="ch0" min="0" max="1000" value="500"><output id="ch0Val">—</output>
+      </div>
+      <div class="slider-row">
+        <label>CH 2</label><input type="range" id="ch1" min="0" max="1000" value="500"><output id="ch1Val">—</output>
+      </div>
+      <div class="slider-row">
+        <label>PHONES</label><input type="range" id="hp" min="0" max="1000" value="500"><output id="hpVal">—</output>
+      </div>
+      <div class="seg c2">
+        <button class="bmd" id="phantomBtn">PHANTOM 48V: ?</button>
+      </div>
+    </div>
+
+    <!-- MONITOR -->
+    <div class="page" id="page-mon">
+      <div class="eyebrow">PHONE MONITOR</div>
+      <div class="slider-row">
+        <label>ZEBRA IRE</label><input type="range" id="zebraTh" min="70" max="100" value="95"><output id="zebraOut">95</output>
+      </div>
+      <select id="devSel" aria-label="Video source"><option>FEED SOURCE — start feed first</option></select>
+      <div class="eyebrow">CAMERA SCREEN</div>
+      <div class="seg c2">
+        <button class="bmd" id="barsBtn">COLOR BARS</button>
+        <button class="bmd" id="fa0">FOCUS ASSIST</button>
+      </div>
+      <div class="seg c5" id="faColorSeg"></div>
+      <div class="note">Focus assist color applies to the camera's own peaking overlay. Experimental — check the LOG for RX echoes.</div>
+    </div>
+
+    <div id="dots"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG overlay -->
+<div id="logOverlay">
+  <div class="log-head">
+    <h2>PROTOCOL LOG</h2>
+    <button class="bmd blue" id="logClose">CLOSE ✕</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script>
+/* ============================================================
+   BLUETOOTH — Blackmagic Camera Service
+   ============================================================ */
+const SVC='291d567a-6d75-11e6-8b77-86f30ca893d3';
+const CH_OUT='5dd3465f-1aee-4299-8493-d2eca2f8e1bb';
+const CH_IN ='b864e140-76a0-416a-bf30-5876504537d9';
+const CH_TC ='6d8f2110-86f1-41bf-9afb-451d87e976c8';
+const CH_STATUS='7fe8691d-95dc-4fc5-8abd-ca74339b51b9';
+const CH_DEVNAME='ffac0c52-c9fb-41a0-b063-cc76282eb89c';
+const DIS=0x180A, CH_MODEL=0x2A24;
+const T_VOID=0,T_INT8=1,T_INT16=2,T_INT32=3,T_FIXED16=128,OP_ASSIGN=0;
+
+const $=id=>document.getElementById(id);
+let device=null,chOut=null,linked=false,recording=false,playing=false;
+
+/* ---------- log overlay ---------- */
+const logEl=$('log');
+$('logBtn').onclick=()=>{$('logOverlay').classList.add('open');logEl.scrollTop=logEl.scrollHeight;};
+$('logClose').onclick=()=>$('logOverlay').classList.remove('open');
+function log(cls,msg){const d=document.createElement('div');d.className=cls;d.textContent=msg;
+  logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
+  while(logEl.childNodes.length>300)logEl.removeChild(logEl.firstChild);}
+window.addEventListener('error',e=>log('err','JS: '+e.message+' @'+(e.lineno||'?')));
+window.addEventListener('unhandledrejection',e=>log('err','ASYNC: '+(e.reason&&e.reason.message||e.reason)));
+log('tx','RIG v2.2 ready — '+new Date().toLocaleTimeString());
+const hex=u8=>[...u8].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+
+/* ---------- packets ---------- */
+function packet(cat,param,type,op,data){
+  const cmdLen=4+data.length,total=8+Math.ceil(data.length/4)*4;
+  const p=new Uint8Array(total);p.set([255,cmdLen,0,0,cat,param,type,op],0);p.set(data,8);return p;
+}
+const le16=v=>{v&=0xFFFF;return[v&255,(v>>8)&255]};
+const le32=v=>{v>>>=0;return[v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255]};
+const fixed16=f=>le16(Math.round(f*2048));
+let chain=Promise.resolve();
+function send(p,label){
+  if(!chOut){log('err','TX dropped — no link');return;}
+  chain=chain.then(async()=>{try{
+    await (chOut.writeValueWithResponse?chOut.writeValueWithResponse(p):chOut.writeValue(p));
+    log('tx','TX '+(label?label+'  ':'')+hex(p));
+  }catch(e){log('err','TX fail: '+e.message);}});
+}
+
+/* command set */
+const cmdTransport=m=>packet(10,1,T_INT8,OP_ASSIGN,[m,0,0,0,0]);
+const cmdISO=v=>packet(1,14,T_INT32,OP_ASSIGN,le32(v));
+const cmdShutter=d=>packet(1,11,T_INT32,OP_ASSIGN,le32(Math.round(d*100)));
+const cmdWB=(k,t)=>packet(1,2,T_INT16,OP_ASSIGN,[...le16(k),...le16(t)]);
+const cmdAWB=()=>packet(1,3,T_VOID,OP_ASSIGN,[]);
+const cmdAE=m=>packet(1,10,T_INT8,OP_ASSIGN,[m]);
+const cmdIris=f=>packet(0,3,T_FIXED16,OP_ASSIGN,fixed16(f));
+const cmdFocus=f=>packet(0,0,T_FIXED16,OP_ASSIGN,fixed16(f));
+const cmdAF=()=>packet(0,1,T_VOID,OP_ASSIGN,[]);
+const cmdStill=()=>packet(10,3,T_VOID,OP_ASSIGN,[]);
+const cmdLUT=null; /* removed — LUT selection over BLE not accepted by this firmware */
+const cmdND=stops=>packet(1,16,T_FIXED16,OP_ASSIGN,fixed16(stops));
+const cmdFormat=(ffps,sfps,w,h,flags)=>packet(1,9,T_INT16,OP_ASSIGN,[...le16(ffps),...le16(sfps),...le16(w),...le16(h),...le16(flags)]);
+const cmdHP=f=>packet(2,1,T_FIXED16,OP_ASSIGN,fixed16(f));
+const cmdInputType=t=>packet(2,4,T_INT8,OP_ASSIGN,[t]);
+const cmdInputLevels=(a,b)=>packet(2,5,T_FIXED16,OP_ASSIGN,[...fixed16(a),...fixed16(b)]);
+const cmdPhantom=on=>packet(2,6,T_VOID,OP_ASSIGN,[on?1:0]);
+const cmdBars=sec=>packet(4,4,T_INT8,OP_ASSIGN,[sec]);
+const cmdFocusAssist=(method,color)=>packet(4,5,T_INT8,OP_ASSIGN,[method,color]);
+
+/* ---------- HUD readout ---------- */
+const ro={fps:$('roFps'),sh:$('roSh'),iris:$('roIris'),iso:$('roISO'),wb:$('roWB'),tint:$('roTint')};
+function setRO(k,v){ro[k].textContent=v;}
+
+/* ---------- connect ---------- */
+$('linkBtn').onclick=async()=>{
+  if(!navigator.bluetooth){bleErr('❌ No Web Bluetooth in this browser. Must use Chrome on Android over https://');return;}
+  try{
+    $('linkBtn').textContent='SCANNING…';
+    log('tx','BLE: requesting device...');
+    device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,DIS]});
+    log('tx','BLE: device selected: '+device.name);
+    device.addEventListener('gattserverdisconnected',onBleDrop);
+    $('linkBtn').textContent='CONNECTING…';
+    const server=await device.gatt.connect();
+    log('tx','BLE: GATT server connected');
+    const svc=await server.getPrimaryService(SVC);
+    log('tx','BLE: Blackmagic service found');
+    chOut=await svc.getCharacteristic(CH_OUT);
+    try{const dn=await svc.getCharacteristic(CH_DEVNAME);
+      await dn.writeValue(new TextEncoder().encode('STAYLOOKINGOUT'));}catch(e){}
+    try{const cin=await svc.getCharacteristic(CH_IN);await cin.startNotifications();
+      cin.addEventListener('characteristicvaluechanged',e=>onControlMsg(new Uint8Array(e.target.value.buffer)));
+    }catch(e){log('err','control notify: '+e.message);}
+    try{const tcc=await svc.getCharacteristic(CH_TC);await tcc.startNotifications();
+      tcc.addEventListener('characteristicvaluechanged',e=>onTimecode(e.target.value));
+    }catch(e){log('err','timecode notify: '+e.message);}
+    try{const st=await svc.getCharacteristic(CH_STATUS);await st.startNotifications();
+      st.addEventListener('characteristicvaluechanged',e=>log('rx','STATUS 0x'+e.target.value.getUint8(0).toString(16)));
+      /* write 0x01 = power/awake: forces bonding (PIN prompt) and asks the camera to dump its full current state */
+      await st.writeValue(new Uint8Array([1]));
+      log('tx','STATUS ← 0x01 (request state / trigger pairing)');
+    }catch(e){log('err','status: '+e.message);}
+    let model=device.name||'CAMERA';
+    try{const dis=await server.getPrimaryService(DIS);
+      model=new TextDecoder().decode(await (await dis.getCharacteristic(CH_MODEL)).readValue());}catch(e){}
+    linked=true;document.body.classList.add('linked');
+    $('dot').classList.add('on');$('linkTxt').textContent=model.toUpperCase().replace('POCKET CINEMA CAMERA','PCC');
+    $('linkBtn').textContent='LINKED';log('tx','connected: '+model);
+    /* pairing trigger backup: first secure write forces the PIN prompt if the status write didn't */
+    send(cmdStill(),'STILL (pairing trigger)');
+  }catch(e){
+    $('linkBtn').textContent='LINK CAMERA';
+    let msg='❌ '+e.name+': '+e.message;
+    if(e.name==='NotFoundError') msg='❌ No Bluetooth devices found. Check:\n• Camera Bluetooth is ON (Setup menu)\n• Camera is not already paired elsewhere\n• Phone Bluetooth is ON';
+    else if(e.name==='NetworkError') msg='❌ Connection lost. Camera may have disconnected or Bluetooth is off.';
+    else if(e.name==='SecurityError') msg='❌ Bluetooth permission denied. Check phone Bluetooth settings.';
+    else if(e.name==='InvalidStateError') msg='❌ GATT error. Try:\n• Forget camera in Android Bluetooth settings\n• Restart camera\n• Restart Chrome';
+    else if(e.message&&e.message.includes('GATT')) msg='❌ Service not found. Camera firmware may need update, or Bluetooth module is not responding.';
+    bleErr(msg);log('err',e.name+': '+e.message);
+  }
+};
+function onBleDrop(){
+  linked=false;chOut=null;recording=false;playing=false;
+  document.body.classList.remove('linked','rec','playing');
+  $('dot').classList.remove('on');$('linkTxt').textContent='NO LINK';
+  $('linkBtn').textContent='LINK CAMERA';
+  log('err','link lost');
+}
+function bleErr(msg){const el=$('errBox');el.style.display='block';el.textContent=msg;log('err',msg);}
+
+/* ---------- incoming ---------- */
+function onControlMsg(u8){
+  let i=0;
+  while(i+8<=u8.length){
+    const cmdLen=u8[i+1]; if(cmdLen<4) break;
+    handleParam(u8[i+4],u8[i+5],u8.slice(i+8,i+4+cmdLen));
+    i += 4 + Math.ceil(cmdLen/4)*4;
+  }
+}
+let curWB=5600,curTint=0,curFmt=null,phantom=null;
+function handleParam(cat,param,d){
+  const dv=new DataView(d.buffer,d.byteOffset,d.byteLength);
+  const f16=off=>dv.getInt16(off,true)/2048;
+  if(cat===10&&param===1&&d.length>=1){
+    recording=(d[0]===2);playing=(d[0]===1);
+    document.body.classList.toggle('rec',recording);
+    document.body.classList.toggle('playing',playing);
+    log('rx','RX transport mode='+d[0]);
+  }
+  else if(cat===1&&param===14&&d.length>=4){const v=dv.getInt32(0,true);selectSeg(isoSeg,String(v));setRO('iso',v);}
+  else if(cat===1&&param===11&&d.length>=4){const a=dv.getInt32(0,true)/100;
+    selectSeg(shSeg,(a%1?a.toFixed(1):String(a)));setRO('sh',(a%1?a.toFixed(1):a)+'°');}
+  else if(cat===1&&param===2&&d.length>=4){
+    curWB=dv.getInt16(0,true);curTint=dv.getInt16(2,true);
+    selectSeg(wbSeg,String(curWB));
+    $('tint').value=curTint;$('tintVal').textContent=curTint;paint($('tint'));
+    setRO('wb',curWB+'K');setRO('tint',curTint);
+    log('rx','RX WB '+curWB+'K tint '+curTint);
+  }
+  else if(cat===1&&param===10&&d.length>=1){selectSeg(aeSeg,String(d[0]));log('rx','RX AE mode='+d[0]);}
+  else if(cat===1&&param===16&&d.length>=2){
+    const stops=Math.round(f16(0));
+    selectSeg(ndSeg,String(stops));
+    log('rx','RX ND '+stops+' stops');
+  }
+  else if(cat===1&&param===9&&d.length>=10){
+    curFmt={ffps:dv.getInt16(0,true),sfps:dv.getInt16(2,true),w:dv.getInt16(4,true),h:dv.getInt16(6,true),flags:dv.getInt16(8,true)};
+    $('fmtInfo').textContent='PROJECT '+curFmt.ffps+' FPS · SENSOR '+curFmt.sfps+' FPS · '+curFmt.w+'×'+curFmt.h+' · flags 0x'+curFmt.flags.toString(16);
+    selectSeg(fpsSeg,String(curFmt.sfps));
+    setRO('fps',curFmt.sfps);
+    log('rx','RX format file='+curFmt.ffps+' sensor='+curFmt.sfps+' '+curFmt.w+'x'+curFmt.h+' flags=0x'+curFmt.flags.toString(16));
+  }
+  else if(cat===0&&param===2&&d.length>=2){setRO('iris','f'+f16(0).toFixed(1));}
+  else if(cat===0&&param===3&&d.length>=2){const f=f16(0);
+    $('iris').value=Math.round(f*1000);$('irisVal').textContent=(f*100|0)+'%';paint($('iris'));}
+  else if(cat===0&&param===0&&d.length>=2){const f=f16(0);
+    $('focus').value=Math.round(f*1000);$('focusVal').textContent=(f*100|0)+'%';paint($('focus'));}
+  else if(cat===2&&param===5&&d.length>=4){
+    $('ch0').value=Math.round(f16(0)*1000);$('ch0Val').textContent=(f16(0)*100|0)+'%';paint($('ch0'));
+    $('ch1').value=Math.round(f16(2)*1000);$('ch1Val').textContent=(f16(2)*100|0)+'%';paint($('ch1'));
+  }
+  else if(cat===2&&param===1&&d.length>=2){$('hp').value=Math.round(f16(0)*1000);$('hpVal').textContent=(f16(0)*100|0)+'%';paint($('hp'));}
+  else if(cat===2&&param===4&&d.length>=1){selectSeg(inSeg,String(d[0]));log('rx','RX input type='+d[0]);}
+  else if(cat===2&&param===6&&d.length>=1){phantom=!!d[0];$('phantomBtn').textContent='PHANTOM 48V: '+(phantom?'ON':'OFF');log('rx','RX phantom='+d[0]);}
+  else if(cat===9&&param===0&&d.length>=4){
+    const mv=dv.getInt16(0,true), pct=dv.getInt16(2,true);
+    $('batt').textContent=pct+'%';
+  }
+  else log('rx','RX ['+cat+','+param+'] '+hex(d));
+}
+function onTimecode(dv){
+  const v=dv.getUint32(0,true);
+  const bcd=x=>x.toString(16).padStart(2,'0');
+  $('tc').textContent=bcd((v>>>24)&0x3F)+':'+bcd((v>>>16)&0xFF)+':'+bcd((v>>>8)&0xFF)+':'+bcd(v&0xFF);
+}
+
+/* ---------- transport ---------- */
+$('recBtn').onclick=()=>{
+  if(!linked) return;
+  recording=!recording;playing=false;
+  document.body.classList.toggle('rec',recording);
+  document.body.classList.remove('playing');
+  send(cmdTransport(recording?2:0),recording?'REC':'STOP');
+};
+$('playBtn').onclick=()=>{
+  if(!linked) return;
+  playing=!playing;recording=false;
+  document.body.classList.toggle('playing',playing);
+  document.body.classList.remove('rec');
+  send(cmdTransport(playing?1:0),playing?'PLAY':'STANDBY');
+};
+$('stillBtn').onclick=()=>send(cmdStill(),'STILL');
+$('afBtn').onclick=()=>send(cmdAF(),'AF');
+$('afBtn2').onclick=()=>send(cmdAF(),'AF');
+
+/* ---------- seg + slider helpers ---------- */
+function buildSeg(el,values,fmt,onPick){
+  values.forEach(v=>{const b=document.createElement('button');
+    b.className='bmd';
+    b.textContent=fmt?fmt(v):v;b.dataset.v=String(v);
+    b.onclick=()=>{selectSeg(el,String(v));onPick(v);};el.appendChild(b);});
+}
+function selectSeg(el,v){[...el.children].forEach(b=>b.classList.toggle('sel',b.dataset.v===v));}
+function paint(el){
+  const min=+el.min,max=+el.max,pct=((+el.value)-min)/(max-min)*100;
+  el.style.setProperty('--track',`linear-gradient(90deg,var(--blue) ${pct}%, #3A3F44 ${pct}%)`);
+}
+function bindSlider(el,valEl,toCmd,label,fmtVal){
+  let t=0,pending=null;
+  const denom=el.max==='1000'?1000:100;
+  const show=f=>valEl.textContent=fmtVal?fmtVal(f):((f*100|0)+'%');
+  const fire=f=>send(toCmd(f),label);
+  el.addEventListener('input',()=>{
+    paint(el);
+    const f=el.value/denom;
+    show(f);
+    const now=Date.now();
+    if(now-t>120){t=now;fire(f);}
+    else{clearTimeout(pending);pending=setTimeout(()=>fire(el.value/denom),140);}
+  });
+  paint(el);
+}
+
+/* ---------- EXPO ---------- */
+const isoSeg=$('isoSeg'),shSeg=$('shSeg'),wbSeg=$('wbSeg'),ndSeg=$('ndSeg'),aeSeg=$('aeSeg');
+buildSeg(isoSeg,[200,400,800,1250,3200,6400],null,v=>{send(cmdISO(v),'ISO '+v);setRO('iso',v);});
+buildSeg(shSeg,[45,90,172.8,180,270,360],v=>String(v),v=>{send(cmdShutter(v),'SH '+v);setRO('sh',v+'°');});
+buildSeg(ndSeg,[0,2,4,6],v=>v===0?'CLEAR':v+' STOP',v=>send(cmdND(v),'ND '+v));
+buildSeg(wbSeg,[3200,4600,5600,6500,7500],v=>(v/100|0)/10+'K',v=>{curWB=v;send(cmdWB(v,curTint),'WB '+v);setRO('wb',v+'K');});
+const AE_NAMES={0:'MANUAL',1:'IRIS',2:'SHUTTER',3:'I+S',4:'S+I'};
+buildSeg(aeSeg,[0,1,2,3,4],v=>AE_NAMES[v],v=>send(cmdAE(v),'AE '+AE_NAMES[v]));
+$('tint').addEventListener('input',e=>{
+  curTint=+e.target.value;$('tintVal').textContent=curTint;paint(e.target);
+});
+$('tint').addEventListener('change',()=>{send(cmdWB(curWB,curTint),'WB '+curWB+' TINT '+curTint);setRO('tint',curTint);});
+paint($('tint'));
+$('awbBtn').onclick=()=>send(cmdAWB(),'AUTO WB');
+
+/* ---------- LENS ---------- */
+bindSlider($('iris'),$('irisVal'),f=>cmdIris(f),'IRIS');
+bindSlider($('focus'),$('focusVal'),f=>cmdFocus(f),'FOCUS');
+
+/* ---------- SPEED ---------- */
+const fpsSeg=$('fpsSeg');
+const OFFSPEED_FLAG=0x02; /* sensor off-speed bit — verify via RX format flags in LOG */
+buildSeg(fpsSeg,[24,30,48,50,60],null,v=>{
+  if(!curFmt){log('err','No format from camera yet — link first');return;}
+  const off=(v!==curFmt.ffps);
+  const flags=off?(curFmt.flags|OFFSPEED_FLAG):(curFmt.flags&~OFFSPEED_FLAG);
+  send(cmdFormat(curFmt.ffps,v,curFmt.w,curFmt.h,flags),'SENSOR '+v+' FPS');
+});
+$('fpsSync').onclick=()=>{
+  if(!curFmt){log('err','No format from camera yet — link first');return;}
+  send(cmdFormat(curFmt.ffps,curFmt.ffps,curFmt.w,curFmt.h,curFmt.flags&~OFFSPEED_FLAG),'SYNC '+curFmt.ffps+' FPS');
+};
+
+/* ---------- AUDIO ---------- */
+const inSeg=$('inSeg');
+const IN_NAMES={0:'INT MIC',1:'LINE',2:'LOW MIC',3:'HIGH MIC'};
+buildSeg(inSeg,[0,1,2,3],v=>IN_NAMES[v],v=>send(cmdInputType(v),'INPUT '+IN_NAMES[v]));
+bindSlider($('ch0'),$('ch0Val'),f=>cmdInputLevels(f,$('ch1').value/1000),'CH1');
+bindSlider($('ch1'),$('ch1Val'),f=>cmdInputLevels($('ch0').value/1000,f),'CH2');
+bindSlider($('hp'),$('hpVal'),f=>cmdHP(f),'PHONES');
+$('phantomBtn').onclick=()=>{
+  phantom=!phantom;
+  $('phantomBtn').textContent='PHANTOM 48V: '+(phantom?'ON':'OFF');
+  send(cmdPhantom(phantom),'PHANTOM '+(phantom?'ON':'OFF'));
+};
+
+/* ---------- MONITOR (camera screen) ---------- */
+let barsOn=false,faOn=false,faColor=0;
+$('barsBtn').onclick=()=>{barsOn=!barsOn;send(cmdBars(barsOn?30:0),'BARS '+(barsOn?'ON':'OFF'));};
+$('fa0').onclick=()=>{faOn=!faOn;send(cmdFocusAssist(faOn?1:0,faColor),'FOCUS ASSIST '+(faOn?'ON':'OFF'));};
+const faColorSeg=$('faColorSeg');
+const FA_COLORS={0:'RED',1:'GRN',2:'BLU',3:'WHT',4:'BLK'};
+buildSeg(faColorSeg,[0,1,2,3,4],v=>FA_COLORS[v],v=>{faColor=v;send(cmdFocusAssist(faOn?1:0,v),'FA COLOR '+FA_COLORS[v]);});
+
+/* ============================================================
+   FEED — UVC capture + WebGL assists
+   ============================================================ */
+const vid=$('vid'),cnv=$('gl');
+let stream=null,mode=0,zebra=.95,gl=null,uni={},tex=null,pumping=false;
+
+$('feedBtn').onclick=()=>startFeed();
+async function startFeed(deviceId){
+  try{
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{deviceId:deviceId?{exact:deviceId}:undefined,
+        width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:60}},
+      audio:false});
+    vid.srcObject=stream;await vid.play();
+    $('standby').style.display='none';cnv.style.display='block';
+    initGL();if(!pumping){pump();pumping=true;}
+    listDevices();$('feedBtn').textContent='FEED LIVE';
+    try{await navigator.wakeLock.request('screen');}catch(e){}
+  }catch(e){
+    const el=$('errBox');el.style.display='block';
+    el.textContent=(e.name==='NotFoundError'||e.name==='OverconstrainedError')
+      ?'No video source found. If the dongle is plugged in, this Chrome build may not expose external USB cameras — check chrome://flags or use a native UVC viewer.'
+      :e.name+': '+e.message;
+    log('err','FEED '+e.name+': '+e.message);
+  }
+}
+async function listDevices(){
+  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+  const sel=$('devSel');sel.innerHTML='';
+  devs.forEach((d,i)=>{const o=document.createElement('option');
+    o.value=d.deviceId;o.textContent=(d.label||('SOURCE '+(i+1))).toUpperCase();
+    if(stream&&stream.getVideoTracks()[0].getSettings().deviceId===d.deviceId)o.selected=true;
+    sel.appendChild(o);});
+  sel.onchange=()=>startFeed(sel.value);
+}
+if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)
+  navigator.mediaDevices.addEventListener('devicechange',()=>{if(stream)listDevices();});
+
+const VS=`attribute vec2 p;varying vec2 uv;
+void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision mediump float;
+varying vec2 uv;uniform sampler2D t;uniform int mode;uniform float zeb;uniform vec2 px;
+float luma(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+void main(){
+  vec3 c=texture2D(t,uv).rgb;
+  if(mode==1){
+    float l00=luma(texture2D(t,uv+px*vec2(-1.,-1.)).rgb),l10=luma(texture2D(t,uv+px*vec2(0.,-1.)).rgb),l20=luma(texture2D(t,uv+px*vec2(1.,-1.)).rgb);
+    float l01=luma(texture2D(t,uv+px*vec2(-1.,0.)).rgb),l21=luma(texture2D(t,uv+px*vec2(1.,0.)).rgb);
+    float l02=luma(texture2D(t,uv+px*vec2(-1.,1.)).rgb),l12=luma(texture2D(t,uv+px*vec2(0.,1.)).rgb),l22=luma(texture2D(t,uv+px*vec2(1.,1.)).rgb);
+    float gx=-l00-2.*l01-l02+l20+2.*l21+l22;
+    float gy=-l00-2.*l10-l20+l02+2.*l12+l22;
+    float edge=smoothstep(.28,.6,length(vec2(gx,gy)));
+    c=mix(c,vec3(.19,.66,.88),edge);
+  }else if(mode==2){
+    if(luma(c)>=zeb){
+      float s=step(.5,fract((gl_FragCoord.x+gl_FragCoord.y)/12.));
+      c=mix(c,vec3(1.),s*.85);
+    }
+  }else if(mode==3){
+    float l=luma(c);vec3 fc;
+    if(l<.05)fc=vec3(.31,.12,.65);
+    else if(l<.15)fc=vec3(.15,.30,.85);
+    else if(l<.35)fc=vec3(.20,.65,.75);
+    else if(l<.45)fc=vec3(.30,.70,.30);
+    else if(l<.55)fc=vec3(.55,.75,.35);
+    else if(l<.70)fc=vec3(.85,.75,.30);
+    else if(l<.85)fc=vec3(.95,.55,.20);
+    else if(l<.95)fc=vec3(.95,.30,.15);
+    else fc=vec3(1.,.05,.05);
+    c=fc;
+  }
+  gl_FragColor=vec4(c,1.);
+}`;
+function initGL(){
+  if(gl)return resize();
+  gl=cnv.getContext('webgl',{antialias:false});
+  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);
+    if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x;};
+  const pr=gl.createProgram();
+  gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(pr);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pr,'p');
+  gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  ['mode','zeb','px'].forEach(n=>uni[n]=gl.getUniformLocation(pr,n));
+  resize();
+}
+function resize(){
+  if(!gl)return;
+  const w=vid.videoWidth||1920,h=vid.videoHeight||1080;
+  cnv.width=w;cnv.height=h;
+  const ar=w/h,vw=innerWidth,vh=innerHeight;
+  if(vw/vh>ar){cnv.style.height=vh+'px';cnv.style.width=(vh*ar)+'px';}
+  else{cnv.style.width=vw+'px';cnv.style.height=(vw/ar)+'px';}
+  gl.viewport(0,0,w,h);gl.uniform2f(uni.px,1/w,1/h);
+}
+addEventListener('resize',resize);
+vid.addEventListener('loadedmetadata',resize);
+function draw(){
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,vid);}catch(e){}
+  gl.uniform1i(uni.mode,mode);gl.uniform1f(uni.zeb,zebra);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+function pump(){
+  if(vid.requestVideoFrameCallback){
+    const cb=()=>{draw();vid.requestVideoFrameCallback(cb);};
+    vid.requestVideoFrameCallback(cb);
+  }else{
+    const cb=()=>{if(vid.readyState>=2)draw();requestAnimationFrame(cb);};
+    requestAnimationFrame(cb);
+  }
+}
+
+/* assists */
+document.querySelectorAll('#assistRow .bmd').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#assistRow .bmd').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');mode=+b.dataset.mode;
+  };
+});
+$('zebraTh').oninput=e=>{zebra=e.target.value/100;$('zebraOut').textContent=e.target.value;paint(e.target);};
+paint($('zebraTh'));
+
+/* ============================================================
+   Shell: tabs, dots, HUD auto-hide, drawer, fullscreen
+   ============================================================ */
+const tabBtns=[...document.querySelectorAll('#tabs button')];
+const dotsEl=$('dots');
+tabBtns.forEach(()=>{const s=document.createElement('span');dotsEl.appendChild(s);});
+function setDots(){
+  const i=tabBtns.findIndex(b=>b.classList.contains('sel'));
+  [...dotsEl.children].forEach((s,j)=>s.classList.toggle('on',j===i));
+}
+tabBtns.forEach(b=>{
+  b.onclick=()=>{
+    tabBtns.forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+    $('page-'+b.dataset.page).classList.add('on');
+    setDots();
+  };
+});
+setDots();
+$('drawerBtn').onclick=()=>{
+  const d=$('drawer');d.classList.toggle('open');
+  $('drawerBtn').classList.toggle('sel',d.classList.contains('open'));
+};
+$('fsBtn').onclick=()=>{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+};
+const hud=$('hud'),topBar=$('top');
+let hudTimer=null;
+function showHUD(){
+  hud.classList.remove('hidden');topBar.classList.remove('hidden');
+  clearTimeout(hudTimer);
+  hudTimer=setTimeout(()=>{
+    if(!$('drawer').classList.contains('open')){hud.classList.add('hidden');topBar.classList.add('hidden');}
+    else showHUD();
+  },5000);
+}
+$('stage').addEventListener('click',()=>{
+  hud.classList.contains('hidden')?showHUD():(hud.classList.add('hidden'),topBar.classList.add('hidden'));
+});
+hud.addEventListener('click',e=>{e.stopPropagation();showHUD();});
+topBar.addEventListener('click',e=>e.stopPropagation());
+showHUD();
+</script>
+</body>
+</html>
