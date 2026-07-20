@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>STAYLOOKINGOUT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #141414;
+    --panel-raised: #1a1a1a;
+    --line: #2c2c2c;
+    --line-soft: #1f1f1f;
+    --text: #e8e4dc;
+    --text-dim: #8a8780;
+    --text-faint: #55534e;
+    --amber: #ff8a3d;
+    --amber-dim: #4d3119;
+    --teal: #4dd0c4;
+    --teal-dim: #1a3a37;
+    --gold: #e8c547;
+    --purple: #b18cf0;
+    --purple-dim: #2f2647;
+    --danger: #e85d4d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- HEADER / TAB STRIP ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-shrink: 0;
+  }
+
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+  }
+  .wordmark span { color: var(--amber); }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    background: transparent;
+    border: none;
+    padding: 7px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .tab.active {
+    background: var(--panel-raised);
+    color: var(--text);
+  }
+  .tab.active.amber { color: var(--amber); }
+  .tab.active.teal { color: var(--teal); }
+
+  main {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .view {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+  }
+  .view.active { display: flex; }
+
+  /* ================= TAP TEMPO VIEW ================= */
+  #view-tap {
+    padding: 18px 18px 0;
+  }
+
+  .bpm-readout {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+  .bpm-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 76px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--amber);
+    letter-spacing: -0.02em;
+  }
+  .bpm-number.idle { color: var(--text-faint); }
+  .bpm-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  .confidence-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 0 4px;
+    height: 14px;
+  }
+  .conf-bar {
+    width: 18px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--line);
+    transition: background 0.2s;
+  }
+  .conf-bar.lit { background: var(--amber); }
+
+  .tap-zone {
+    flex: 1;
+    margin: 14px 0;
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    background: radial-gradient(circle at 50% 50%, var(--panel-raised), var(--panel));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    min-height: 180px;
+  }
+
+  .tap-ring {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    opacity: 0;
+  }
+  @keyframes ringPulse {
+    0% { transform: scale(0.5); opacity: 0.9; }
+    100% { transform: scale(5.5); opacity: 0; }
+  }
+  .tap-ring.go { animation: ringPulse 0.6s ease-out forwards; }
+
+  .tap-zone-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.15s;
+  }
+  .tap-zone:active { background: radial-gradient(circle at 50% 50%, #1f1f1f, var(--panel)); }
+
+  .tap-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 0 18px;
+  }
+
+  .btn {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-dim);
+    padding: 13px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-reset { flex: 0 0 84px; }
+  .btn-log-bpm {
+    background: var(--amber-dim);
+    border-color: #6b4322;
+    color: var(--amber);
+  }
+  .btn-log-bpm:disabled {
+    opacity: 0.4;
+    background: var(--panel);
+    color: var(--text-faint);
+    border-color: var(--line);
+  }
+
+  /* ================= KEY FINDER VIEW ================= */
+  #view-key {
+    padding: 18px 18px 0;
+  }
+
+  .key-readout {
+    text-align: center;
+    padding: 8px 0 2px;
+    min-height: 88px;
+  }
+  .key-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px;
+    font-weight: 700;
+    color: var(--teal);
+    line-height: 1;
+  }
+  .key-note.idle { color: var(--text-faint); font-size: 22px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+  .key-note.scale-match {
+    font-size: 30px;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+  .key-sub.scale-match { color: var(--gold); opacity: 0.85; }
+  .key-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    margin-top: 4px;
+    min-height: 14px;
+  }
+  .key-sub.chord { color: var(--teal); opacity: 0.8; }
+
+  .chord-stack {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    min-height: 24px;
+  }
+  .chord-note-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--teal);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .keyboard-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 14px;
+    min-height: 0;
+  }
+
+  .keyboard {
+    position: relative;
+    width: 100%;
+    height: 46vh;
+    max-height: 360px;
+    display: flex;
+  }
+
+  .white-key {
+    flex: 1;
+    background: linear-gradient(to bottom, #f1ede4, #d8d2c4);
+    border: 1px solid #0a0a0a;
+    border-radius: 0 0 8px 8px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 10px;
+    transition: background 0.08s;
+  }
+  .white-key:active, .white-key.pressed {
+    background: linear-gradient(to bottom, var(--teal), #2a9a90);
+  }
+  .white-key .key-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b6555;
+    pointer-events: none;
+  }
+  .white-key.pressed .key-name { color: #0a0a0a; }
+
+  .black-key {
+    position: absolute;
+    top: 0;
+    width: 8.5%;
+    height: 60%;
+    background: linear-gradient(to bottom, #2a2a2a, #050505);
+    border-radius: 0 0 6px 6px;
+    z-index: 2;
+    border: 1px solid #000;
+    transition: background 0.08s;
+  }
+  .black-key:active, .black-key.pressed {
+    background: linear-gradient(to bottom, var(--teal), #2a9a90);
+  }
+
+  .key-footer {
+    display: flex;
+    gap: 10px;
+    padding: 0 0 18px;
+  }
+  .btn-log-note {
+    background: var(--teal-dim);
+    border-color: #2a6a62;
+    color: var(--teal);
+  }
+  .btn-log-note:disabled {
+    opacity: 0.4;
+    background: var(--panel);
+    color: var(--text-faint);
+    border-color: var(--line);
+  }
+  .hint-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-align: center;
+    padding: 0 0 8px;
+  }
+
+  .log-gesture-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-align: center;
+    padding-bottom: 10px;
+  }
+
+  /* ================= LOG VIEW ================= */
+  #view-log {
+    padding: 16px 16px 0;
+  }
+
+  .log-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 8px;
+  }
+  .log-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .log-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+  }
+
+  .log-share-footer {
+    flex-shrink: 0;
+    padding: 10px 0 18px;
+  }
+
+  .btn-share-log {
+    width: 100%;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    border: 1px solid #6b4322;
+    background: var(--amber-dim);
+    color: var(--amber);
+    padding: 14px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-share-log:active { transform: scale(0.98); }
+  .btn-share-log:disabled {
+    opacity: 0.4;
+    background: var(--panel);
+    color: var(--text-faint);
+    border-color: var(--line);
+  }
+
+  .log-empty {
+    text-align: center;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 60px 20px;
+    line-height: 1.6;
+  }
+
+  .log-entry-wrap {
+    position: relative;
+  }
+
+  .log-entry-wrap.drag-source {
+    opacity: 0.35;
+  }
+
+  .log-drop-line {
+    height: 2px;
+    background: var(--purple);
+    border-radius: 2px;
+    margin: 0 4px;
+    transform: scaleX(0);
+    transition: transform 0.12s ease;
+  }
+  .log-drop-line.show { transform: scaleX(1); }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+  }
+
+  .log-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .log-icon.bpm { background: var(--amber-dim); color: var(--amber); }
+  .log-icon.key { background: var(--teal-dim); color: var(--teal); }
+
+  .log-icon-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .log-icon.small {
+    width: 38px;
+    height: 17px;
+    font-size: 9px;
+    border-radius: 6px;
+  }
+
+  .log-main { flex: 1; min-width: 0; }
+  .log-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .log-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .log-label-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--line);
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 1px 0;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .log-label-input:focus { outline: none; border-bottom-color: var(--text-dim); }
+  .log-label-input::placeholder { color: var(--text-faint); }
+
+  .log-song-handle {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--purple);
+    background: var(--purple-dim);
+    border: 1px solid #4a3a6b;
+    border-radius: 8px;
+    padding: 9px 10px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+  }
+  .log-song-handle:active { cursor: grabbing; }
+
+  .log-delete {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 18px;
+    padding: 4px 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .log-delete:active { color: var(--danger); }
+
+  /* floating clone shown while dragging via the handle */
+  .log-drag-ghost {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0.96;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    background: var(--panel-raised);
+  }
+
+  /* small delete popover anchored above/below the handle on long-press */
+  .log-delete-popover {
+    position: fixed;
+    z-index: 210;
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px;
+    display: flex;
+    gap: 6px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  }
+  .log-delete-popover button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .log-delete-popover .confirm-delete {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #1a0a08;
+  }
+
+  /* ===== AUDIO PLAYER ===== */
+  .audio-player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: #111113;
+    border-top: 1px solid var(--line);
+    padding: 10px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.5);
+  }
+
+  .player-track-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .player-load-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .player-load-btn:active { color: var(--amber); border-color: var(--amber); }
+
+  .player-track-name {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .player-track-name.loaded { color: var(--text); }
+
+  .player-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .player-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .player-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .player-btn:active { color: var(--text); }
+
+  .player-play-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--amber);
+    background: transparent;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .player-play-btn:active { background: var(--amber-dim); }
+  .player-play-btn:disabled {
+    border-color: var(--line);
+    color: var(--text-faint);
+  }
+  .player-play-btn.playing {
+    background: var(--amber-dim);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .player-scrub-wrap {
+    flex: 1;
+    padding: 10px 0;
+    cursor: pointer;
+  }
+
+  .player-scrub-track {
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .player-scrub-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--amber);
+    border-radius: 2px;
+    width: 0%;
+    pointer-events: none;
+  }
+
+  .player-scrub-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--amber);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .player-scrub-wrap:active .player-scrub-thumb,
+  .player-scrub-wrap.scrubbing .player-scrub-thumb { opacity: 1; }
+
+  .player-duration {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  /* push every view's bottom edge up to clear the player bar */
+  #view-tap, #view-key, #view-log {
+    padding-bottom: 112px;
+  }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    z-index: 50;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* manual copy fallback modal */
+  .copy-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .copy-modal {
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .copy-modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .copy-modal-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .copy-modal-textarea {
+    width: 100%;
+    height: 220px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 12px;
+    resize: none;
+  }
+
+  .copy-modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .btn-modal-secondary, .btn-modal-primary {
+    flex: 1;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-dim);
+  }
+
+  .btn-modal-primary {
+    background: var(--amber-dim);
+    border-color: #6b4322;
+    color: var(--amber);
+  }
+  .btn-modal-secondary:active, .btn-modal-primary:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="wordmark">STAYLOOKINGOUT</div>
+    <div class="tabs">
+      <button class="tab amber active" data-view="tap">TAP</button>
+      <button class="tab teal" data-view="key">KEY</button>
+      <button class="tab" data-view="log">LOG</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- TAP TEMPO -->
+    <div class="view active" id="view-tap">
+      <div class="bpm-readout">
+        <div class="bpm-number idle" id="bpmNumber">– – –</div>
+        <div class="bpm-label">BPM</div>
+        <div class="confidence-row" id="confRow">
+          <div class="conf-bar"></div><div class="conf-bar"></div><div class="conf-bar"></div>
+          <div class="conf-bar"></div><div class="conf-bar"></div>
+        </div>
+      </div>
+
+      <div class="tap-zone" id="tapZone">
+        <div class="tap-zone-label" id="tapZoneLabel">TAP TO START</div>
+      </div>
+
+      <div class="tap-footer">
+        <button class="btn btn-reset" id="resetTapBtn">RESET</button>
+        <button class="btn btn-log-bpm" id="logBpmBtn" disabled>LOG THIS BPM</button>
+      </div>
+    </div>
+
+    <!-- KEY FINDER -->
+    <div class="view" id="view-key">
+      <div class="key-readout">
+        <div class="key-note idle" id="keyNote">PLAY A NOTE</div>
+        <div class="key-sub" id="keySub"></div>
+        <div class="chord-stack" id="chordStack"></div>
+      </div>
+
+      <div class="keyboard-wrap">
+        <div class="hint-text">TAP TO PREVIEW · HOLD TO ADD OR REMOVE FROM SCALE</div>
+        <div class="keyboard" id="keyboard"></div>
+      </div>
+
+      <div class="key-footer">
+        <button class="btn btn-reset" id="clearChordBtn">CLEAR</button>
+        <button class="btn btn-log-note" id="logNoteBtn" disabled>LOG THIS KEY</button>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="view" id="view-log">
+      <div class="log-header-row">
+        <div class="log-title">Session Log</div>
+        <div class="log-count" id="logCount">0 entries</div>
+      </div>
+      <div class="log-gesture-hint">DRAG THE SONG # TO REORDER · HOLD IT TO DELETE</div>
+      <div class="log-list" id="logList">
+        <div class="log-empty">Nothing logged yet.<br>Tap tempo or play a key, then save it here.</div>
+      </div>
+      <div class="log-share-footer">
+        <button class="btn-share-log" id="shareLogBtn" disabled>SHARE LOG</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== FIXED AUDIO PLAYER ===== -->
+<div class="audio-player" id="audioPlayer">
+  <div class="player-track-row">
+    <button class="player-load-btn" id="playerLoadBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </button>
+    <input type="file" id="audioFileInput" accept="audio/*" style="display:none">
+    <div class="player-track-name" id="playerTrackName">Load a track to play while you work</div>
+    <div class="player-time" id="playerTime">–:––</div>
+  </div>
+  <div class="player-controls-row">
+    <button class="player-btn" id="playerRewind">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 19l-9-7 9-7v14zM21 19l-9-7 9-7v14z"/></svg>
+    </button>
+    <button class="player-play-btn" id="playerPlayBtn" disabled>
+      <svg class="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+      <svg class="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+    </button>
+    <div class="player-scrub-wrap">
+      <div class="player-scrub-track" id="playerScrubTrack">
+        <div class="player-scrub-fill" id="playerScrubFill"></div>
+        <div class="player-scrub-thumb" id="playerScrubThumb"></div>
+      </div>
+    </div>
+    <div class="player-duration" id="playerDuration">–:––</div>
+  </div>
+</div>
+
+<audio id="audioEl"></audio>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   SHARED STATE
+============================================================ */
+let logEntries = []; // {id, type: 'bpm'|'key', value, meta, label, ts}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+/* ============================================================
+   TAB SWITCHING
+============================================================ */
+const tabs = document.querySelectorAll('.tab');
+const views = document.querySelectorAll('.view');
+
+function switchToTab(target) {
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.view === target));
+  views.forEach(v => v.classList.toggle('active', v.id === 'view-' + target));
+  if (target === 'log') renderLog();
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    // manually switching tabs (other than an automatic BPM->KEY handoff)
+    // clears a pending BPM that the user didn't follow through on by hand —
+    // it's already safely saved as its own entry, so nothing is lost.
+    if (tab.dataset.view !== 'key') clearPendingBpm();
+    switchToTab(tab.dataset.view);
+  });
+});
+
+/* ============================================================
+   AUDIO CONTEXT (shared, lazy-init on first interaction)
+============================================================ */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration = 0.9) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duration + 0.05);
+}
+
+/* ============================================================
+   TAP TEMPO TOOL
+============================================================ */
+const tapZone = document.getElementById('tapZone');
+const tapZoneLabel = document.getElementById('tapZoneLabel');
+const bpmNumber = document.getElementById('bpmNumber');
+const confRow = document.getElementById('confRow');
+const resetTapBtn = document.getElementById('resetTapBtn');
+const logBpmBtn = document.getElementById('logBpmBtn');
+
+let tapTimes = [];
+let currentBpm = null;
+let tapResetTimer = null;
+
+function computeBpm(times) {
+  if (times.length < 2) return null;
+  const intervals = [];
+  for (let i = 1; i < times.length; i++) intervals.push(times[i] - times[i-1]);
+  // use a recency-weighted average of the last 8 intervals to stay responsive but stable
+  const recent = intervals.slice(-8);
+  const avgMs = recent.reduce((a,b) => a+b, 0) / recent.length;
+  const bpm = 60000 / avgMs;
+  return { bpm, intervals: recent };
+}
+
+function intervalConsistency(intervals) {
+  if (intervals.length < 2) return 0;
+  const avg = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+  const variance = intervals.reduce((a,b) => a + Math.pow(b - avg, 2), 0) / intervals.length;
+  const stddev = Math.sqrt(variance);
+  const cv = stddev / avg; // coefficient of variation
+  // map cv to 0-5 confidence bars (lower cv = higher confidence)
+  const score = Math.max(0, Math.min(5, Math.round(5 - cv * 25)));
+  return score;
+}
+
+function spawnRing() {
+  const ring = document.createElement('div');
+  ring.className = 'tap-ring';
+  const rect = tapZone.getBoundingClientRect();
+  ring.style.left = (rect.width/2 - 30) + 'px';
+  ring.style.top = (rect.height/2 - 30) + 'px';
+  tapZone.appendChild(ring);
+  requestAnimationFrame(() => ring.classList.add('go'));
+  setTimeout(() => ring.remove(), 650);
+}
+
+function registerTap() {
+  const now = performance.now();
+
+  // if it's been more than 2.5s since last tap, treat as a fresh start
+  if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2500) {
+    tapTimes = [];
+  }
+
+  tapTimes.push(now);
+  if (tapTimes.length > 12) tapTimes = tapTimes.slice(-12);
+
+  spawnRing();
+
+  if (tapTimes.length === 1) {
+    tapZoneLabel.textContent = 'KEEP GOING…';
+    bpmNumber.textContent = '– – –';
+    bpmNumber.classList.add('idle');
+    logBpmBtn.disabled = true;
+    return;
+  }
+
+  const result = computeBpm(tapTimes);
+  if (result) {
+    currentBpm = Math.round(result.bpm * 10) / 10;
+    bpmNumber.textContent = currentBpm.toFixed(1);
+    bpmNumber.classList.remove('idle');
+    tapZoneLabel.textContent = 'KEEP TAPPING TO REFINE';
+    logBpmBtn.disabled = false;
+
+    const score = intervalConsistency(result.intervals);
+    const bars = confRow.querySelectorAll('.conf-bar');
+    bars.forEach((b, i) => b.classList.toggle('lit', i < score));
+  }
+
+  clearTimeout(tapResetTimer);
+  tapResetTimer = setTimeout(() => {
+    tapZoneLabel.textContent = 'TAP TO CONTINUE';
+  }, 2600);
+}
+
+tapZone.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  registerTap();
+});
+
+function resetTapTool() {
+  tapTimes = [];
+  currentBpm = null;
+  bpmNumber.textContent = '– – –';
+  bpmNumber.classList.add('idle');
+  tapZoneLabel.textContent = 'TAP TO START';
+  logBpmBtn.disabled = true;
+  confRow.querySelectorAll('.conf-bar').forEach(b => b.classList.remove('lit'));
+}
+
+resetTapBtn.addEventListener('click', resetTapTool);
+
+// holds the id of the most recently logged BPM-only entry, so that the
+// next key logged can be merged into it instead of creating a new row.
+let pendingBpmEntryId = null;
+
+function clearPendingBpm() {
+  pendingBpmEntryId = null;
+}
+
+logBpmBtn.addEventListener('click', () => {
+  if (!currentBpm) return;
+  const score = confRow.querySelectorAll('.conf-bar.lit').length;
+  const entry = {
+    id: uid(),
+    type: 'bpm',
+    bpmValue: currentBpm.toFixed(1),
+    bpmMeta: `${tapTimes.length} taps · confidence ${score}/5`,
+    keyValue: null,
+    keyMeta: null,
+    label: '',
+    ts: Date.now()
+  };
+  logEntries.unshift(entry);
+  pendingBpmEntryId = entry.id;
+  showToast(`Logged ${currentBpm.toFixed(1)} BPM — find the key next`);
+  switchToTab('key');
+});
+
+/* ============================================================
+   KEY FINDER TOOL
+============================================================ */
+const keyboard = document.getElementById('keyboard');
+const keyNote = document.getElementById('keyNote');
+const keySub = document.getElementById('keySub');
+const chordStack = document.getElementById('chordStack');
+const clearChordBtn = document.getElementById('clearChordBtn');
+const logNoteBtn = document.getElementById('logNoteBtn');
+
+// One octave, C to C (13 notes total so the white keys span evenly C..C)
+const NOTE_DEFS = [
+  { name: 'C',  type: 'white', freq: 261.63 },
+  { name: 'C#', type: 'black', freq: 277.18, after: 0 },
+  { name: 'D',  type: 'white', freq: 293.66 },
+  { name: 'D#', type: 'black', freq: 311.13, after: 1 },
+  { name: 'E',  type: 'white', freq: 329.63 },
+  { name: 'F',  type: 'white', freq: 349.23 },
+  { name: 'F#', type: 'black', freq: 369.99, after: 3 },
+  { name: 'G',  type: 'white', freq: 392.00 },
+  { name: 'G#', type: 'black', freq: 415.30, after: 4 },
+  { name: 'A',  type: 'white', freq: 440.00 },
+  { name: 'A#', type: 'black', freq: 466.16, after: 5 },
+  { name: 'B',  type: 'white', freq: 493.88 },
+  { name: 'C2', type: 'white', freq: 523.25, display: 'C' }
+];
+
+const whiteNotes = NOTE_DEFS.filter(n => n.type === 'white');
+const blackNotes = NOTE_DEFS.filter(n => n.type === 'black');
+
+whiteNotes.forEach(note => {
+  const el = document.createElement('div');
+  el.className = 'white-key';
+  el.dataset.note = note.name;
+  el.innerHTML = `<span class="key-name">${note.display || note.name}</span>`;
+  keyboard.appendChild(el);
+});
+
+// position black keys based on white key index they fall after
+function layoutBlackKeys() {
+  const whiteWidth = 100 / whiteNotes.length;
+  blackNotes.forEach(note => {
+    let el = keyboard.querySelector(`[data-note="${note.name}"]`);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'black-key';
+      el.dataset.note = note.name;
+      keyboard.appendChild(el);
+    }
+    const leftPct = (note.after + 1) * whiteWidth - 4.25;
+    el.style.left = leftPct + '%';
+  });
+}
+layoutBlackKeys();
+window.addEventListener('resize', layoutBlackKeys);
+
+let chordHoldNotes = []; // notes accumulated during a hold session
+let holdTimer = null;
+let isHolding = false;
+
+function noteEl(name) {
+  return keyboard.querySelector(`[data-note="${name}"]`);
+}
+
+function pressVisual(name, on) {
+  const el = noteEl(name);
+  if (el) el.classList.toggle('pressed', on);
+}
+
+function displayName(name) {
+  const def = NOTE_DEFS.find(n => n.name === name);
+  return def.display || def.name;
+}
+
+/* ---------- SCALE DETECTION ---------- */
+// pitch classes 0-11, C=0 .. B=11
+const PITCH_CLASS = { 'C':0, 'C#':1, 'D':2, 'D#':3, 'E':4, 'F':5, 'F#':6, 'G':7, 'G#':8, 'A':9, 'A#':10, 'B':11 };
+const PC_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const MAJOR_STEPS = [0,2,4,5,7,9,11]; // intervals from root for a major scale
+const MINOR_STEPS = [0,2,3,5,7,8,10]; // natural minor
+
+function scalePitchSet(rootPc, steps) {
+  return new Set(steps.map(s => (rootPc + s) % 12));
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+// notes: array of note names like ['C','E','G',...] (display-normalized, e.g. C2 -> C)
+function detectScales(notes) {
+  const pcs = new Set(notes.map(n => PITCH_CLASS[n]));
+  if (pcs.size !== 7) return [];
+
+  const matches = [];
+  for (let root = 0; root < 12; root++) {
+    if (setsEqual(pcs, scalePitchSet(root, MAJOR_STEPS))) {
+      matches.push({ type: 'major', root: PC_NAMES[root] });
+    }
+    if (setsEqual(pcs, scalePitchSet(root, MINOR_STEPS))) {
+      matches.push({ type: 'minor', root: PC_NAMES[root] });
+    }
+  }
+  return matches;
+}
+
+function formatScaleMatches(matches) {
+  if (matches.length === 0) return null;
+  return matches.map(m => `${m.root} ${m.type}`).join(' / ');
+}
+
+function showSingleNote(name) {
+  keyNote.textContent = displayName(name);
+  keyNote.classList.remove('idle');
+  keyNote.classList.remove('scale-match');
+  keySub.textContent = 'single note';
+  keySub.classList.remove('chord');
+  keySub.classList.remove('scale-match');
+  chordStack.innerHTML = '';
+  logNoteBtn.disabled = false;
+  logNoteBtn.dataset.mode = 'single';
+  logNoteBtn.dataset.notes = name;
+}
+
+function showChord(notes) {
+  if (notes.length === 0) {
+    keyNote.textContent = 'PLAY A NOTE';
+    keyNote.classList.add('idle');
+    keyNote.classList.remove('scale-match');
+    keySub.textContent = '';
+    keySub.classList.remove('scale-match');
+    chordStack.innerHTML = '';
+    logNoteBtn.disabled = true;
+    return;
+  }
+  const names = notes.map(displayName);
+  const uniqueNames = [...new Set(names)];
+  const scaleMatches = detectScales(uniqueNames);
+  const scaleText = formatScaleMatches(scaleMatches);
+
+  if (scaleText) {
+    keyNote.textContent = scaleText;
+    keyNote.classList.remove('idle');
+    keyNote.classList.add('scale-match');
+    keySub.textContent = `${uniqueNames.length} notes captured · scale match`;
+    keySub.classList.add('chord', 'scale-match');
+  } else {
+    keyNote.textContent = names.length > 1 ? names[names.length-1] : names[0];
+    keyNote.classList.remove('idle');
+    keyNote.classList.remove('scale-match');
+    keySub.textContent = `${names.length}-note combination`;
+    keySub.classList.add('chord');
+    keySub.classList.remove('scale-match');
+  }
+  chordStack.innerHTML = names.map(n => `<span class="chord-note-chip">${n}</span>`).join('');
+  logNoteBtn.disabled = false;
+  logNoteBtn.dataset.mode = 'chord';
+  logNoteBtn.dataset.notes = notes.join(',');
+  logNoteBtn.dataset.scale = scaleText || '';
+}
+
+function handleNoteDown(name) {
+  playTone(NOTE_DEFS.find(n => n.name === name).freq);
+  pressVisual(name, true);
+
+  // every press needs its own sustained hold to actually modify the saved
+  // chord/scale — a quick tap, whether it's the first note or the tenth,
+  // only previews the tone and never changes what's been captured. This
+  // keeps accidental brushes against other keys from polluting the list.
+  holdTimer = setTimeout(() => {
+    const tappedPc = displayName(name);
+
+    if (isHolding) {
+      const existingIndex = chordHoldNotes.findIndex(n => displayName(n) === tappedPc);
+      if (existingIndex !== -1) {
+        chordHoldNotes.splice(existingIndex, 1);
+      } else {
+        chordHoldNotes.push(name);
+      }
+      if (chordHoldNotes.length === 0) isHolding = false;
+    } else {
+      isHolding = true;
+      chordHoldNotes = [name];
+    }
+    showChord(chordHoldNotes);
+  }, 380);
+}
+
+function handleNoteUp(name) {
+  pressVisual(name, false);
+  // if the hold timer hasn't fired yet, this was a quick tap — cancel it
+  // so the note never touches the chord, and just leave whatever was
+  // already captured exactly as it was.
+  clearTimeout(holdTimer);
+  if (!isHolding) {
+    showSingleNote(name);
+  }
+}
+
+[...NOTE_DEFS].forEach(note => {
+  // wait for elements to exist (black keys added after layout)
+});
+
+function bindKey(el, name) {
+  el.addEventListener('pointerdown', (e) => { e.preventDefault(); handleNoteDown(name); });
+  el.addEventListener('pointerup', (e) => { e.preventDefault(); handleNoteUp(name); });
+  el.addEventListener('pointerleave', (e) => { handleNoteUp(name); });
+}
+
+NOTE_DEFS.forEach(note => {
+  const el = noteEl(note.name);
+  if (el) bindKey(el, note.name);
+});
+
+function resetKeyTool() {
+  isHolding = false;
+  chordHoldNotes = [];
+  clearTimeout(holdTimer);
+  showChord([]);
+  keyboard.querySelectorAll('.pressed').forEach(el => el.classList.remove('pressed'));
+}
+
+clearChordBtn.addEventListener('click', resetKeyTool);
+
+function logKeyResult(keyValue, keyMeta) {
+  if (pendingBpmEntryId) {
+    const entry = logEntries.find(e => e.id === pendingBpmEntryId);
+    if (entry) {
+      entry.type = 'combo';
+      entry.keyValue = keyValue;
+      entry.keyMeta = keyMeta;
+      showToast(`Added ${keyValue} to ${entry.bpmValue} BPM entry`);
+      pendingBpmEntryId = null;
+      resetTapTool();
+      resetKeyTool();
+      switchToTab('log');
+      focusNotesFieldFor(entry.id);
+      return;
+    }
+    // pending id pointed at an entry that no longer exists (deleted) — fall through
+    pendingBpmEntryId = null;
+  }
+
+  logEntries.unshift({
+    id: uid(),
+    type: 'key',
+    bpmValue: null,
+    bpmMeta: null,
+    keyValue,
+    keyMeta,
+    label: '',
+    ts: Date.now()
+  });
+  showToast(`Logged ${keyValue}`);
+}
+
+logNoteBtn.addEventListener('click', () => {
+  const mode = logNoteBtn.dataset.mode;
+  const notes = logNoteBtn.dataset.notes.split(',').map(displayName);
+
+  if (mode === 'single') {
+    logKeyResult(notes[0], 'single note');
+  } else {
+    const scaleText = logNoteBtn.dataset.scale;
+    const uniqueNames = [...new Set(notes)];
+    if (scaleText) {
+      logKeyResult(scaleText, `${uniqueNames.length} notes · ${uniqueNames.join(', ')}`);
+    } else {
+      logKeyResult(notes.join(' · '), `${notes.length}-note combination`);
+    }
+  }
+});
+
+/* ============================================================
+   LOG / NOTEBOOK
+============================================================ */
+const logList = document.getElementById('logList');
+const logCount = document.getElementById('logCount');
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (sameDay) return time;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ' + time;
+}
+
+function focusNotesFieldFor(entryId) {
+  const input = logList.querySelector(`.log-label-input[data-id="${entryId}"]`);
+  if (input) input.focus();
+}
+
+/* ---------- DRAG TO REORDER + DELETE, VIA THE SONG # HANDLE ---------- */
+const HANDLE_LONG_PRESS_MS = 350;   // hold this long with no movement before a drag (or delete) engages
+const DRAG_ENGAGE_PX = 8;           // movement past this, once held, starts an actual drag
+
+function bindSongHandles() {
+  logList.querySelectorAll('.log-song-handle').forEach(handle => {
+    const id = handle.dataset.id;
+
+    let startX = 0, startY = 0;
+    let pressTimer = null;
+    let dragging = false;
+    let armed = false; // true once the long-press has fired, waiting to see drag vs. tap-hold-release
+    let ghost = null;
+    let snapshot = []; // [{ index, top, height }] for every row, taken once at drag start
+    let dropLines = [];
+    let targetIndex = null;
+
+    const clearArmTimer = () => clearTimeout(pressTimer);
+
+    const buildSnapshot = () => {
+      const wraps = [...logList.querySelectorAll('.log-entry-wrap')];
+      snapshot = wraps.map((w, i) => {
+        const r = w.getBoundingClientRect();
+        return { index: i, top: r.top, height: r.height, id: w.dataset.id };
+      });
+      dropLines = [...logList.querySelectorAll('.log-drop-line')];
+    };
+
+    const showDropLineAt = (idx) => {
+      dropLines.forEach(line => line.classList.remove('show'));
+      const line = dropLines.find(l => Number(l.dataset.dropIndex) === idx);
+      if (line) line.classList.add('show');
+      targetIndex = idx;
+    };
+
+    const startDrag = (clientY) => {
+      dragging = true;
+      buildSnapshot();
+
+      const row = logList.querySelector(`.log-entry[data-id="${id}"]`);
+      const wrap = row.closest('.log-entry-wrap');
+      const rect = row.getBoundingClientRect();
+
+      ghost = row.cloneNode(true);
+      ghost.classList.add('log-drag-ghost');
+      ghost.style.width = rect.width + 'px';
+      ghost.style.top = rect.top + 'px';
+      document.body.appendChild(ghost);
+
+      wrap.classList.add('drag-source');
+
+      // figure out this row's current index from its own wrap (before any
+      // reordering), so dropping with no movement is a correct no-op
+      const myWrap = wrap;
+      const myIndex = [...logList.querySelectorAll('.log-entry-wrap')].indexOf(myWrap);
+      showDropLineAt(myIndex);
+    };
+
+    const moveDrag = (clientY) => {
+      if (!ghost) return;
+      const dy = clientY - startY;
+      ghost.style.transform = `translateY(${dy}px)`;
+
+      // find the drop-line whose original position is closest to the ghost's
+      // current vertical center — computed against the static snapshot, so
+      // a mid-drag DOM that hasn't changed yet can't throw this off
+      const ghostRect = ghost.getBoundingClientRect();
+      const ghostCenter = ghostRect.top + ghostRect.height / 2;
+
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      // candidate drop indices are 0..snapshot.length, one between/around every row
+      for (let i = 0; i <= snapshot.length; i++) {
+        const boundary = i < snapshot.length
+          ? snapshot[i].top
+          : snapshot[snapshot.length - 1].top + snapshot[snapshot.length - 1].height;
+        const dist = Math.abs(boundary - ghostCenter);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      }
+      showDropLineAt(bestIdx);
+    };
+
+    const endDrag = () => {
+      if (ghost) { ghost.remove(); ghost = null; }
+      dropLines.forEach(line => line.classList.remove('show'));
+      const wrap = logList.querySelector(`.log-entry-wrap[data-id="${id}"]`);
+      if (wrap) wrap.classList.remove('drag-source');
+
+      if (targetIndex !== null) {
+        const fromIndex = logEntries.findIndex(en => en.id === id);
+        let toIndex = targetIndex;
+        // if removing the dragged item from above the target shifts indices down by one
+        if (fromIndex < toIndex) toIndex -= 1;
+        if (fromIndex !== -1 && toIndex !== fromIndex) {
+          const [moved] = logEntries.splice(fromIndex, 1);
+          logEntries.splice(toIndex, 0, moved);
+          renderLog();
+        }
+      }
+
+      dragging = false;
+      armed = false;
+      targetIndex = null;
+    };
+
+    const showDeletePopover = () => {
+      const rect = handle.getBoundingClientRect();
+      const popover = document.createElement('div');
+      popover.className = 'log-delete-popover';
+      popover.innerHTML = `
+        <button class="cancel-delete">CANCEL</button>
+        <button class="confirm-delete">DELETE</button>
+      `;
+      document.body.appendChild(popover);
+
+      // position above the handle if there's room, else below
+      const popH = 50;
+      const top = rect.top - popH - 8 > 0 ? rect.top - popH - 8 : rect.bottom + 8;
+      popover.style.top = top + 'px';
+      popover.style.left = Math.max(8, rect.right - 140) + 'px';
+
+      const remove = () => popover.remove();
+      popover.querySelector('.cancel-delete').addEventListener('click', remove);
+      popover.querySelector('.confirm-delete').addEventListener('click', () => {
+        if (id === pendingBpmEntryId) pendingBpmEntryId = null;
+        logEntries = logEntries.filter(en => en.id !== id);
+        showToast('Entry deleted');
+        remove();
+        renderLog();
+      });
+      // tapping anywhere else dismisses it
+      setTimeout(() => {
+        const dismiss = (e) => {
+          if (!popover.contains(e.target)) { remove(); document.removeEventListener('pointerdown', dismiss); }
+        };
+        document.addEventListener('pointerdown', dismiss);
+      }, 0);
+    };
+
+    const onPointerDown = (e) => {
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      armed = false;
+      dragging = false;
+
+      pressTimer = setTimeout(() => {
+        armed = true; // long-press threshold reached with no real movement yet
+      }, HANDLE_LONG_PRESS_MS);
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp, { once: true });
+    };
+
+    const onPointerMove = (e) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const moved = Math.hypot(dx, dy) > DRAG_ENGAGE_PX;
+
+      if (!dragging && armed && moved) {
+        startDrag(e.clientY);
+      } else if (!dragging && moved) {
+        // moved before the long-press threshold fired — treat as an
+        // intentional drag start anyway, so the gesture feels responsive
+        clearArmTimer();
+        startDrag(e.clientY);
+      }
+
+      if (dragging) moveDrag(e.clientY);
+    };
+
+    const onPointerUp = (e) => {
+      window.removeEventListener('pointermove', onPointerMove);
+      clearArmTimer();
+
+      if (dragging) {
+        endDrag();
+        return;
+      }
+
+      if (armed) {
+        // held in place without dragging: this is the delete gesture
+        showDeletePopover();
+      }
+
+      armed = false;
+    };
+
+    handle.addEventListener('pointerdown', onPointerDown);
+  });
+}
+
+function renderLog() {
+  logCount.textContent = `${logEntries.length} ${logEntries.length === 1 ? 'entry' : 'entries'}`;
+
+  if (logEntries.length === 0) {
+    logList.innerHTML = `<div class="log-empty">Nothing logged yet.<br>Tap tempo or play a key, then save it here.</div>`;
+    return;
+  }
+
+  logList.innerHTML = logEntries.map((entry, index) => {
+    let iconHtml, valueHtml, metaHtml;
+
+    if (entry.type === 'combo') {
+      iconHtml = `<div class="log-icon-stack">
+        <div class="log-icon bpm small">BPM</div>
+        <div class="log-icon key small">KEY</div>
+      </div>`;
+      valueHtml = `${entry.bpmValue} BPM · ${entry.keyValue}`;
+      metaHtml = `${entry.bpmMeta} — ${entry.keyMeta}`;
+    } else if (entry.type === 'bpm') {
+      iconHtml = `<div class="log-icon bpm">BPM</div>`;
+      valueHtml = `${entry.bpmValue} BPM`;
+      metaHtml = entry.bpmMeta;
+    } else {
+      iconHtml = `<div class="log-icon key">KEY</div>`;
+      valueHtml = entry.keyValue;
+      metaHtml = entry.keyMeta;
+    }
+
+    // song numbers reflect current position in the list (newest entry = highest
+    // number), so they re-sequence automatically on reorder or delete
+    const songNumber = logEntries.length - index;
+
+    return `
+    <div class="log-drop-line" data-drop-index="${index}"></div>
+    <div class="log-entry-wrap" data-id="${entry.id}">
+      <div class="log-entry" data-id="${entry.id}">
+        ${iconHtml}
+        <div class="log-main">
+          <div class="log-value">${valueHtml}</div>
+          <div class="log-meta">${metaHtml}</div>
+          <input class="log-label-input" placeholder="Song — what track was this?" value="${entry.label.replace(/"/g,'&quot;')}" data-id="${entry.id}">
+        </div>
+        <button class="log-song-handle" data-id="${entry.id}">Song #${songNumber}</button>
+        <button class="log-delete" data-id="${entry.id}">×</button>
+      </div>
+    </div>
+  `;
+  }).join('') + `<div class="log-drop-line" data-drop-index="${logEntries.length}"></div>`;
+
+  logList.querySelectorAll('.log-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      // if the deleted row was the pending BPM entry, drop the pending pointer too
+      if (id === pendingBpmEntryId) pendingBpmEntryId = null;
+      logEntries = logEntries.filter(e => e.id !== id);
+      renderLog();
+    });
+  });
+
+  bindSongHandles();
+
+  logList.querySelectorAll('.log-label-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const entry = logEntries.find(e => e.id === input.dataset.id);
+      if (entry) entry.label = input.value;
+    });
+  });
+
+  shareLogBtn.disabled = logEntries.length === 0;
+}
+
+/* ============================================================
+   SHARE LOG
+============================================================ */
+const shareLogBtn = document.getElementById('shareLogBtn');
+
+function formatLogAsText() {
+  const lines = ['SESSION LOG', ''];
+
+  // share in the same order shown on screen (newest first); numbers match
+  // what's displayed on screen, which reflects current position
+  logEntries.forEach((entry, index) => {
+    let title, meta;
+    if (entry.type === 'combo') {
+      title = `${entry.bpmValue} BPM · ${entry.keyValue}`;
+      meta = `${entry.bpmMeta} — ${entry.keyMeta}`;
+    } else if (entry.type === 'bpm') {
+      title = `${entry.bpmValue} BPM`;
+      meta = entry.bpmMeta;
+    } else {
+      title = entry.keyValue;
+      meta = entry.keyMeta;
+    }
+
+    const songNumber = logEntries.length - index;
+    lines.push(`Song #${songNumber}: ${title}`);
+    if (meta) lines.push(`   ${meta}`);
+    if (entry.label && entry.label.trim()) lines.push(`   Song: ${entry.label.trim()}`);
+    lines.push('');
+  });
+
+  return lines.join('\n').trim();
+}
+
+async function shareLog() {
+  if (logEntries.length === 0) return;
+  const text = formatLogAsText();
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ text, title: 'Session Log' });
+      return;
+    } catch (err) {
+      // user cancelled the share sheet — no error, just stop
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+
+  // try the clipboard API next (requires a secure context: https or localhost —
+  // this silently fails on file:// or other non-secure contexts)
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Log copied to clipboard');
+      return;
+    } catch (err) {
+      // fall through to manual copy box below
+    }
+  }
+
+  // last resort: show the text in a selectable box so it can always be copied
+  // by hand, regardless of browser permissions or context (works on file:// too)
+  showManualCopyModal(text);
+}
+
+function showManualCopyModal(text) {
+  const overlay = document.createElement('div');
+  overlay.className = 'copy-modal-overlay';
+  overlay.innerHTML = `
+    <div class="copy-modal">
+      <div class="copy-modal-title">Copy your log</div>
+      <div class="copy-modal-sub">Sharing isn't available here — select all and copy manually.</div>
+      <textarea class="copy-modal-textarea" id="copyModalTextarea" readonly></textarea>
+      <div class="copy-modal-actions">
+        <button class="btn-modal-secondary" id="copyModalClose">CLOSE</button>
+        <button class="btn-modal-primary" id="copyModalSelectAll">SELECT ALL</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const textarea = overlay.querySelector('#copyModalTextarea');
+  textarea.value = text;
+
+  function selectAll() {
+    textarea.focus();
+    textarea.select();
+    // for iOS Safari, which sometimes ignores .select() on readonly textareas
+    textarea.setSelectionRange(0, text.length);
+  }
+
+  overlay.querySelector('#copyModalSelectAll').addEventListener('click', selectAll);
+  overlay.querySelector('#copyModalClose').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // auto-select immediately so the person can just hit copy right away
+  setTimeout(selectAll, 50);
+}
+
+shareLogBtn.addEventListener('click', shareLog);
+
+/* ============================================================
+   AUDIO PLAYER
+============================================================ */
+const audioEl       = document.getElementById('audioEl');
+const audioFileInput= document.getElementById('audioFileInput');
+const playerLoadBtn = document.getElementById('playerLoadBtn');
+const playerPlayBtn = document.getElementById('playerPlayBtn');
+const playerRewind  = document.getElementById('playerRewind');
+const playerTrackName = document.getElementById('playerTrackName');
+const playerTime    = document.getElementById('playerTime');
+const playerDuration= document.getElementById('playerDuration');
+const playerScrubTrack = document.getElementById('playerScrubTrack');
+const playerScrubFill  = document.getElementById('playerScrubFill');
+const playerScrubThumb = document.getElementById('playerScrubThumb');
+const playerScrubWrap  = playerScrubTrack.closest('.player-scrub-wrap');
+
+function fmtTime(s) {
+  if (!isFinite(s) || isNaN(s)) return '–:––';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function updateScrub() {
+  if (!audioEl.duration) return;
+  const pct = (audioEl.currentTime / audioEl.duration) * 100;
+  playerScrubFill.style.width = pct + '%';
+  playerScrubThumb.style.left = pct + '%';
+  playerTime.textContent = fmtTime(audioEl.currentTime);
+}
+
+// load a file from the device
+playerLoadBtn.addEventListener('click', () => audioFileInput.click());
+
+audioFileInput.addEventListener('change', () => {
+  const file = audioFileInput.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  // clean up old object URL if any
+  if (audioEl.src && audioEl.src.startsWith('blob:')) URL.revokeObjectURL(audioEl.src);
+  audioEl.src = url;
+  audioEl.load();
+  // strip file extension for display
+  const name = file.name.replace(/\.[^.]+$/, '');
+  playerTrackName.textContent = name;
+  playerTrackName.classList.add('loaded');
+  playerPlayBtn.disabled = false;
+  playerTime.textContent = '0:00';
+  playerDuration.textContent = '–:––';
+  playerScrubFill.style.width = '0%';
+  playerScrubThumb.style.left = '0%';
+  // auto-play on load
+  audioEl.play().then(() => {
+    playerPlayBtn.classList.add('playing');
+    playerPlayBtn.querySelector('.icon-play').style.display = 'none';
+    playerPlayBtn.querySelector('.icon-pause').style.display = '';
+  }).catch(() => {});
+});
+
+// play / pause
+playerPlayBtn.addEventListener('click', () => {
+  if (audioEl.paused) {
+    audioEl.play();
+  } else {
+    audioEl.pause();
+  }
+});
+
+audioEl.addEventListener('play', () => {
+  playerPlayBtn.classList.add('playing');
+  playerPlayBtn.querySelector('.icon-play').style.display = 'none';
+  playerPlayBtn.querySelector('.icon-pause').style.display = '';
+});
+
+audioEl.addEventListener('pause', () => {
+  playerPlayBtn.classList.remove('playing');
+  playerPlayBtn.querySelector('.icon-play').style.display = '';
+  playerPlayBtn.querySelector('.icon-pause').style.display = 'none';
+});
+
+audioEl.addEventListener('timeupdate', updateScrub);
+
+audioEl.addEventListener('loadedmetadata', () => {
+  playerDuration.textContent = fmtTime(audioEl.duration);
+});
+
+audioEl.addEventListener('ended', () => {
+  playerPlayBtn.classList.remove('playing');
+  playerPlayBtn.querySelector('.icon-play').style.display = '';
+  playerPlayBtn.querySelector('.icon-pause').style.display = 'none';
+  playerScrubFill.style.width = '100%';
+  playerScrubThumb.style.left = '100%';
+});
+
+// rewind to start
+playerRewind.addEventListener('click', () => {
+  audioEl.currentTime = 0;
+  updateScrub();
+});
+
+// scrub bar — works on both mouse and touch
+function scrubToPosition(clientX) {
+  const rect = playerScrubTrack.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  if (audioEl.duration) {
+    audioEl.currentTime = pct * audioEl.duration;
+    updateScrub();
+  }
+}
+
+let scrubbing = false;
+
+playerScrubWrap.addEventListener('pointerdown', (e) => {
+  if (!audioEl.duration) return;
+  e.preventDefault();
+  scrubbing = true;
+  playerScrubWrap.classList.add('scrubbing');
+  scrubToPosition(e.clientX);
+  window.addEventListener('pointermove', onScrubMove);
+  window.addEventListener('pointerup', onScrubEnd, { once: true });
+});
+
+function onScrubMove(e) {
+  if (!scrubbing) return;
+  scrubToPosition(e.clientX);
+}
+
+function onScrubEnd() {
+  scrubbing = false;
+  playerScrubWrap.classList.remove('scrubbing');
+  window.removeEventListener('pointermove', onScrubMove);
+}
+</script>
+</body>
+</html>
