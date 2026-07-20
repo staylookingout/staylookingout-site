@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARABLE/INDEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0B;
+  --panel:#111113;
+  --panel2:#16161A;
+  --line:#232329;
+  --text:#E9E7E2;
+  --dim:#8B8A94;
+  --faint:#55545E;
+  --amber:#E8A33D;
+  --teal:#3DC9C2;
+  --disp:'Space Grotesk',sans-serif;
+  --body:'Inter',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;}
+  html{scroll-behavior:auto;}
+}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:10;background:rgba(10,10,11,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;gap:12px;
+}
+.brand{font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.14em;cursor:pointer;user-select:none;}
+.brand span{color:var(--amber);}
+.hstats{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.08em;text-align:right;}
+.hstats b{color:var(--teal);font-weight:600;}
+
+/* ---------- library ---------- */
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px;}
+.lede{margin:10px 0 26px;}
+.lede h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,4.5vw,32px);letter-spacing:.01em;line-height:1.2;}
+.lede p{color:var(--dim);font-size:14px;margin-top:8px;max-width:56ch;line-height:1.6;}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;}
+.chip{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--dim);
+  border:1px solid var(--line);background:var(--panel);border-radius:999px;
+  padding:6px 12px;cursor:pointer;transition:color .15s,border-color .15s;
+}
+.chip:hover{color:var(--text);}
+.chip.on{color:var(--bg);background:var(--amber);border-color:var(--amber);font-weight:600;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:10px;
+  transition:border-color .15s,transform .15s;
+}
+.card:hover{border-color:var(--amber);transform:translateY(-2px);}
+.card:focus-visible,.chip:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);}
+.card .origin{color:var(--teal);}
+.card h2{font-family:var(--disp);font-weight:600;font-size:17px;line-height:1.3;}
+.card .hook{color:var(--dim);font-size:13px;line-height:1.55;flex:1;}
+.card .foot{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line);display:inline-block;}
+.card.read .dot{background:var(--teal);}
+.card.read .readlbl{color:var(--teal);}
+
+/* ---------- reader ---------- */
+#reader{display:none;}
+.rtop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 6px;}
+.backbtn,.sizebtn,.navbtn{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--dim);
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:8px 14px;cursor:pointer;transition:color .15s,border-color .15s;
+}
+.backbtn:hover,.sizebtn:hover,.navbtn:hover{color:var(--text);border-color:var(--amber);}
+.sizes{display:flex;gap:6px;}
+.rmeta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--teal);margin:26px 0 8px;}
+.rtitle{font-family:var(--disp);font-weight:700;font-size:clamp(26px,5vw,38px);line-height:1.15;letter-spacing:.005em;}
+.rsub{color:var(--faint);font-family:var(--mono);font-size:11px;letter-spacing:.1em;margin-top:10px;}
+.rule{height:1px;background:var(--line);margin:26px 0;}
+.story{font-size:var(--rsz,17px);line-height:1.85;color:var(--text);max-width:62ch;}
+.story p{margin-bottom:1.35em;}
+.story p:first-of-type::first-letter{
+  font-family:var(--disp);font-weight:700;color:var(--amber);
+  font-size:3.1em;line-height:.85;float:left;padding-right:10px;padding-top:4px;
+}
+.lessonbox{max-width:62ch;margin-top:34px;}
+.revealbtn{
+  width:100%;font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+  color:var(--amber);background:transparent;border:1px dashed var(--amber);
+  border-radius:10px;padding:16px;cursor:pointer;transition:background .15s;
+}
+.revealbtn:hover{background:rgba(232,163,61,.08);}
+.lesson{
+  display:none;border-left:3px solid var(--amber);background:var(--panel);
+  border-radius:0 10px 10px 0;padding:18px 20px;
+}
+.lesson .tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber);margin-bottom:8px;}
+.lesson p{font-size:15px;line-height:1.7;color:var(--text);}
+.rnav{display:flex;justify-content:space-between;gap:10px;margin-top:40px;max-width:62ch;}
+.navbtn{flex:1;text-align:center;}
+.navbtn:disabled{opacity:.3;cursor:default;}
+.counterlbl{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;align-self:center;}
+footer{border-top:1px solid var(--line);padding:20px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--faint);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" onclick="showLibrary()">PARABLE<span>/</span>INDEX</div>
+  <div class="hstats" id="hstats"></div>
+</header>
+
+<div class="wrap">
+  <!-- LIBRARY -->
+  <section id="library">
+    <div class="lede">
+      <h1>Small stories. Long lessons.</h1>
+      <p>A field archive of folk parables — from Cuba, the Caribbean, and beyond. Each one is a few minutes to read and a long time to forget. The lesson stays hidden until you finish.</p>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- READER -->
+  <section id="reader">
+    <div class="rtop">
+      <button class="backbtn" onclick="showLibrary()">&larr; INDEX</button>
+      <div class="sizes">
+        <button class="sizebtn" onclick="setSize(-1)">A&minus;</button>
+        <button class="sizebtn" onclick="setSize(1)">A+</button>
+      </div>
+    </div>
+    <div class="rmeta" id="rmeta"></div>
+    <h1 class="rtitle" id="rtitle"></h1>
+    <div class="rsub" id="rsub"></div>
+    <div class="rule"></div>
+    <div class="story" id="rbody"></div>
+    <div class="lessonbox">
+      <button class="revealbtn" id="revealbtn" onclick="revealLesson()">REVEAL THE LESSON</button>
+      <div class="lesson" id="lesson">
+        <div class="tag">THE LESSON</div>
+        <p id="lessontext"></p>
+      </div>
+    </div>
+    <div class="rnav">
+      <button class="navbtn" id="prevbtn" onclick="step(-1)">&larr; PREV</button>
+      <span class="counterlbl" id="counter"></span>
+      <button class="navbtn" id="nextbtn" onclick="step(1)">NEXT &rarr;</button>
+    </div>
+  </section>
+</div>
+
+<footer>PARABLE/INDEX &middot; 9 STORIES &middot; ORAL TRADITION, WRITTEN DOWN</footer>
+
+<script>
+const STORIES=[
+{
+id:"cow",title:"The Cow and the Harvest",origin:"CUBA",region:"CARIBBEAN",time:"4 MIN",
+hook:"A family survives on one cow's milk — until a passing master gives his student a terrible instruction.",
+lesson:"Just enough is the quietest prison there is. The small comfort that keeps you fed can be the very thing keeping you small. Ask yourself what you would be forced to become if your cow were gone tomorrow.",
+body:[
+"A master and his student walked for days through the countryside. One evening, far from any town, they came upon a small wooden house leaning at the edge of a weedy field. A family of eight lived there — mother, father, six children — all of them thin, all of them dressed in clothes gone gray from washing.",
+"The travelers asked for shelter, and the family gave what they had: a corner of the floor, and cups of warm milk.",
+"\u201CHow do you live out here?\u201D the master asked. \u201CThere's no work, no market, nothing growing.\u201D",
+"The father pointed proudly through the doorway at a single cow tied to a post. \u201CShe is everything. She gives us milk every morning. We drink some and trade the rest in the village. Without her, we would have nothing.\u201D",
+"At dawn, as they left, the master stopped at the edge of the property and said quietly, \u201CPush the cow off the cliff.\u201D",
+"The student was horrified. \u201CThat family will starve. The cow is all they have.\u201D \u201CExactly,\u201D said the master, and walked on. Bound by obedience and hating himself for it, the student did as he was told. For years the guilt followed him.",
+"A decade later, traveling the same road, he braced himself for ruin. But where the leaning shack had stood, there was a handsome farmhouse with a tiled roof. The weedy field was rows of vegetables and fruit trees. Well-fed children chased each other between the rows.",
+"It was the same father, older, standing straight. \u201CThe strangest thing,\u201D he said. \u201CYears ago our cow fell from the cliff and died. We thought it was the end of us. But with no milk to live on, we had no choice — we cleared the field. We planted. The first harvest fed us; the second we sold. We bought seed, then tools, then a second field. Her dying was the worst day of our lives, and the best.\u201D",
+"The student walked away understanding what the master had seen from the doorway: the cow was not keeping the family alive. It was keeping them small."
+]},
+{
+id:"fisherman",title:"The Fisherman and the Businessman",origin:"MEXICO / BRAZIL",region:"LATIN AMERICA",time:"3 MIN",
+hook:"A businessman finds a fisherman napping in the sun and offers him a twenty-year plan to earn the life he already has.",
+lesson:"Know what the striving is for. Ambition that never asks \u201Cand then what?\u201D can spend a whole life earning a freedom that was available on day one. This is the mirror of the cow story — the two are meant to be held together.",
+body:[
+"A businessman on vacation stood at the edge of a small coastal village and watched a fisherman tie up his boat. It was barely past noon. Inside the little boat lay a few large, gleaming fish.",
+"\u201CFine catch,\u201D the businessman said. \u201CHow long did it take you?\u201D",
+"\u201CA few hours,\u201D said the fisherman.",
+"\u201CWhy not stay out longer and catch more?\u201D",
+"The fisherman shrugged. \u201CThis is enough for my family today.\u201D",
+"\u201CBut what do you do with the rest of your day?\u201D",
+"\u201CI sleep late, fish a little, play with my children, take a siesta with my wife. In the evenings I walk to the village, drink a little wine, and play guitar with my friends. I have a full and busy life.\u201D",
+"The businessman laughed. \u201CI have an MBA — let me help you. Fish longer each day. Sell the extra, buy a bigger boat. With the bigger boat's earnings, buy a second, then a fleet. Skip the middleman, sell directly to the cannery, then open your own cannery. You'd move to the capital, then maybe abroad, to run the expanding enterprise.\u201D",
+"\u201CAnd how long would all that take?\u201D",
+"\u201CFifteen, twenty years.\u201D",
+"\u201CAnd then what?\u201D",
+"\u201CThen comes the best part,\u201D the businessman said. \u201CYou'd announce an IPO, sell your company stock, and become very rich. Millions!\u201D",
+"\u201CMillions. And then what?\u201D",
+"\u201CThen you'd retire. Move to a small coastal village, sleep late, fish a little, play with your grandchildren, take a siesta with your wife, and stroll to the village in the evenings to drink wine and play guitar with your friends.\u201D",
+"The fisherman smiled, picked up his fish, and went home for lunch."
+]},
+{
+id:"martina",title:"La Cucarachita Martina",origin:"CUBA / PUERTO RICO",region:"CARIBBEAN",time:"3 MIN",
+hook:"A little cockroach finds a coin, makes herself beautiful, and interviews the whole barnyard for a husband — with one strange question.",
+lesson:"Choose companions by how they will treat you in the quiet hours, not by how impressive they sound in the street. Martina's question — \u201Cwhat will you do at night?\u201D — is the only interview question that matters.",
+body:[
+"Once there was a small, tidy cockroach named Martina who kept the cleanest little house on the street. One morning, sweeping her porch, she found a gold coin in the dust.",
+"\u201CWhat shall I buy?\u201D she wondered. \u201CCandy? No — it would be gone by evening. A new broom? Mine works fine.\u201D At last she bought a fine ribbon and a little powder, dressed herself beautifully, and sat on her porch in the afternoon sun.",
+"Word traveled, and the suitors came.",
+"First strutted the rooster, feathers blazing. \u201CMartina, marry me!\u201D \u201CPerhaps,\u201D she said. \u201CBut tell me — what will you do at night?\u201D The rooster threw back his head: \u201CKI-KI-RI-KIIII!\u201D Martina covered her ears. \u201CNo, thank you. You would frighten me.\u201D",
+"Next came the dog, big and eager. \u201CAnd what will you do at night?\u201D \u201CGUAU! GUAU! GUAU!\u201D he barked, loud enough to shake the shutters. \u201CNo, thank you,\u201D said Martina.",
+"Then the cat, sleek and purring — but when she asked her question, he yowled, \u201CMIAU-MIAU-MIAAAU!\u201D and showed his claws. Martina shook her head.",
+"As the sun set, a small gray mouse approached — Ratoncito P\u00E9rez, hat in his paws. \u201CMartina,\u201D he said softly, \u201CI don't have the rooster's feathers or the dog's size. But I would be good to you.\u201D",
+"\u201CAnd what will you do at night?\u201D she asked.",
+"\u201CChui, chui,\u201D whispered the little mouse. \u201CI will keep you company, quietly.\u201D",
+"And Martina, who had listened to all the loud voices of the barnyard, married the gentle one."
+]},
+{
+id:"anansi",title:"Anansi and His Six Sons",origin:"JAMAICA / WEST AFRICA",region:"CARIBBEAN",time:"3 MIN",
+hook:"The trickster spider falls into terrible danger, and each of his six sons has exactly one talent — none sufficient alone.",
+lesson:"No single gift saves the day; the rescue takes every talent in the family, in order. And when the prize can't be divided fairly among many deserving hands, sometimes it belongs to everyone — which is why, the tellers say, the moon hangs in the sky for all.",
+body:[
+"Anansi the spider had six sons, and each was born with one strange gift. The first was called See Trouble, for he could see danger from any distance. The second, Road Builder. The third, River Drinker. The fourth, Game Skinner. The fifth, Stone Thrower. The sixth and smallest, Cushion.",
+"One day Anansi journeyed far from home and did not return. Far away, See Trouble sat up straight. \u201CFather is in danger — he has fallen into the river and a great fish has swallowed him!\u201D",
+"\u201CThen we go,\u201D said Road Builder, and he cut a road through the forest, straight toward the river, and his brothers ran along it.",
+"At the riverbank, River Drinker lay down and drank the river dry. There in the mud flopped the enormous fish. Game Skinner drew his knife, split the fish open with one clean stroke, and out stepped Anansi, blinking in the sunlight.",
+"But before anyone could celebrate, a shadow fell — a giant falcon snatched Anansi in its talons and rose into the sky. Stone Thrower took one stone, waited, and threw. The falcon jerked and let go, and Anansi came tumbling down from a terrible height.",
+"Little Cushion threw himself on the ground beneath his falling father, soft as sleep, and Anansi landed without a bruise.",
+"That night Anansi found a great glowing globe of white light in the forest, and he wished to give it to the son who had saved him. But which one? Without See Trouble, no one would have known. Without Road Builder, no one would have arrived. Without each of the six, Anansi would be gone.",
+"He argued with himself until dawn, and finding no answer, he asked the sky god Nyame to hold the prize until he could decide. Nyame took the ball of light and set it high in the heavens, where it hangs to this day — the moon, belonging to no one son, shining on all of them."
+]},
+{
+id:"juanbobo",title:"Juan Bobo Sends the Pig to Mass",origin:"PUERTO RICO",region:"CARIBBEAN",time:"2 MIN",
+hook:"Left home alone with the pig, a 'foolish' boy follows his own logic to a perfectly absurd conclusion.",
+lesson:"Instructions followed without understanding produce nonsense — and the fool's innocent logic often exposes everyone else's. If a pig in a mantilla looks ridiculous, the tale asks quietly, what do our own dressed-up appearances prove?",
+body:[
+"One Sunday morning, Juan Bobo's mother put on her best dress. \u201CI am going to Mass,\u201D she told him. \u201CStay home, behave, and look after the pig.\u201D",
+"Juan Bobo waved goodbye and sat on the step. Soon the pig began to squeal. It squealed and squealed and would not stop.",
+"Juan Bobo studied the pig carefully. \u201CI know what you want,\u201D he said. \u201CYou want to go to Mass too, like Mother. But you cannot go to church looking like that.\u201D",
+"So Juan Bobo went inside and found his mother's second-best dress. He wrestled the pig into it, one leg at a time. He hung her mother's necklace around the pig's thick neck, pinned a mantilla over its ears, and — because the mud outside was deep — squeezed its hooves into his mother's good shoes.",
+"\u201CNow you are beautiful,\u201D said Juan Bobo. \u201CGo, and pay attention to the sermon.\u201D He opened the gate and sent the pig trotting up the road toward the church.",
+"The pig made it exactly as far as the first mud puddle, which it entered with a joyful splash, rolling until dress, necklace, mantilla, and shoes were the same color as the mud.",
+"That is how Juan Bobo's mother found them: the pig delighted, the finery destroyed, and her son beaming with pride. \u201CI sent her to Mass,\u201D he explained, \u201Cbut she must have decided to bathe first.\u201D",
+"His mother looked from the boy to the pig and could not decide whether to weep or laugh. In Puerto Rico they still say of anything absurdly overdressed: como la puerca de Juan Bobo — like Juan Bobo's pig."
+]},
+{
+id:"turtle",title:"Turtle's Race with Deer",origin:"CARIBBEAN / LATIN AMERICA",region:"CARIBBEAN",time:"2 MIN",
+hook:"Everyone knows the tortoise beats the hare by persistence. In the island telling, Turtle wins a very different way.",
+lesson:"Aesop's version praises the lone plodder. The island version has a slyer point: community and coordination beat individual speed. One turtle can't outrun a deer — but a family of turtles doesn't have to.",
+body:[
+"Deer was the fastest animal in the forest, and he never let anyone forget it. \u201CI could beat any of you asleep,\u201D he liked to say, \u201Cwith two legs tied.\u201D",
+"One day Turtle looked up from the riverbank. \u201CI will race you.\u201D",
+"The whole forest laughed. Deer laughed loudest. \u201CYou? You take all morning to cross a path.\u201D",
+"\u201CTomorrow,\u201D said Turtle calmly. \u201CAlong the river, past the five bends, to the great ceiba tree. You run the bank; I will swim.\u201D Deer agreed, still laughing, and bounded off to tell everyone.",
+"That night, Turtle called together her relatives — and turtle families are large. She placed one cousin at the first bend, another at the second, another at the third and fourth, and stationed herself at the finish. Turtles, as everyone knows, look very much alike.",
+"At dawn the race began. Deer shot down the riverbank like an arrow. At the first bend he glanced at the water — and there was a small dark head, already ahead of him. \u201CImpossible!\u201D He ran faster.",
+"At the second bend, a turtle head bobbed in front of him again. At the third, again. At the fourth, Deer was gasping, his legs shaking, his pride in tatters — and still the turtle was ahead.",
+"When he staggered around the last bend, Turtle was sitting at the foot of the ceiba tree, dry and rested, examining her claws. \u201CWhat kept you?\u201D she asked.",
+"Deer never bragged again. And the turtles never told."
+]},
+{
+id:"farmer",title:"The Farmer's Luck",origin:"CHINA",region:"BEYOND",time:"2 MIN",
+hook:"A horse runs away. The neighbors say bad luck. The old farmer only says: \u201CWho knows?\u201D",
+lesson:"Judge events slowly. Fortune and misfortune arrive in disguise and trade masks without warning — the disaster of today is often the rescue of next season. \u201CWho knows?\u201D is not indifference; it is wisdom refusing to grade the story before it ends.",
+body:[
+"There was an old farmer who had worked his fields for many years with the help of a single horse. One morning, the horse broke its rope and ran off into the hills.",
+"The neighbors came to sympathize. \u201CSuch bad luck!\u201D they said.",
+"\u201CWho knows?\u201D said the farmer. \u201CGood luck, bad luck.\u201D",
+"A week later, the horse returned — leading three wild horses down from the hills into the farmer's corral. The neighbors came running. \u201CSuch good luck!\u201D they cried.",
+"\u201CWho knows?\u201D said the farmer.",
+"His only son began taming the wild horses. One threw him, and he broke his leg badly. The neighbors shook their heads at the gate. \u201CYour only son, lame at harvest time. Such terrible luck!\u201D",
+"\u201CWho knows?\u201D said the farmer.",
+"The next month, war came to the province. Soldiers marched into the village and conscripted every able-bodied young man for the front, from which few would return. The farmer's son, leg in a splint, was passed over and left at home.",
+"The neighbors, whose own sons were gone, said nothing at all this time.",
+"And the farmer went on plowing his field behind his four horses, saying, when anyone asked him how things were going: \u201CWho knows? Good luck, bad luck.\u201D"
+]},
+{
+id:"wolves",title:"The Two Wolves",origin:"CHEROKEE (ATTRIBUTED)",region:"BEYOND",time:"1 MIN",
+hook:"A grandfather tells his grandson about the fight going on inside every person — and who wins it.",
+lesson:"Character is not fixed; it is fed. Every day's attention, habits, and words are meals served to one wolf or the other. The one you feed wins.",
+body:[
+"An old man sat with his grandson at the fire and said, \u201CThere is a fight going on inside me. It is a terrible fight, and it is between two wolves.\u201D",
+"The boy leaned closer.",
+"\u201COne wolf is anger, envy, sorrow, regret, greed, arrogance, self-pity, resentment, and lies,\u201D the grandfather said. \u201CThe other is joy, peace, love, hope, humility, kindness, generosity, and truth.\u201D",
+"He let the fire crack for a moment. \u201CThe same fight is going on inside you, and inside every person who has ever lived.\u201D",
+"The grandson thought about it for a while, the way children do, seriously and all at once. Then he asked, \u201CGrandfather — which wolf will win?\u201D",
+"The old man watched the flames.",
+"\u201CThe one you feed.\u201D"
+]},
+{
+id:"starfish",title:"The Starfish Thrower",origin:"MODERN / LOREN EISELEY",region:"BEYOND",time:"1 MIN",
+hook:"After the storm, thousands of starfish lie stranded on the sand — and one man walks the beach, throwing them back.",
+lesson:"The scale of a problem is not an excuse. You cannot save every starfish on the beach, but the arithmetic of impossibility means nothing to the one in your hand.",
+body:[
+"A storm had passed in the night, and the morning beach was littered with starfish — thousands of them, stranded above the tide line, drying in the rising sun.",
+"A traveler walking the shore saw a figure in the distance, bending and straightening, bending and straightening. As he came closer, he saw it was a man picking up starfish, one at a time, and throwing them past the breakers into the sea.",
+"\u201CFriend,\u201D the traveler said, \u201Cwhat are you doing?\u201D",
+"\u201CThe tide is out and the sun is up,\u201D the man said, tossing another. \u201CIf they stay on the sand, they die.\u201D",
+"The traveler looked down the beach, where the stranded starfish stretched as far as he could see, and then the other way, where they stretched just as far. \u201CBut there are thousands of them. Miles of them. You can't possibly make a difference.\u201D",
+"The man bent down, picked up another starfish, and threw it far out over the waves. He watched it disappear into the water.",
+"\u201CMade a difference to that one.\u201D",
+"The traveler stood for a long moment. Then he bent down, picked up a starfish, and threw."
+]}
+];
+
+const REGIONS=["ALL","CARIBBEAN","LATIN AMERICA","BEYOND"];
+let filter="ALL", current=-1;
+let read=JSON.parse(localStorage.getItem("pi_read")||"{}");
+let fsize=parseInt(localStorage.getItem("pi_fsize")||"17",10);
+document.documentElement.style.setProperty("--rsz",fsize+"px");
+
+function save(){localStorage.setItem("pi_read",JSON.stringify(read));}
+
+function renderFilters(){
+  const f=document.getElementById("filters");
+  f.innerHTML=REGIONS.map(r=>
+    `<button class="chip ${r===filter?"on":""}" onclick="setFilter('${r}')">${r}</button>`
+  ).join("");
+}
+function setFilter(r){filter=r;renderFilters();renderGrid();}
+
+function renderGrid(){
+  const g=document.getElementById("grid");
+  const list=STORIES.filter(s=>filter==="ALL"||s.region===filter);
+  g.innerHTML=list.map(s=>{
+    const i=STORIES.indexOf(s);
+    return `<div class="card ${read[s.id]?"read":""}" tabindex="0" role="button"
+      onclick="openStory(${i})" onkeydown="if(event.key==='Enter')openStory(${i})">
+      <div class="meta"><span class="origin">${s.origin}</span><span>${s.time}</span></div>
+      <h2>${s.title}</h2>
+      <div class="hook">${s.hook}</div>
+      <div class="foot"><span class="readlbl">${read[s.id]?"READ":"UNREAD"}</span><span class="dot"></span></div>
+    </div>`;
+  }).join("");
+  updateStats();
+}
+
+function updateStats(){
+  const n=Object.keys(read).filter(k=>read[k]).length;
+  document.getElementById("hstats").innerHTML=`<b>${n}</b> / ${STORIES.length} READ`;
+}
+
+function openStory(i){
+  current=i;
+  const s=STORIES[i];
+  document.getElementById("rmeta").textContent=`${s.origin} \u00B7 ${s.time}`;
+  document.getElementById("rtitle").textContent=s.title;
+  document.getElementById("rsub").textContent="STORY "+String(i+1).padStart(2,"0")+" OF "+String(STORIES.length).padStart(2,"0");
+  document.getElementById("rbody").innerHTML=s.body.map(p=>`<p>${p}</p>`).join("");
+  document.getElementById("lessontext").textContent=s.lesson;
+  document.getElementById("lesson").style.display="none";
+  document.getElementById("revealbtn").style.display="block";
+  document.getElementById("counter").textContent=String(i+1).padStart(2,"0")+"/"+String(STORIES.length).padStart(2,"0");
+  document.getElementById("prevbtn").disabled=(i===0);
+  document.getElementById("nextbtn").disabled=(i===STORIES.length-1);
+  document.getElementById("library").style.display="none";
+  document.getElementById("reader").style.display="block";
+  window.scrollTo({top:0});
+}
+
+function revealLesson(){
+  document.getElementById("revealbtn").style.display="none";
+  document.getElementById("lesson").style.display="block";
+  read[STORIES[current].id]=true;save();updateStats();
+}
+
+function step(d){
+  const n=current+d;
+  if(n>=0&&n<STORIES.length)openStory(n);
+}
+
+function showLibrary(){
+  document.getElementById("reader").style.display="none";
+  document.getElementById("library").style.display="block";
+  renderGrid();
+  window.scrollTo({top:0});
+}
+
+function setSize(d){
+  fsize=Math.min(22,Math.max(14,fsize+d));
+  document.documentElement.style.setProperty("--rsz",fsize+"px");
+  localStorage.setItem("pi_fsize",fsize);
+}
+
+renderFilters();renderGrid();
+</script>
+</body>
+</html>
