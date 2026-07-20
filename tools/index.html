@@ -3,114 +3,550 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>TOOLS — STAYLOOKINGOUT</title>
+<title>STAY Terminal — staylookingout.com</title>
+<meta name="description" content="staylookingout/tools/ — instruments built in-house.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Special+Gothic+Condensed+One&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0A0A0B; --panel:#121214; --line:#232326;
-    --txt:#E9E9EA; --muted:#6E6E76;
-    --amber:#E8A33D; --teal:#3DC9C2;
+    --bg:#0e0a14;
+    --fg:#e6e2f0;
+    --dim:#6d6a86;
+    --line:#2c2740;
+    --pink:#ff7edb;
+    --cyan:#36f9f6;
+    --orange:#ff9a4d;
+    --red:#fe5f75;
+    --green:#72f1b8;
+    --yellow:#fede5d;
+    --purple:#b893e6;
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{
-    background:var(--bg);color:var(--txt);
-    font-family:'Inter',system-ui,sans-serif;
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  a{color:var(--cyan);text-decoration:none;}
+  a:hover{color:var(--pink);}
+
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  @keyframes glitchIn{
+    0%{clip-path:inset(42% 0 42% 0);transform:translateX(-14px) skewX(10deg);filter:hue-rotate(120deg) saturate(3);opacity:.4;}
+    18%{clip-path:inset(8% 0 72% 0);transform:translateX(10px);opacity:.7;}
+    36%{clip-path:inset(62% 0 4% 0);transform:translateX(-7px) skewX(-7deg);}
+    54%{clip-path:inset(18% 0 46% 0);transform:translateX(5px);filter:hue-rotate(-60deg);}
+    72%{clip-path:inset(2% 0 12% 0);transform:translateX(-3px);}
+    86%{clip-path:inset(0 0 0 0);transform:translateX(2px);}
+    100%{clip-path:inset(0 0 0 0);transform:none;filter:none;opacity:1;}
+  }
+  @keyframes glitchOut{
+    0%{clip-path:inset(0 0 0 0);transform:none;opacity:1;}
+    25%{clip-path:inset(12% 0 55% 0);transform:translateX(8px) skewX(-8deg);filter:hue-rotate(90deg);}
+    50%{clip-path:inset(58% 0 10% 0);transform:translateX(-10px);}
+    75%{clip-path:inset(30% 0 30% 0);transform:translateX(14px) skewX(10deg);opacity:.5;}
+    100%{clip-path:inset(48% 0 48% 0);transform:translateX(-20px);opacity:0;}
+  }
+
+  #root{
     min-height:100vh;
-    padding:max(env(safe-area-inset-top),20px) 18px 60px;
-    max-width:680px;margin:0 auto;
+    background:var(--bg);
+    font-family:'JetBrains Mono',monospace;
+    color:var(--fg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    cursor:text;
   }
-  a{color:inherit;text-decoration:none}
+  #root.glitch{animation:glitchIn 0.9s steps(14) both;}
+  #root.out{animation:glitchOut 0.5s steps(10) forwards;}
 
-  header{padding:16px 0 22px;border-bottom:1px solid var(--line)}
-  .brand{font-family:'Space Grotesk';font-weight:700;font-size:17px;letter-spacing:.14em}
-  .brand span{color:var(--amber)}
-  .sub{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.28em;color:var(--muted);margin-top:8px}
-
-  .filter{display:flex;gap:6px;margin:20px 0 6px;flex-wrap:wrap}
-  .filter button{
-    font-family:'JetBrains Mono';font-size:10px;letter-spacing:.12em;
-    padding:9px 13px;border:1px solid var(--line);border-radius:6px;
-    background:var(--panel);color:var(--muted);cursor:pointer;
+  #wrap{
+    width:100%;
+    max-width:840px;
+    padding:44px 22px 60px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
   }
-  .filter button.sel{border-color:var(--teal);color:var(--teal)}
-
-  .grid{display:flex;flex-direction:column;gap:8px;margin-top:14px}
-  .card{
-    border:1px solid var(--line);border-radius:8px;background:var(--panel);
-    padding:16px;display:block;transition:border-color .15s;
+  @keyframes breathe{
+    0%,100%{ text-shadow: 0 0 6px rgba(230,226,240,0.25), 0 0 16px rgba(54,249,246,0.12); }
+    50%{ text-shadow: 0 0 14px rgba(230,226,240,0.5), 0 0 32px rgba(54,249,246,0.32), 0 0 52px rgba(255,126,219,0.14); }
   }
-  .card:active{border-color:#3A3A3E}
-  .card .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-  .card h2{font-family:'Space Grotesk';font-weight:700;font-size:15px;letter-spacing:.08em}
-  .card .cat{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
-  .card p{font-size:12.5px;line-height:1.55;color:var(--muted);margin-top:7px}
-  .card .path{font-family:'JetBrains Mono';font-size:10px;color:#4A4A50;margin-top:9px}
-  .card.soon{opacity:.45;pointer-events:none}
-  .card.soon .cat{color:var(--muted)}
+  #logo{
+    font-family:'Special Gothic Condensed One', sans-serif;
+    font-size:52px;
+    line-height:1;
+    letter-spacing:0.5px;
+    color:#f2f0f8;
+    margin-bottom:14px;
+    user-select:none;
+    display:block;
+    animation: breathe 4.5s ease-in-out infinite;
+  }
+  #subtitle{color:var(--dim);font-size:13px;letter-spacing:1.5px;margin-bottom:26px;}
 
-  footer{margin-top:44px;font-family:'JetBrains Mono';font-size:9px;letter-spacing:.22em;color:#3A3A3E;text-align:center}
+  .term-line{
+    font-size:15px;
+    line-height:1.85;
+    word-break:break-word;
+    padding:0 8px;
+    margin:0 -8px;
+    border-radius:3px;
+    background:transparent;
+  }
+  .term-line.clickable{cursor:pointer;}
+  .term-line span{white-space:pre-wrap;}
+
+  #promptRow{
+    display:flex;
+    flex-wrap:wrap;
+    font-size:15px;
+    line-height:1.85;
+    padding:0 8px;
+    margin:2px -8px 0;
+  }
+  #promptRow.hidden{display:none;}
+  #promptLabel{color:var(--green);white-space:pre;text-shadow:0 0 10px rgba(114,241,184,0.35);}
+  #typedText{color:var(--fg);white-space:pre-wrap;}
+  #caret{color:var(--cyan);animation:blink 1.1s steps(1) infinite;text-shadow:0 0 9px rgba(54,249,246,0.8);}
+  #ghost{color:#443f5c;white-space:pre;}
+
+  #musicBtn{
+    position:fixed;top:14px;right:14px;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:3px;
+    cursor:pointer;
+    letter-spacing:1px;
+  }
+  #musicBtn:hover{color:var(--cyan);border-color:var(--cyan);}
+
+  #mobileInput{
+    position:fixed;bottom:0;left:0;
+    width:2px;height:2px;
+    opacity:0.01;
+    border:none;background:transparent;color:transparent;caret-color:transparent;
+  }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="brand">STAYLOOKINGOUT<span>·</span>TOOLS</div>
-  <div class="sub">INSTRUMENTS BUILT IN-HOUSE</div>
-</header>
-
-<div class="filter" id="filter"></div>
-<div class="grid" id="grid"></div>
-
-<footer>STAYLOOKINGOUT · MIAMI</footer>
+<div id="root" class="glitch">
+  <div id="wrap">
+    <div id="logo">STAY</div>
+    <div id="subtitle">staylookingout/tools/</div>
+    <div id="lines"></div>
+    <div id="promptRow" class="hidden">
+      <span id="promptLabel"></span>
+      <span id="typedText"></span>
+      <span id="caret">&#9608;</span>
+      <span id="ghost"></span>
+    </div>
+  </div>
+  <button id="musicBtn" type="button">&#9834; off</button>
+  <input id="mobileInput" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
+</div>
 
 <script>
-/* ============================================================
-   Add a tool: append one object here, upload the tool to
-   tools/<slug>/index.html — that's the whole workflow.
-   soon:true renders it dimmed and unclickable until it's live.
-   ============================================================ */
-const TOOLS=[
-  {slug:'rig',       name:'RIG',                 cat:'CAMERA', desc:'Bluetooth control + HDMI field monitor for the BMPCC 6K Pro. Record, stills, ISO, shutter, WB, iris, focus, LUT preview, and WebGL assists (peaking, zebra, false color).'},
-  {slug:'varispeed', name:'VARISPEED',           cat:'PITCH',  desc:'BPM and key calculator with 3D pitch-class and Camelot wheels for planning harmonic mixes and speed changes.'},
-  {slug:'varispeed-processor', name:'VARISPEED PROCESSOR', cat:'PITCH', desc:'In-browser varispeed audio processing with WAV export — hear and render the speed/pitch change.'},
-  {slug:'retune',    name:'RETUNE',              cat:'PITCH',  desc:'BPM and key conversion with WSOLA time-stretching for tempo changes without pitch shift.'},
-  {slug:'stretch',   name:'STRETCH',             cat:'PITCH',  desc:'Phase-vocoder time-stretching with waveform scrubbing.'},
-  {slug:'loop-console', name:'LOOP/CONSOLE',     cat:'AUDIO',  desc:'Loop editor with pinch-to-zoom, scrubbing, and per-point WAV export.'},
-  {slug:'splice',    name:'SPLICE',              cat:'AUDIO',  desc:'Record, trim, and split audio with waveform editing; export WAV/MP3 or a zipped bundle.'},
-  {slug:'stems',     name:'STEM SPLIT',          cat:'AUDIO',  desc:'Browser-based stem separation running MDX-Net models locally via ONNX Runtime — no upload, no server.'},
-  {slug:'toolkit',   name:'TOOLKIT',             cat:'AUDIO',  desc:'Musician utility: tap tempo, key reference piano with scale detection, and a session log.'},
-  {slug:'groove-lab',name:'GROOVE LAB',          cat:'AUDIO',  desc:'Rhythm sequencer with 18 documented grooves and the history behind each one.'},
-];
+(function(){
+  "use strict";
 
-const grid=document.getElementById('grid');
-const filterEl=document.getElementById('filter');
-const cats=['ALL',...new Set(TOOLS.map(t=>t.cat))];
-let active='ALL';
+  var PAL = { pink:'#ff7edb', cyan:'#36f9f6', orange:'#ff9a4d', red:'#fe5f75', green:'#72f1b8', yellow:'#fede5d', purple:'#b893e6', dim:'#6d6a86', fg:'#e6e2f0' };
+  var COLORS = ['#ff7edb','#36f9f6','#ff9a4d','#72f1b8','#fede5d','#b893e6','#fe5f75'];
+  var GLYPHS = '!<>-_\\/[]{}=+*^?#@%&';
+  var PROMPT_LABEL = 'user:/tools';
+  var TEMPO = 130;
+  var BEAT_GLOW = true;
 
-function render(){
-  filterEl.innerHTML='';
-  cats.forEach(c=>{
-    const b=document.createElement('button');
-    b.textContent=c;
-    b.className=c===active?'sel':'';
-    b.onclick=()=>{active=c;render();};
-    filterEl.appendChild(b);
+  // Edit this list to point your real tools at real URLs.
+  var PAGES = [
+    { name:'home',    url:'https://staylookingout.com/',       desc:'front door' },
+    { name:'tools',   url:'https://staylookingout.com/tools/', desc:'instruments built in-house' },
+    { name:'bmpcc',   url:'https://www.staylookingout.com/tools/bmpcc.html', desc:'BMPCC camera control app' },
+    { name:'tool_02', url:'#', desc:'// drop URL here' },
+    { name:'tool_03', url:'#', desc:'// drop URL here' }
+  ];
+
+  var root = document.getElementById('root');
+  var linesEl = document.getElementById('lines');
+  var promptRow = document.getElementById('promptRow');
+  var promptLabelEl = document.getElementById('promptLabel');
+  var typedTextEl = document.getElementById('typedText');
+  var ghostEl = document.getElementById('ghost');
+  var musicBtn = document.getElementById('musicBtn');
+  var mobileInput = document.getElementById('mobileInput');
+
+  var state = {
+    lines: [],
+    typed: '',
+    phase: 'glitch',
+    sel: -1,
+    muted: false,
+    showPrompt: false,
+    ranOnce: false,
+    out: false
+  };
+
+  var timers = [];
+  var audioLoop = null;
+  var ac = null, master = null, delay = null, prog = [], arp = [], step = 0;
+
+  // ---------- helpers ----------
+  function rnd(n){ var s=''; for (var i=0;i<n;i++) s += GLYPHS[Math.floor(Math.random()*GLYPHS.length)]; return s; }
+  function hashColor(w){ var h=0; for (var i=0;i<w.length;i++) h=(h*31+w.charCodeAt(i))>>>0; return COLORS[h % COLORS.length]; }
+  function colorize(text){
+    return text.split(/(\s+)/).filter(function(t){ return t.length; }).map(function(t){
+      if (/^\s+$/.test(t)) return { t:t, c:PAL.fg };
+      if (/^[.\/\\:;,(){}\[\]<>=+"'`~-]+$/.test(t)) return { t:t, c:PAL.dim };
+      return { t:t, c:hashColor(t) };
+    });
+  }
+
+  // ---------- rendering ----------
+  function renderPromptRow(){
+    promptRow.classList.toggle('hidden', !state.showPrompt);
+    promptLabelEl.textContent = PROMPT_LABEL + ' ';
+    typedTextEl.textContent = state.typed;
+    ghostEl.textContent = (state.typed === '' && !state.ranOnce) ? "  type 'list' + \u21B5" : '';
+  }
+
+  function updateRootAnim(){
+    root.classList.remove('glitch','out');
+    if (state.out) root.classList.add('out');
+    else if (state.phase === 'glitch') root.classList.add('glitch');
+  }
+
+  function updateMusicLabel(){
+    musicBtn.textContent = (state.muted || !ac) ? '\u266A off' : '\u266A on';
+  }
+
+  function scrollDown(){
+    requestAnimationFrame(function(){ window.scrollTo(0, document.body.scrollHeight); });
+  }
+
+  function setSelHighlight(newSel){
+    state.lines.forEach(function(ln){
+      if (ln.pageIdx === undefined) return;
+      if (ln.pageIdx === newSel) ln.el.style.background = 'rgba(54,249,246,0.09)';
+      else ln.el.style.background = 'transparent';
+    });
+    state.sel = newSel;
+  }
+
+  // spans: [{t, c, w, sh}], extra: {click, pageIdx, cursor}, scramble: bool
+  function pushLine(spans, extra, scramble){
+    var line = Object.assign({
+      spans: spans.map(function(s){
+        return Object.assign({ w:400, sh:'none', disp: scramble ? rnd(s.t.length) : s.t }, s);
+      })
+    }, extra || {});
+
+    var lineEl = document.createElement('div');
+    lineEl.className = 'term-line';
+    if (line.pageIdx !== undefined) lineEl.dataset.pageIdx = line.pageIdx;
+    if (line.click){
+      lineEl.classList.add('clickable');
+      lineEl.addEventListener('click', line.click);
+    }
+    line.spans.forEach(function(sp){
+      var spanEl = document.createElement('span');
+      spanEl.textContent = sp.disp;
+      spanEl.style.color = sp.c;
+      spanEl.style.fontWeight = sp.w;
+      spanEl.style.textShadow = sp.sh;
+      lineEl.appendChild(spanEl);
+      sp.el = spanEl;
+    });
+    line.el = lineEl;
+    linesEl.appendChild(lineEl);
+    state.lines.push(line);
+    scrollDown();
+
+    if (scramble){
+      var f = 0, frames = 6;
+      var iv = setInterval(function(){
+        f++;
+        line.spans.forEach(function(sp){
+          var n = Math.ceil(sp.t.length * f / frames);
+          sp.disp = sp.t.slice(0, n) + (f >= frames ? '' : rnd(sp.t.length - n));
+          sp.el.textContent = sp.disp;
+        });
+        if (f >= frames) clearInterval(iv);
+      }, 30);
+      timers.push(iv);
+    }
+    return line;
+  }
+  function sys(text, c, extra){ return pushLine([{ t:text, c: c || PAL.dim }], extra); }
+
+  function clearLines(){
+    linesEl.innerHTML = '';
+    state.lines = [];
+    state.sel = -1;
+  }
+
+  // ---------- boot sequence ----------
+  function boot(){
+    var seq = [
+      [90,  function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
+      [230, function(){ pushLine(colorize('import Nav from "./core/stay";'), null, true); }],
+      [120, function(){ pushLine(colorize('import Tools from "./tools/index";'), null, true); }],
+      [120, function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
+      [120, function(){ pushLine(colorize('link staylookingout.com ........ OK'), null, true); }],
+      [160, function(){ sys('> File loaded: src/core/main.js'); }],
+      [220, function(){ state.phase = 'ready'; state.showPrompt = true; renderPromptRow(); updateRootAnim(); focusInput(); }]
+    ];
+    var t = 0;
+    seq.forEach(function(entry){
+      t += entry[0];
+      timers.push(setTimeout(entry[1], t));
+    });
+  }
+
+  // ---------- input ----------
+  function focusInput(){ mobileInput.focus({ preventScroll:true }); }
+
+  mobileInput.addEventListener('input', function(e){
+    var v = e.target.value;
+    if (v && state.phase === 'ready'){ state.typed += v; renderPromptRow(); }
+    e.target.value = '';
   });
-  grid.innerHTML='';
-  TOOLS.filter(t=>active==='ALL'||t.cat===active).forEach(t=>{
-    const a=document.createElement('a');
-    a.className='card'+(t.soon?' soon':'');
-    a.href=t.slug+'/';
-    a.innerHTML=
-      '<div class="row"><h2>'+t.name+'</h2><span class="cat">'+(t.soon?'SOON':t.cat)+'</span></div>'+
-      '<p>'+t.desc+'</p>'+
-      '<div class="path">/tools/'+t.slug+'/</div>';
-    grid.appendChild(a);
-  });
-}
-render();
+
+  function onKey(e){
+    if (state.phase !== 'ready' || state.out || e.metaKey || e.ctrlKey || e.altKey) return;
+    var linkLines = state.lines.filter(function(l){ return l.pageIdx !== undefined; });
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      if (!linkLines.length) return;
+      e.preventDefault();
+      var idxs = linkLines.map(function(l){ return l.pageIdx; });
+      var p = idxs.indexOf(state.sel);
+      p = e.key === 'ArrowDown' ? (p+1) % idxs.length : (p-1+idxs.length) % idxs.length;
+      setSelHighlight(idxs[p]);
+    } else if (e.key === 'Enter'){
+      e.preventDefault();
+      var cmd = state.typed.trim();
+      if (cmd){ state.typed=''; state.ranOnce=true; renderPromptRow(); run(cmd); }
+      else if (state.sel >= 0) openPage(state.sel);
+    } else if (e.key === 'Backspace'){
+      e.preventDefault();
+      state.typed = state.typed.slice(0, -1);
+      renderPromptRow();
+    } else if (e.key.length === 1){
+      e.preventDefault();
+      state.typed += e.key;
+      renderPromptRow();
+    }
+  }
+  window.addEventListener('keydown', onKey);
+
+  root.addEventListener('click', focusInput);
+
+  // ---------- commands ----------
+  function echoCmd(cmd){
+    pushLine([{ t: PROMPT_LABEL + ' ', c:PAL.green }, { t:cmd, c:PAL.fg }]);
+  }
+
+  function run(raw){
+    echoCmd(raw);
+    var cmd = raw.toLowerCase();
+    var parts = cmd.split(/\s+/);
+    var head = parts[0];
+    var rest = parts.slice(1);
+    var arg = rest.join(' ');
+    var P = PAL;
+    var num = parseInt(cmd, 10);
+    var byName = PAGES.findIndex(function(p){
+      return p.name === cmd || (p.name === arg && (head === 'open' || head === 'cd' || head === 'go'));
+    });
+
+    if (cmd === 'list' || cmd === 'ls' || cmd === 'dir') return showList();
+    if (!isNaN(num) && num >= 1 && num <= PAGES.length && String(num) === cmd) return openPage(num - 1);
+    if (byName >= 0) return openPage(byName);
+
+    switch (head){
+      case 'help':
+        sys('\u2500\u2500 commands \u2500\u2500', P.purple);
+        [['list','show all pages'],['open <name|#>','jump to a page'],['about','what is this place'],
+         ['contact','reach out'],['whoami','identify yourself'],['stay','...'],['clear','wipe the screen'],
+         ['reload','refresh reality'],['music on|off','toggle the chiptune'],['echo <text>','shout into the void'],
+         ['exit','try it']].forEach(function(pair){
+          pushLine([{ t:'  ' + pair[0].padEnd(16), c:P.cyan }, { t:pair[1], c:P.dim }]);
+        });
+        return;
+      case 'clear': return clearLines();
+      case 'about':
+        sys('STAYLOOKINGOUT \u00B7 MIAMI', P.pink);
+        sys('instruments built in-house. tools, experiments, transmissions.', P.dim);
+        return;
+      case 'contact':
+        pushLine([{ t:'signal \u25B8 ', c:P.dim }, { t:'stay@staylookingout.com', c:P.cyan, sh:'0 0 10px rgba(54,249,246,0.4)' }],
+          { click:function(){ location.href = 'mailto:stay@staylookingout.com'; }, cursor:'pointer' });
+        return;
+      case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
+      case 'sudo': return sys('permission denied. nice try, root.', P.red);
+      case 'stay': return arg === 'looking out' ? lookingOut() : sys('stay what?', P.pink);
+      case 'print': return arg === 'looking out' ? lookingOut() : sys('print what? (hint: what should you stay doing?)', P.dim);
+      case 'looking': if (arg === 'out') return lookingOut(); break;
+      case 'reload':
+        sys('reloading reality...', P.orange);
+        setTimeout(function(){ location.reload(); }, 600);
+        return;
+      case 'exit': case 'quit': case 'logout': return sys('there is no exit. stay.', P.red);
+      case 'echo': return pushLine(colorize(arg || '...'));
+      case 'date': case 'time': return sys(new Date().toString(), P.green);
+      case 'rm': return sys('these files are load-bearing. denied.', P.red);
+      case 'matrix': return sys('wake up... this terminal IS the matrix.', P.green);
+      case 'music':
+        if (arg === 'off'){ setMute(true); return sys('music: off', P.dim); }
+        initAudio(); setMute(false); return sys('music: on \u266A', P.cyan);
+      case 'open': case 'cd': case 'go':
+        return sys('no page called "' + arg + '" \u2014 type list', P.red);
+    }
+    sys('command not found: ' + head + ' \u2014 type help', P.red);
+  }
+
+  function lookingOut(){
+    pushLine([{ t:'LOOKING OUT.', c:PAL.cyan, w:700, sh:'0 0 14px rgba(54,249,246,0.9), 0 0 44px rgba(255,126,219,0.6)' }], null, true);
+  }
+
+  function showList(){
+    sys('\u2500\u2500 pages \u2500\u2500', PAL.purple);
+    PAGES.forEach(function(p, i){
+      pushLine([
+        { t:'  ' + (i+1) + '  ', c:PAL.dim },
+        { t:p.name.padEnd(10), c:COLORS[i % COLORS.length], w:500 },
+        { t:p.desc, c:PAL.dim }
+      ], { pageIdx:i, click:function(){ openPage(i); }, cursor:'pointer' });
+    });
+    sys('\u2191\u2193 + enter, click, or type a name / number', PAL.dim);
+    setSelHighlight(0);
+  }
+
+  function openPage(i){
+    var p = PAGES[i];
+    if (!p) return;
+    if (p.url === '#') return sys('// "' + p.name + '" is an empty slot \u2014 give me its URL', PAL.orange);
+    sys('> jacking into ' + p.name + ' ...', PAL.cyan);
+    state.out = true;
+    updateRootAnim();
+    setTimeout(function(){ window.location.href = p.url; }, 520);
+  }
+
+  // ---------- generative synth audio ----------
+  function initAudio(){
+    if (ac) return;
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e){ return; }
+
+    master = ac.createGain();
+    master.gain.value = state.muted ? 0 : 0.16;
+    master.connect(ac.destination);
+
+    delay = ac.createDelay(1); delay.delayTime.value = 0.38;
+    var fb = ac.createGain(); fb.gain.value = 0.38;
+    var wet = ac.createGain(); wet.gain.value = 0.3;
+    delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+
+    var roots = [0, -2, -4, 3, -7, 5];
+    prog = Array.from({ length:4 }, function(){ return roots[Math.floor(Math.random()*roots.length)]; });
+    prog[0] = 0;
+    var minor = [0, 3, 7, 10, 12, 15];
+    arp = Array.from({ length:16 }, function(){ return Math.random() < 0.25 ? null : minor[Math.floor(Math.random()*minor.length)]; });
+    step = 0;
+
+    audioLoop = setInterval(tick, 60000 / TEMPO / 4);
+    updateMusicLabel();
+  }
+
+  function voice(type, freq, when, dur, vol, cutoff, toDelay){
+    var o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    o.type = type; o.frequency.value = freq;
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(cutoff, when);
+    f.frequency.exponentialRampToValueAtTime(Math.max(80, cutoff*0.25), when + dur);
+    f.Q.value = 4;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+    o.connect(f); f.connect(g); g.connect(master);
+    if (toDelay) g.connect(delay);
+    o.start(when); o.stop(when + dur + 0.05);
+  }
+
+  function tick(){
+    var t = ac.currentTime + 0.03, s = step;
+    var bar = Math.floor(s/16) % 4, root = prog[bar];
+    function rf(semi, base){ return base * Math.pow(2, (root+semi)/12); }
+
+    if (s % 16 === 0){
+      var barDur = (60000/TEMPO/4)*16/1000;
+      voice('sawtooth', rf(0,110)*0.997, t, barDur, 0.05, 500, true);
+      voice('sawtooth', rf(3,110)*1.004, t, barDur, 0.04, 420, true);
+    }
+    if (s % 8 === 0) voice('sawtooth', rf(0,55), t, 0.9, 0.32, 240, false);
+    if (s % 4 === 0){
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(110, t);
+      o.frequency.exponentialRampToValueAtTime(38, t + 0.14);
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.25);
+    }
+    var a = arp[s % 16];
+    if (a !== null) voice('square', rf(a,110), t, 0.22, 0.07, 750, true);
+    if (s % 8 === 6){
+      var b = ac.createBuffer(1, 900, ac.sampleRate), d = b.getChannelData(0);
+      for (var i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+      var src = ac.createBufferSource(), g2 = ac.createGain(), f2 = ac.createBiquadFilter();
+      f2.type = 'lowpass'; f2.frequency.value = 5000;
+      src.buffer = b; g2.gain.value = 0.07;
+      src.connect(f2); f2.connect(g2); g2.connect(master); src.start(t);
+    }
+    if (s % 4 === 0) onBeat();
+    step++;
+  }
+
+  function onBeat(){
+    if (!BEAT_GLOW || state.muted) return;
+    if (Math.random() > 0.22) return;
+    var lines = state.lines;
+    if (!lines.length) return;
+    var ln = lines[Math.floor(Math.random()*lines.length)];
+    var sp = ln.spans[Math.floor(Math.random()*ln.spans.length)];
+    if (!sp || /^\s+$/.test(sp.t)) return;
+    var prev = sp.sh;
+    sp.sh = '0 0 10px ' + sp.c + ', 0 0 26px ' + sp.c;
+    sp.el.style.textShadow = sp.sh;
+    setTimeout(function(){
+      sp.sh = prev === undefined ? 'none' : prev;
+      sp.el.style.textShadow = sp.sh;
+    }, 320);
+  }
+
+  function setMute(m){
+    state.muted = m;
+    if (master) master.gain.value = m ? 0 : 0.11;
+    updateMusicLabel();
+  }
+  function toggleMusic(){ initAudio(); setMute(!state.muted); }
+
+  musicBtn.addEventListener('click', toggleMusic);
+  window.addEventListener('pointerdown', function once(){ initAudio(); window.removeEventListener('pointerdown', once); }, { once:true });
+  window.addEventListener('keydown', function once(){ initAudio(); window.removeEventListener('keydown', once); }, { once:true });
+
+  // ---------- go ----------
+  renderPromptRow();
+  updateRootAnim();
+  updateMusicLabel();
+  timers.push(setTimeout(function(){
+    state.phase = 'boot';
+    updateRootAnim();
+    boot();
+  }, 950));
+
+})();
 </script>
 </body>
 </html>
