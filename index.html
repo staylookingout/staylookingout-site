@@ -61,10 +61,17 @@
   #wrap{
     width:100%;
     max-width:840px;
-    padding:44px 22px 60px;
+    padding:0 22px 60px;
     display:flex;
     flex-direction:column;
     gap:2px;
+  }
+  #header{
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:5;
+    padding-top:44px;
   }
   @keyframes breathe{
     0%,100%{ text-shadow: 0 0 6px rgba(230,226,240,0.25), 0 0 16px rgba(54,249,246,0.12); }
@@ -134,8 +141,10 @@
 <body>
 <div id="root" class="glitch">
   <div id="wrap">
-    <div id="logo">STAY</div>
-    <div id="subtitle">staylookingout/tools/</div>
+    <div id="header">
+      <div id="logo">STAY</div>
+      <div id="subtitle">staylookingout/tools/</div>
+    </div>
     <div id="lines"></div>
     <div id="promptRow" class="hidden">
       <span id="promptLabel"></span>
