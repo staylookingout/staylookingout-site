@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VARISPEED PROCESSOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0B;
+    --panel:#111113;
+    --panel2:#161618;
+    --line:#232326;
+    --line2:#2e2e32;
+    --amber:#E8A33D;
+    --teal:#3DC9C2;
+    --text:#EDEDEF;
+    --dim:#7a7a82;
+    --danger:#e85d5d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 20px 48px;
+  }
+
+  /* ── HEADER ── */
+  header{
+    width:100%;
+    max-width:620px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:22px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:-0.01em;
+  }
+  .brand span{color:var(--amber);}
+  .sub-brand{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:0.1em;
+  }
+
+  /* ── CARD ── */
+  .card{
+    width:100%;
+    max-width:620px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+    margin-bottom:12px;
+  }
+  .card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:11px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--dim);
+  }
+  .card-head .step{
+    color:var(--teal);
+    font-weight:700;
+  }
+  .card-body{padding:18px 18px;}
+
+  /* ── DROP ZONE ── */
+  .drop-zone{
+    border:1.5px dashed var(--line2);
+    border-radius:4px;
+    padding:34px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .2s, background .2s;
+    position:relative;
+  }
+  .drop-zone:hover, .drop-zone.over{
+    border-color:var(--teal);
+    background:rgba(61,201,194,0.04);
+  }
+  .drop-zone input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%;
+  }
+  .drop-icon{
+    font-size:26px;
+    margin-bottom:10px;
+    opacity:0.5;
+  }
+  .drop-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--dim);
+  }
+  .drop-label strong{color:var(--teal);}
+  .file-info{
+    display:none;
+    text-align:left;
+    padding:12px 14px;
+    background:var(--panel2);
+    border:1px solid var(--line2);
+    border-radius:3px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    gap:0;
+  }
+  .file-info.visible{display:block;}
+  .file-info .fi-name{
+    font-size:12px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:8px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .fi-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px 12px;
+  }
+  .fi-item label{
+    display:block;
+    color:var(--dim);
+    font-size:9px;
+    letter-spacing:0.1em;
+    margin-bottom:2px;
+    text-transform:uppercase;
+  }
+  .fi-item span{color:var(--text); font-size:12px;}
+
+  /* ── INPUTS ── */
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;}
+  .row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--dim);
+    text-transform:uppercase;
+    margin-bottom:7px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:#0d0d0f;
+    border:1px solid var(--line2);
+    border-radius:3px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    padding:9px 10px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus,.field select:focus{border-color:var(--teal);}
+  .field input::placeholder{color:#3d3d42;}
+  .field select option:disabled{color:var(--line2);}
+
+  /* ── MODE TABS ── */
+  .mode-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .mode-tab{
+    flex:1;
+    background:#0d0d0f;
+    border:1px solid var(--line2);
+    border-radius:3px;
+    color:var(--dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    padding:9px 10px;
+    cursor:pointer;
+    transition:all .15s;
+    text-align:center;
+  }
+  .mode-tab.active{
+    border-color:var(--teal);
+    color:var(--teal);
+    background:rgba(61,201,194,0.06);
+  }
+  .mode-desc{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    margin-bottom:16px;
+    padding:10px 12px;
+    background:rgba(255,255,255,0.02);
+    border-left:2px solid var(--line2);
+    border-radius:0 3px 3px 0;
+    line-height:1.7;
+  }
+  .mode-desc b{color:var(--text);}
+
+  /* ── SLIDER ── */
+  .slider-wrap{margin-bottom:6px;}
+  .slider-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .slider-pct{font-size:20px; font-weight:700;}
+  .slider-pct.pos{color:var(--teal);}
+  .slider-pct.neg{color:var(--amber);}
+  .slider-side{font-size:11px; color:var(--dim);}
+  .slider-side b{color:var(--text);}
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:32px; background:transparent; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:3px;
+    background:linear-gradient(90deg, var(--amber) 0%, var(--line2) 50%, var(--teal) 100%);
+    border-radius:2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; margin-top:-6.5px;
+    border-radius:50%; background:var(--text); border:3px solid var(--bg); box-shadow:0 0 0 1px var(--line2);
+  }
+  input[type=range]::-moz-range-track{
+    height:3px;
+    background:linear-gradient(90deg, var(--amber) 0%, var(--line2) 50%, var(--teal) 100%);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%; background:var(--text); border:3px solid var(--bg);
+  }
+  .ticks{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);
+    margin-top:4px; letter-spacing:0.04em;
+  }
+
+  /* ── RESULT READOUT ── */
+  .result-bar{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:10px;
+    padding:14px 16px;
+    background:var(--panel2);
+    border:1px solid var(--line2);
+    border-radius:3px;
+    margin-top:14px;
+  }
+  .rb-col{text-align:center;}
+  .rb-col:last-child{text-align:right;}
+  .rb-col label{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    letter-spacing:0.1em;
+    color:var(--dim);
+    text-transform:uppercase;
+    margin-bottom:5px;
+  }
+  .rb-val{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--text);
+  }
+  .rb-val.changed{color:var(--teal);}
+  .rb-arrow{font-size:16px; color:var(--line2); text-align:center;}
+  .cents-note{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    margin-top:8px;
+  }
+  .cents-note b{color:var(--text);}
+
+  /* ── CAMELOT ROW ── */
+  .camelot-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:8px;
+    padding:9px 12px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#0d0d0f;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:0.1em;
+  }
+  .camelot-row .codes{display:flex; gap:8px; align-items:center; font-size:13px;}
+  .camelot-row .codes b{color:var(--text);}
+  .camelot-row .codes .arrow{color:var(--dim);}
+  .camelot-row .codes .new-code{color:var(--teal); font-weight:700;}
+
+  /* ── PROCESS BUTTON ── */
+  .process-btn{
+    width:100%;
+    padding:14px;
+    background:var(--teal);
+    color:#0A0A0B;
+    border:none;
+    border-radius:3px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.04em;
+    cursor:pointer;
+    transition:opacity .15s, transform .1s;
+    margin-top:14px;
+  }
+  .process-btn:hover{opacity:0.88;}
+  .process-btn:active{transform:scale(0.99);}
+  .process-btn:disabled{
+    background:var(--line2);
+    color:var(--dim);
+    cursor:not-allowed;
+    opacity:1;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-wrap{
+    display:none;
+    margin-top:14px;
+  }
+  .progress-wrap.visible{display:block;}
+  .progress-label{
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    margin-bottom:7px;
+    letter-spacing:0.06em;
+  }
+  .progress-track{
+    height:3px;
+    background:var(--line2);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--teal);
+    border-radius:2px;
+    width:0%;
+    transition:width .3s ease;
+  }
+
+  /* ── DOWNLOAD RESULT ── */
+  .download-card{
+    display:none;
+    padding:16px;
+    background:rgba(61,201,194,0.06);
+    border:1px solid rgba(61,201,194,0.3);
+    border-radius:3px;
+    margin-top:14px;
+  }
+  .download-card.visible{display:block;}
+  .download-head{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  .download-meta{
+    display:flex;
+    gap:20px;
+    margin-bottom:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--dim);
+  }
+  .download-meta b{color:var(--text);}
+  .download-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    background:var(--teal);
+    color:#0A0A0B;
+    text-decoration:none;
+    border-radius:3px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+  }
+
+  /* ── WAVEFORM ── */
+  .scrub-wrap{
+    position:relative;
+    overflow:hidden;
+    margin-bottom:12px;
+    border-radius:3px;
+    background:#0d0d0f;
+    cursor:col-resize;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:none;
+  }
+  .scrub-wrap.active{ cursor:grabbing; }
+  #waveformCanvas{
+    width:100%;
+    height:60px;
+    display:block;
+  }
+  .scrub-playhead{
+    position:absolute;
+    top:0; bottom:0;
+    width:1px;
+    background:rgba(255,255,255,0.8);
+    pointer-events:none;
+    left:0;
+    opacity:0;
+    box-shadow:0 0 5px rgba(255,255,255,0.25);
+    transition:opacity 0.1s;
+  }
+  .scrub-dot{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:6px; height:6px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 0 4px rgba(255,255,255,0.5);
+  }
+  .scrub-hint{
+    position:absolute;
+    bottom:4px; right:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:8px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.18);
+    pointer-events:none;
+  }
+
+  /* ── ERROR ── */
+  .error-msg{
+    display:none;
+    padding:10px 12px;
+    background:rgba(232,93,93,0.08);
+    border:1px solid rgba(232,93,93,0.3);
+    border-radius:3px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--danger);
+    margin-top:10px;
+  }
+  .error-msg.visible{display:block;}
+
+  .divider{height:1px; background:var(--line); margin:14px 0;}
+
+  @media(max-width:480px){
+    .row{grid-template-columns:1fr;}
+    .row-3{grid-template-columns:1fr 1fr;}
+    .fi-grid{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">VARI<span>SPEED</span> <span style="color:var(--dim);font-weight:400;font-size:14px;">PROCESSOR</span></div>
+  <div class="sub-brand">PITCH · LOCK OFF</div>
+</header>
+
+<!-- STEP 1: FILE -->
+<div class="card">
+  <div class="card-head">
+    <span><span class="step">01</span>&nbsp; LOAD AUDIO</span>
+    <span id="fileStatus">NO FILE LOADED</span>
+  </div>
+  <div class="card-body">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="audio/*">
+      <div class="drop-icon">⌁</div>
+      <div class="drop-label"><strong>Drop audio file here</strong> or click to browse<br>WAV · MP3 · AIFF · AAC · FLAC · OGG</div>
+    </div>
+    <div class="file-info" id="fileInfo">
+      <div class="fi-name" id="fiName">—</div>
+      <div class="scrub-wrap" id="scrubWrap">
+      <canvas id="waveformCanvas"></canvas>
+      <div class="scrub-playhead" id="scrubPlayhead"><div class="scrub-dot"></div></div>
+      <div class="scrub-hint">Drag to scrub</div>
+    </div>
+      <div class="fi-grid">
+        <div class="fi-item"><label>Duration</label><span id="fiDur">—</span></div>
+        <div class="fi-item"><label>Sample Rate</label><span id="fiSr">—</span></div>
+        <div class="fi-item"><label>Channels</label><span id="fiCh">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2: SOURCE KEY/BPM -->
+<div class="card">
+  <div class="card-head">
+    <span><span class="step">02</span>&nbsp; ORIGINAL KEY &amp; TEMPO</span>
+    <span id="origCamelot">—</span>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="field">
+        <label>Original BPM</label>
+        <input type="number" id="origBpm" value="128" min="20" max="300" step="0.1">
+      </div>
+      <div class="field">
+        <label>Original Key</label>
+        <select id="origKey"></select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: MODE + TARGET -->
+<div class="card">
+  <div class="card-head">
+    <span><span class="step">03</span>&nbsp; SHIFT AMOUNT</span>
+    <span id="ratioReadout">RATIO 1.0000</span>
+  </div>
+  <div class="card-body">
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="varispeed">VARISPEED</button>
+      <button class="mode-tab" data-mode="bpm">TARGET BPM</button>
+      <button class="mode-tab" data-mode="key">TARGET KEY</button>
+    </div>
+
+    <div class="mode-desc" id="modeDesc">
+      <b>Varispeed:</b> drag the slider — pitch and tempo shift together, exactly as a turntable or tape speed change would produce. The ratio you set here is what gets applied to the file.
+    </div>
+
+    <!-- Varispeed slider (default) -->
+    <div id="panelVarispeed" class="panel">
+      <div class="slider-wrap">
+        <div class="slider-head">
+          <span class="slider-pct" id="pctDisp">+0.0%</span>
+          <span class="slider-side">new tempo <b id="newBpmDisp">128.0</b> BPM</span>
+        </div>
+        <input type="range" id="mainSlider" min="-50" max="50" value="0" step="0.1">
+        <div class="ticks"><span>−50%</span><span>−25%</span><span>0</span><span>+25%</span><span>+50%</span></div>
+      </div>
+    </div>
+
+    <!-- Target BPM input -->
+    <div id="panelBpm" class="panel" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label>Target BPM</label>
+          <input type="number" id="targetBpmInp" placeholder="e.g. 140" min="1" step="0.1">
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);padding-bottom:11px;line-height:1.6;">
+            Ratio will be computed<br>automatically.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target Key select -->
+    <div id="panelKey" class="panel" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label>Target Key</label>
+          <select id="targetKeyInp">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);padding-bottom:11px;line-height:1.6;">
+            Nearest semitone path<br>is used.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result readout -->
+    <div class="result-bar">
+      <div class="rb-col">
+        <label>Original</label>
+        <div class="rb-val" id="rbOrig">128 BPM</div>
+      </div>
+      <div class="rb-arrow">→</div>
+      <div class="rb-col">
+        <label>New</label>
+        <div class="rb-val changed" id="rbNew">128 BPM</div>
+      </div>
+    </div>
+    <div class="cents-note" id="centsNote">±0.00 st &nbsp;·&nbsp; exact semitone</div>
+
+    <div class="camelot-row">
+      <span>CAMELOT</span>
+      <div class="codes">
+        <b id="camOrig">8A</b>
+        <span class="arrow">→</span>
+        <span class="new-code" id="camNew">8A</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STEP 4: PROCESS -->
+<div class="card">
+  <div class="card-head">
+    <span><span class="step">04</span>&nbsp; PROCESS &amp; EXPORT</span>
+    <span id="exportFormat">WAV · 16-BIT PCM</span>
+  </div>
+  <div class="card-body">
+    <div class="field" style="margin-bottom:0;">
+      <label>Output filename</label>
+      <input type="text" id="outFilename" placeholder="varispeed_output" style="margin-bottom:0;">
+    </div>
+
+    <button class="process-btn" id="processBtn" disabled>LOAD A FILE TO BEGIN</button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Rendering…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="download-card" id="downloadCard">
+      <div class="download-head">✓ PROCESSING COMPLETE</div>
+      <div class="download-meta">
+        <span>Duration <b id="dlDur">—</b></span>
+        <span>Size <b id="dlSize">—</b></span>
+        <span>Rate <b id="dlRate">—</b></span>
+      </div>
+      <a class="download-btn" id="downloadLink" href="#" download>↓ &nbsp;Download WAV</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const KEYS = [
+  "C maj","C# maj","D maj","D# maj","E maj","F maj",
+  "F# maj","G maj","G# maj","A maj","A# maj","B maj",
+  "C min","C# min","D min","D# min","E min","F min",
+  "F# min","G min","G# min","A min","A# min","B min"
+];
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const MAJOR_CAMELOT = [8,3,10,5,12,7,2,9,4,11,6,1];
+const MINOR_CAMELOT = [5,12,7,2,9,4,11,6,1,8,3,10];
+
+const MODES = {
+  varispeed:{
+    label:"VARISPEED",
+    desc:"<b>Varispeed:</b> drag the slider — pitch and tempo shift together, exactly as a turntable or tape speed change would produce. The ratio you set here is what gets applied to the file."
+  },
+  bpm:{
+    label:"TARGET BPM",
+    desc:"<b>Target BPM:</b> enter the BPM you want the output to be at. The ratio that gets the original tempo there is computed automatically and applied to pitch and tempo together."
+  },
+  key:{
+    label:"TARGET KEY",
+    desc:"<b>Target Key:</b> pick the key you want. The nearest semitone path is used to find the ratio. Pitch and tempo shift together — the output BPM will reflect that shift."
+  }
+};
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let audioBuffer = null;
+let currentRatio = 1;
+let currentMode = 'varispeed';
+let originalFilename = '';
+
+// Persistent AudioContext for scrubbing (never closed after file load)
+let scrubCtx = null;
+function getScrubCtx(){
+  if(!scrubCtx) scrubCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(scrubCtx.state === 'suspended') scrubCtx.resume();
+  return scrubCtx;
+}
+
+// Scrub grain state
+let scrubNode = null;
+let scrubGain = null;
+let lastGrainCtxTime = 0;
+let lastGrainPos = -1;
+
+// ─── POPULATE DROPDOWNS ──────────────────────────────────────────────────────
+const origKeySel = document.getElementById('origKey');
+KEYS.forEach((k, i) => {
+  const o = document.createElement('option');
+  o.value = i; o.textContent = k;
+  if(k === "A min") o.selected = true;
+  origKeySel.appendChild(o);
+});
+
+function populateTargetKeyDrop(){
+  const origIdx = parseInt(origKeySel.value);
+  const isMinor = origIdx >= 12;
+  const baseIdx = origIdx % 12;
+  const cur = targetKeyInp.value;
+  targetKeyInp.innerHTML = '<option value="">— select —</option>';
+  for(let n = 0; n < 12; n++){
+    const o = document.createElement('option');
+    o.value = n;
+    const cam = camelotCode(n, isMinor);
+    o.textContent = NOTES[n] + (isMinor ? " min" : " maj") + "   ·   " + cam;
+    if(n === baseIdx) o.disabled = true;
+    targetKeyInp.appendChild(o);
+  }
+  targetKeyInp.value = cur && cur !== String(baseIdx) ? cur : "";
+}
+
+function camelotCode(pitchClass, isMinor){
+  const pc = ((pitchClass % 12) + 12) % 12;
+  return (isMinor ? MINOR_CAMELOT[pc] : MAJOR_CAMELOT[pc]) + (isMinor ? "A" : "B");
+}
+
+// ─── DRAG & DROP / FILE LOAD ─────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file){
+  originalFilename = file.name.replace(/\.[^.]+$/, '');
+  document.getElementById('outFilename').value = originalFilename + '_varispeed';
+  setError('');
+  hideDownload();
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Use persistent scrub context so we can play grains later
+    const ctx = getScrubCtx();
+    ctx.decodeAudioData(e.target.result.slice(0), buf => {
+      audioBuffer = buf;
+      showFileInfo(file, buf);
+      drawWaveform(buf);
+      enableProcess();
+    }, err => {
+      setError('Could not decode audio. Make sure the file is a valid audio format.');
+      console.error(err);
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showFileInfo(file, buf){
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('fileInfo').classList.add('visible');
+  document.getElementById('fileStatus').textContent = 'FILE LOADED';
+  document.getElementById('fiName').textContent = file.name;
+  document.getElementById('fiDur').textContent = formatDuration(buf.duration);
+  document.getElementById('fiSr').textContent = (buf.sampleRate / 1000).toFixed(1) + ' kHz';
+  document.getElementById('fiCh').textContent = buf.numberOfChannels === 1 ? 'Mono' : buf.numberOfChannels === 2 ? 'Stereo' : buf.numberOfChannels + 'ch';
+}
+
+function formatDuration(secs){
+  const m = Math.floor(secs / 60), s = Math.floor(secs % 60);
+  return m + ':' + String(s).padStart(2,'0') + '.' + String(Math.floor((secs % 1) * 10));
+}
+
+function drawWaveform(buf){
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth * window.devicePixelRatio;
+  const H = canvas.offsetHeight * window.devicePixelRatio;
+  canvas.width = W; canvas.height = H;
+  const data = buf.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+  const mid = H / 2;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#2a2a30';
+  for(let x = 0; x < W; x++){
+    let min = 1, max = -1;
+    for(let j = 0; j < step; j++){
+      const v = data[x * step + j] || 0;
+      if(v < min) min = v; if(v > max) max = v;
+    }
+    const y1 = mid + min * mid * 0.92;
+    const y2 = mid + max * mid * 0.92;
+    ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+  }
+  // teal centre line
+  ctx.fillStyle = 'rgba(61,201,194,0.25)';
+  ctx.fillRect(0, mid - 0.5, W, 1);
+}
+
+// ─── SCRUB ───────────────────────────────────────────────────────────────────
+const scrubWrap = document.getElementById('scrubWrap');
+const scrubPlayhead = document.getElementById('scrubPlayhead');
+
+scrubWrap.addEventListener('pointerdown', e => {
+  if(!audioBuffer) return;
+  e.preventDefault();
+  scrubWrap.setPointerCapture(e.pointerId);
+  scrubWrap.classList.add('active');
+  scrubPlayhead.style.opacity = '1';
+  moveScrub(e);
+});
+
+scrubWrap.addEventListener('pointermove', e => {
+  if(!scrubWrap.hasPointerCapture(e.pointerId)) return;
+  e.preventDefault();
+  moveScrub(e);
+});
+
+scrubWrap.addEventListener('pointerup', endScrub);
+scrubWrap.addEventListener('pointercancel', endScrub);
+
+function moveScrub(e){
+  const rect = scrubWrap.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const pos = ratio * audioBuffer.duration;
+  // Move playhead line
+  scrubPlayhead.style.left = (ratio * scrubWrap.offsetWidth) + 'px';
+  playScrubGrain(pos);
+}
+
+function endScrub(){
+  scrubWrap.classList.remove('active');
+  fadeScrubGrain();
+  // Keep playhead visible briefly then fade
+  setTimeout(() => { scrubPlayhead.style.opacity = '0'; }, 600);
+}
+
+function playScrubGrain(pos){
+  const ctx = getScrubCtx();
+  const now = ctx.currentTime;
+  // Throttle: max one grain per 65ms, and only if position moved > 40ms
+  if(now - lastGrainCtxTime < 0.065 && Math.abs(pos - lastGrainPos) < 0.04) return;
+
+  fadeScrubGrain();
+
+  const GRAIN = 0.13;
+  const FADE  = 0.014;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(0.88, now + FADE);
+  gain.gain.setValueAtTime(0.88, now + GRAIN - FADE);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + GRAIN);
+  gain.connect(ctx.destination);
+
+  const src = ctx.createBufferSource();
+  src.buffer = audioBuffer;
+  src.connect(gain);
+  const safePos = Math.max(0, Math.min(pos, audioBuffer.duration - GRAIN));
+  src.start(now, safePos, GRAIN);
+  src.onended = () => { try{ gain.disconnect(); }catch(_){} };
+
+  scrubNode = src;
+  scrubGain = gain;
+  lastGrainCtxTime = now;
+  lastGrainPos = pos;
+}
+
+function fadeScrubGrain(){
+  if(!scrubGain) return;
+  const ctx = getScrubCtx();
+  const g = scrubGain, n = scrubNode;
+  try{
+    g.gain.cancelScheduledValues(ctx.currentTime);
+    g.gain.setValueAtTime(g.gain.value, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+  }catch(_){}
+  setTimeout(() => { try{ n.stop(); g.disconnect(); }catch(_){} }, 35);
+  scrubNode = null;
+  scrubGain = null;
+}
+
+function enableProcess(){
+  const btn = document.getElementById('processBtn');
+  btn.disabled = false;
+  btn.textContent = 'PROCESS FILE';
+}
+
+// ─── MODE TABS ───────────────────────────────────────────────────────────────
+const targetKeyInp = document.getElementById('targetKeyInp');
+
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentMode = tab.dataset.mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.getElementById('panelVarispeed').style.display = currentMode === 'varispeed' ? '' : 'none';
+    document.getElementById('panelBpm').style.display = currentMode === 'bpm' ? '' : 'none';
+    document.getElementById('panelKey').style.display = currentMode === 'key' ? '' : 'none';
+    document.getElementById('modeDesc').innerHTML = MODES[currentMode].desc;
+    update();
+  });
+});
+
+// ─── CORE CALCULATION ────────────────────────────────────────────────────────
+const mainSlider = document.getElementById('mainSlider');
+const origBpmInp = document.getElementById('origBpm');
+
+function update(){
+  const origBpm = parseFloat(origBpmInp.value) || 128;
+  const origIdx = parseInt(origKeySel.value);
+  const isMinor = origIdx >= 12;
+  const baseIdx = origIdx % 12;
+
+  let ratio = 1;
+
+  if(currentMode === 'varispeed'){
+    const pct = parseFloat(mainSlider.value);
+    ratio = 1 + pct / 100;
+  } else if(currentMode === 'bpm'){
+    const tBpm = parseFloat(document.getElementById('targetBpmInp').value);
+    if(tBpm > 0 && origBpm > 0) ratio = tBpm / origBpm;
+  } else if(currentMode === 'key'){
+    const tBase = parseInt(targetKeyInp.value);
+    if(!isNaN(tBase)){
+      const diff = ((tBase - baseIdx + 6) % 12 + 12) % 12 - 6;
+      ratio = Math.pow(2, diff / 12);
+    }
+  }
+
+  ratio = Math.max(0.25, Math.min(4, ratio));
+  currentRatio = ratio;
+
+  const pct = (ratio - 1) * 100;
+  const newBpm = origBpm * ratio;
+  const semitones = 12 * Math.log2(ratio);
+  const roundedSt = Math.round(semitones);
+  const cents = Math.round((semitones - roundedSt) * 100);
+  const newPitchClass = ((baseIdx + roundedSt) % 12 + 12) % 12;
+
+  // sync slider if other modes changed the ratio
+  if(currentMode !== 'varispeed'){
+    const clampedPct = Math.max(-50, Math.min(50, pct));
+    mainSlider.value = clampedPct;
+  }
+
+  // pct display
+  const pctEl = document.getElementById('pctDisp');
+  pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  pctEl.className = 'slider-pct ' + (pct > 0.05 ? 'pos' : pct < -0.05 ? 'neg' : '');
+  document.getElementById('newBpmDisp').textContent = newBpm.toFixed(1);
+  document.getElementById('ratioReadout').textContent = 'RATIO ' + ratio.toFixed(4);
+
+  // result bar
+  document.getElementById('rbOrig').textContent = origBpm.toFixed(1) + ' BPM · ' + NOTES[baseIdx] + (isMinor ? ' min' : ' maj');
+  const newKeyStr = NOTES[newPitchClass] + (isMinor ? ' min' : ' maj');
+  document.getElementById('rbNew').textContent = newBpm.toFixed(1) + ' BPM · ' + newKeyStr;
+
+  // cents note
+  const stStr = (semitones >= 0 ? '+' : '') + semitones.toFixed(2) + ' st';
+  const centStr = cents === 0 ? 'exact semitone' : (cents > 0 ? '+' : '') + cents + '¢ off nearest';
+  document.getElementById('centsNote').innerHTML = stStr + ' &nbsp;·&nbsp; ' + centStr;
+
+  // Camelot
+  const origCam = camelotCode(baseIdx, isMinor);
+  const newCam = camelotCode(newPitchClass, isMinor);
+  document.getElementById('origCamelot').textContent = origCam;
+  document.getElementById('camOrig').textContent = origCam;
+  document.getElementById('camNew').textContent = newCam;
+  document.getElementById('camNew').style.color = newCam !== origCam ? 'var(--teal)' : 'var(--dim)';
+}
+
+mainSlider.addEventListener('input', update);
+origBpmInp.addEventListener('input', update);
+origKeySel.addEventListener('change', () => { populateTargetKeyDrop(); update(); });
+document.getElementById('targetBpmInp').addEventListener('input', update);
+targetKeyInp.addEventListener('change', update);
+
+// ─── WAV ENCODER ─────────────────────────────────────────────────────────────
+function audioBufferToWav(buffer){
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numFrames = buffer.length;
+  const dataSize = numFrames * numChannels * 2; // 16-bit
+  const ab = new ArrayBuffer(44 + dataSize);
+  const v = new DataView(ab);
+  const ws = (off, s) => { for(let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4, 36 + dataSize, true);
+  ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true);
+  v.setUint16(22,numChannels,true); v.setUint32(24,sampleRate,true);
+  v.setUint32(28,sampleRate*numChannels*2,true); v.setUint16(32,numChannels*2,true);
+  v.setUint16(34,16,true); ws(36,'data'); v.setUint32(40,dataSize,true);
+  let offset = 44;
+  for(let i = 0; i < numFrames; i++){
+    for(let ch = 0; ch < numChannels; ch++){
+      const s = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+      v.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      offset += 2;
+    }
+  }
+  return new Blob([ab], { type:'audio/wav' });
+}
+
+function formatBytes(b){ return b < 1024*1024 ? (b/1024).toFixed(0)+' KB' : (b/(1024*1024)).toFixed(1)+' MB'; }
+
+// ─── PROCESS ─────────────────────────────────────────────────────────────────
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if(!audioBuffer || currentRatio === 1) {
+    if(currentRatio === 1){
+      setError('Ratio is 1.0 — no shift applied. Move the slider or set a different target.');
+      return;
+    }
+    return;
+  }
+  setError('');
+  hideDownload();
+
+  const btn = document.getElementById('processBtn');
+  btn.disabled = true;
+  btn.textContent = 'PROCESSING…';
+
+  const progressWrap = document.getElementById('progressWrap');
+  progressWrap.classList.add('visible');
+  setProgress(0, 'Preparing audio context…');
+
+  try {
+    const ratio = currentRatio;
+    const srcSr = audioBuffer.sampleRate;
+    const srcLen = audioBuffer.length;
+    const numCh = audioBuffer.numberOfChannels;
+
+    // New duration = original / ratio (same samples, played back faster/slower)
+    // We render into an OfflineAudioContext at original sample rate,
+    // with the source node's playbackRate set to `ratio`.
+    // The output will have srcLen / ratio frames — the resampled audio.
+    const outLen = Math.round(srcLen / ratio);
+    const offlineCtx = new OfflineAudioContext(numCh, outLen, srcSr);
+
+    setProgress(10, 'Building render graph…');
+    await tick();
+
+    const src = offlineCtx.createBufferSource();
+    src.buffer = audioBuffer;
+    src.playbackRate.value = ratio;
+    src.connect(offlineCtx.destination);
+    src.start(0);
+
+    setProgress(20, 'Rendering…');
+    await tick();
+
+    const rendered = await offlineCtx.startRendering();
+
+    setProgress(80, 'Encoding WAV…');
+    await tick();
+
+    const blob = audioBufferToWav(rendered);
+
+    setProgress(95, 'Finalising…');
+    await tick();
+
+    const url = URL.createObjectURL(blob);
+    const fname = (document.getElementById('outFilename').value || 'varispeed_output').replace(/\.wav$/i,'') + '.wav';
+    const dlLink = document.getElementById('downloadLink');
+    dlLink.href = url;
+    dlLink.download = fname;
+
+    document.getElementById('dlDur').textContent = formatDuration(rendered.duration);
+    document.getElementById('dlSize').textContent = formatBytes(blob.size);
+    document.getElementById('dlRate').textContent = (srcSr / 1000).toFixed(1) + ' kHz';
+
+    setProgress(100, 'Done');
+    await tick();
+
+    document.getElementById('downloadCard').classList.add('visible');
+    progressWrap.classList.remove('visible');
+
+  } catch(err){
+    setError('Processing failed: ' + err.message);
+    console.error(err);
+    progressWrap.classList.remove('visible');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'PROCESS FILE';
+});
+
+function tick(){ return new Promise(r => setTimeout(r, 0)); }
+
+function setProgress(pct, label){
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function setError(msg){
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.toggle('visible', !!msg);
+}
+
+function hideDownload(){
+  document.getElementById('downloadCard').classList.remove('visible');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+populateTargetKeyDrop();
+update();
+</script>
+</body>
+</html>

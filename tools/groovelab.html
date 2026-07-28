@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GROOVE LAB — Rhythm Pattern Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0A0B;
+    --bg-panel: #131316;
+    --bg-panel-2: #1B1B20;
+    --line: #2A2A30;
+    --text: #EDEDF0;
+    --text-dim: #8C8C96;
+    --kick: #FF3D6E;
+    --snare: #3DC9C2;
+    --hat: #E8A33D;
+    --violet: #8B5FBF;
+    --disp: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --body: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--violet);color:#fff;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 80px;}
+
+  /* ---------- Header ---------- */
+  header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:18px;}
+  .brand h1{font-family:var(--disp);font-weight:700;font-size:clamp(28px,5vw,42px);margin:0;letter-spacing:-0.02em;line-height:1;
+    background:linear-gradient(90deg,var(--kick),var(--hat) 50%,var(--snare));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .brand p{margin:6px 0 0;color:var(--text-dim);font-size:13.5px;max-width:520px;line-height:1.5;}
+  .brand .tag{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;}
+
+  /* ---------- Transport ---------- */
+  .transport{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  #playBtn{
+    width:56px;height:56px;border-radius:50%;border:2px solid var(--hat);background:radial-gradient(circle at 35% 30%, #2a2010, var(--bg-panel));
+    color:var(--hat);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0px var(--hat);transition:box-shadow .2s ease, transform .1s ease;
+  }
+  #playBtn:hover{box-shadow:0 0 18px rgba(232,163,61,0.55);}
+  #playBtn:active{transform:scale(0.94);}
+  #playBtn.playing{color:var(--kick);border-color:var(--kick);box-shadow:0 0 18px rgba(255,61,110,0.55);}
+
+  .tempo-box{display:flex;flex-direction:column;gap:2px;min-width:140px;}
+  .tempo-box label{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;display:flex;justify-content:space-between;}
+  .tempo-box output{color:var(--hat);}
+  input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--line);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--hat);cursor:pointer;box-shadow:0 0 8px rgba(232,163,61,0.7);}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--hat);border:none;cursor:pointer;box-shadow:0 0 8px rgba(232,163,61,0.7);}
+
+  .ghost-btn{background:none;border:1px solid var(--line);color:var(--text-dim);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;
+    padding:9px 14px;border-radius:8px;cursor:pointer;transition:all .15s ease;}
+  .ghost-btn:hover{border-color:var(--text-dim);color:var(--text);}
+
+  /* ---------- Sequencer ---------- */
+  .sequencer{background:var(--bg-panel);border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:22px;}
+  .seq-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .seq-head h2{font-family:var(--disp);font-size:15px;margin:0;letter-spacing:0.02em;}
+  .seq-head .now-playing{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
+  .now-playing b{color:var(--text);font-weight:500;}
+
+  .beat-markers{display:grid;grid-template-columns:74px repeat(16,1fr);gap:5px;margin-bottom:4px;}
+  .beat-markers span{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);text-align:center;grid-column:span 4;}
+
+  .track-row{display:grid;grid-template-columns:74px repeat(16,1fr);gap:5px;align-items:center;margin-bottom:6px;}
+  .track-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:6px;}
+  .track-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+  .pad{
+    aspect-ratio:1/1; width:100%; border-radius:6px; border:1px solid var(--line);
+    background:var(--bg-panel-2); cursor:pointer; position:relative; transition:transform .06s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .pad:hover{transform:translateY(-1px);}
+  .pad.beat-start{border-left:1px solid #3a3a42;}
+  .pad.playhead{outline:2px solid rgba(255,255,255,0.35);}
+
+  .pad.on.kick{background:var(--kick);box-shadow:0 0 12px rgba(255,61,110,0.75), inset 0 0 8px rgba(255,255,255,0.25);}
+  .pad.on.snare{background:var(--snare);box-shadow:0 0 12px rgba(61,201,194,0.75), inset 0 0 8px rgba(255,255,255,0.25);}
+  .pad.on.hat{background:var(--hat);box-shadow:0 0 12px rgba(232,163,61,0.75), inset 0 0 8px rgba(255,255,255,0.25);}
+  .pad.on.ghost{opacity:0.55;}
+
+  .pad.playhead.on{filter:brightness(1.35);}
+  .pad.playhead:not(.on){background:#26262c;}
+
+  .seq-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+
+  /* ---------- Genre picker ---------- */
+  .section-title{font-family:var(--disp);font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:10px;}
+  .section-title .count{font-family:var(--mono);font-size:11px;color:var(--text-dim);font-weight:400;}
+
+  .family-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .fchip{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;padding:7px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s ease;}
+  .fchip.active{color:var(--bg);font-weight:600;}
+
+  .groove-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:28px;}
+
+  .groove-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:12px; padding:14px; cursor:pointer;
+    transition:border-color .15s ease, transform .1s ease; position:relative; overflow:hidden;
+  }
+  .groove-card:hover{transform:translateY(-2px);}
+  .groove-card.active{border-color:var(--fam-color, var(--hat));box-shadow:0 0 0 1px var(--fam-color, var(--hat)), 0 0 18px rgba(232,163,61,0.25);}
+  .groove-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--fam-color,#555);}
+  .gc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .gc-name{font-family:var(--disp);font-weight:600;font-size:15px;line-height:1.2;}
+  .gc-bpm{font-family:var(--mono);font-size:10px;color:var(--fam-color,var(--hat));border:1px solid var(--fam-color,var(--hat));border-radius:4px;padding:2px 6px;white-space:nowrap;}
+  .gc-origin{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
+  .gc-desc{font-size:12px;color:var(--text-dim);line-height:1.5;}
+
+  /* ---------- Info panel ---------- */
+  .info-panel{background:var(--bg-panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:10px;}
+  .info-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px;}
+  .info-top h3{font-family:var(--disp);font-size:24px;margin:0 0 4px;}
+  .info-fam{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--info-color,var(--hat));}
+  .info-stats{display:flex;gap:18px;flex-wrap:wrap;}
+  .stat{font-family:var(--mono);}
+  .stat span{display:block;font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
+  .stat b{font-size:16px;color:var(--text);font-weight:500;}
+  .info-body{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;}
+  .info-body h4{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin:0 0 6px;}
+  .info-body p{font-size:13.5px;line-height:1.65;margin:0 0 16px;color:#D8D8DC;}
+  @media (max-width:720px){.info-body{grid-template-columns:1fr;}}
+
+  footer{text-align:center;color:var(--text-dim);font-family:var(--mono);font-size:10.5px;margin-top:30px;letter-spacing:0.03em;}
+
+  @media (max-width:640px){
+    .beat-markers,.track-row{grid-template-columns:44px repeat(16,1fr);gap:3px;}
+    .track-label{font-size:9px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <p class="tag">Groove Lab · Rhythm Pattern Explorer</p>
+      <h1>GROOVE LAB</h1>
+      <p>A working database of kick / snare / hi-hat &amp; shaker combinations pulled from real drumming traditions — tap a pattern to hear it, see where it came from, and reshape it into something new.</p>
+    </div>
+    <div class="transport">
+      <button id="playBtn" title="Play / Pause">▶</button>
+      <div class="tempo-box">
+        <label>Tempo <output id="bpmOut">96</output> BPM</label>
+        <input type="range" id="bpmSlider" min="60" max="160" value="96">
+      </div>
+      <div class="tempo-box">
+        <label>Swing <output id="swingOut">0</output>%</label>
+        <input type="range" id="swingSlider" min="0" max="60" value="0">
+      </div>
+      <button class="ghost-btn" id="clearBtn">Clear</button>
+      <button class="ghost-btn" id="shuffleBtn">Shuffle ⚄</button>
+    </div>
+  </header>
+
+  <div class="sequencer">
+    <div class="seq-head">
+      <h2>Step Sequencer</h2>
+      <div class="now-playing">Now loaded: <b id="loadedName">Boom Bap</b></div>
+    </div>
+    <div class="beat-markers">
+      <span></span>
+      <span>1</span><span>2</span><span>3</span><span>4</span>
+    </div>
+    <div id="grid"></div>
+    <div class="seq-actions">
+      <span class="tag" style="align-self:center;">Tap any pad to build your own combination — every cell is fair game.</span>
+    </div>
+  </div>
+
+  <h2 class="section-title">Groove Database <span class="count" id="dbCount"></span></h2>
+  <div class="family-filters" id="familyFilters"></div>
+  <div class="groove-grid" id="grooveGrid"></div>
+
+  <h2 class="section-title">About this groove</h2>
+  <div class="info-panel" id="infoPanel"></div>
+
+  <footer>Built with Web Audio synthesis — no samples, no build step. Patterns are simplified 16-step approximations of much deeper rhythmic traditions — a starting point for your ears, not a transcription.</footer>
+</div>
+
+<script>
+/* ============================================================
+   GROOVE DATABASE
+   Every pattern is a 16-step array (16th notes, one bar of 4/4).
+   Values: 0 = off, 1 = full hit, 0.5-0.7 = ghost / soft accent.
+   These are educational simplifications of grooves that in their
+   original forms often live in swing, triplet, or multi-bar feels.
+============================================================ */
+const FAMILIES = {
+  hiphop:  { label: 'Hip-Hop & Trap',      color: '#FF3D6E' },
+  carib:   { label: 'Caribbean',           color: '#2ED9A0' },
+  african: { label: 'African',             color: '#E8A33D' },
+  dance:   { label: 'Dance & Disco',       color: '#8B5FBF' },
+  funk:    { label: 'Funk & Soul',         color: '#FF7A3D' },
+  global:  { label: 'Latin & Global',      color: '#3DAEE8' },
+};
+
+const GROOVES = [
+{
+  id:'boombap', name:'Boom Bap', family:'hiphop', bpm:92, era:'1990s', origin:'New York, USA',
+  kick:  [1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'The backbone of golden-age East Coast hip-hop: a hard sampled kick and a snappy acoustic snare hitting the backbeat, with 8th-note hats holding it together. The "boom" is the kick, the "bap" is the snare.',
+  history:'Built on Akai MPC and SP-1200 samplers by producers digging through funk and jazz breaks. DJ Premier, Pete Rock, J Dilla and 9th Wonder each put their own swing on this same basic shape — Dilla in particular pushed the timing loose and "drunk" for feel.',
+  modern:'Still the foundation of lo-fi hip-hop and any "boom bap revival" beat. J. Cole and modern East Coast rap keep the swing and sample-chop DNA alive.',
+  short:'Kick-kick-snare with steady 8th-note hats and heavy MPC-style swing.'
+},
+{
+  id:'trap', name:'Trap', family:'hiphop', bpm:140, era:'Late 2000s–2010s', origin:'Atlanta, USA',
+  kick:  [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0.5,0.5,1,1,0.5,0.5,1,1,0.5,0.5,1,1,1,1,1],
+  desc:'Sub-heavy 808 kicks with a clap on the backbeat, and hi-hats that skitter between 8th, 16th, and 32nd-note rolls — that hi-hat rhythm is the genre\'s real signature, not the kick.',
+  history:'Pioneered by producers like Lex Luger, Shawty Redd, and later Metro Boomin and Southside, trap grew out of Atlanta hip-hop in the 2000s and took its name from "trap houses." The Roland TR-808\'s booming, tunable kick became its bassline.',
+  modern:'Trap hi-hat programming is now the default rhythmic language of mainstream pop, R&B, and even rock production worldwide.',
+  short:'808 kick + clap backbeat under fast, rolling hi-hat subdivisions.'
+},
+{
+  id:'drill', name:'Drill', family:'hiphop', bpm:140, era:'2010s–present', origin:'Chicago, USA → London, UK',
+  kick:  [1,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0],
+  snare: [0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0],
+  hat:   [1,0,1,0.5,1,0,1,0.5,1,0,1,0.5,1,0,1,0.5],
+  desc:'A sliding, pitch-bent 808 kick pattern with the snare deliberately pushed off the expected backbeat, and triplet-leaning hi-hats that give it a menacing swagger.',
+  history:'Emerged from Chicago drill (Chief Keef, early 2010s), then was transformed in South London by producers who added sparse, minor-key melodies and swung hi-hats to create UK drill.',
+  modern:'Now a global sound with distinct Brooklyn, Ghanaian, Nigerian, and Irish drill scenes, each bending the same sliding-808 template.',
+  short:'Sliding 808s, off-grid snare, triplet hi-hat swagger.'
+},
+{
+  id:'onedrop', name:'One Drop', family:'carib', bpm:75, era:'Late 1960s–70s', origin:'Kingston, Jamaica',
+  kick:  [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  snare: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  hat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+  desc:'Beat one is deliberately silent — the kick and snare land together only on beat three, "dropping" the expected downbeat entirely. It creates reggae\'s spacious, unhurried lope.',
+  history:'Popularized by Carlton Barrett, drummer for Bob Marley & The Wailers, though its true originator is disputed among Barrett, his brother Aston, and Winston Grennan. Rooted in earlier Nyabinghi and burru drumming traditions.',
+  modern:'Heard on nearly every classic roots reggae record, and still the reference point any reggae-influenced pop or dub production reaches for.',
+  short:'Kick + snare land together only on beat 3 — beat 1 stays empty.'
+},
+{
+  id:'steppers', name:'Steppers', family:'carib', bpm:90, era:'Late 1970s–80s', origin:'Kingston, Jamaica',
+  kick:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+  desc:'The "four-on-the-floor" of reggae — the one drop\'s empty beat 1 is filled back in, giving a driving, dancefloor-ready pulse under the same offbeat skank feel.',
+  history:'Developed as reggae and dub moved toward heavier sound-system culture in the late 70s and 80s, giving DJs a harder, more relentless rhythm to work with.',
+  modern:'A direct ancestor of dub and modern bass music\'s insistence on a constant low-end pulse.',
+  short:'One drop\'s cousin — kick now hits every beat, driving and steady.'
+},
+{
+  id:'dembow', name:'Dembow (Reggaetón)', family:'carib', bpm:95, era:'1990s–present', origin:'Jamaica → Panama → Puerto Rico',
+  kick:  [1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0],
+  snare: [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'The instantly recognizable "boom-ch-boom-chick" — a syncopated tresillo kick pattern locked against a doubled snare hit, built for movement above everything else.',
+  history:'Descended from a riddim by Jamaican duo Steely & Clevie, voiced by Shabba Ranks on "Dem Bow" (1990). Panamanian and then Puerto Rican producers adapted it through the 90s into what became reggaetón.',
+  modern:'Estimated to underpin the vast majority of reggaetón and Latin urban records ever made — from "Gasolina" to "Despacito" and beyond.',
+  short:'Boom-ch-boom-chick — the tresillo kick that built modern Latin pop.'
+},
+{
+  id:'afrobeat', name:'Afrobeat', family:'african', bpm:105, era:'1970s', origin:'Lagos, Nigeria',
+  kick:  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+  snare: [0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0],
+  hat:   [1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6],
+  desc:'A hypnotic, horn-driven groove that leaves deliberate space in the kick and snare so interlocking guitar, keys, and percussion can weave through it — built for long, evolving arrangements.',
+  history:'Created by Fela Kuti and drummer Tony Allen by fusing Yoruba highlife rhythms with American jazz, funk, and soul — and fusing music with sharp political commentary.',
+  modern:'A direct influence (in spirit and polyrhythm, if not literally) on the West African pop wave now called Afrobeats.',
+  short:'Sparse, syncopated kick/snare under a constant, driving shaker.'
+},
+{
+  id:'afrobeats', name:'Afrobeats', family:'african', bpm:106, era:'2010s–present', origin:'Lagos & Accra → global',
+  kick:  [1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0],
+  hat:   [1,0.5,1,0.5,1,0.5,1,0.5,1,0.5,1,0.5,1,0.5,1,0.5],
+  desc:'A relaxed mid-tempo pocket where a syncopated kick and rimshot leave room to breathe, and a constant shaker does the real work of pushing the groove forward.',
+  history:'A West African pop umbrella blending highlife, dancehall, hip-hop and R&B — distinct from Fela\'s 1970s Afrobeat, though it shares rhythmic ancestry.',
+  modern:'A dominant force in global pop, with artists like Burna Boy, Wizkid, and Davido crossing into Western charts and collaborations.',
+  short:'Laid-back syncopated kick, rimshot, and a shaker that carries the bounce.'
+},
+{
+  id:'amapiano', name:'Amapiano', family:'african', bpm:112, era:'Mid-2010s–present', origin:'Pretoria & Johannesburg, South Africa',
+  kick:  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+  snare: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  hat:   [1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6,1,0.6],
+  desc:'Deliberately restrained — the kick is light and off to the side, leaving the low end to a melodic "log drum" bass tone while a constant shaker carries all the momentum.',
+  history:'Grew out of township bedroom studios blending deep house, kwaito, and jazz, popularized by Kabza De Small and DJ Maphorisa.',
+  modern:'One of the fastest-crossing-over genres in recent memory — viral through TikTok and now blended directly into Afrobeats and pop (see Tyla\'s "Water").',
+  short:'Light, off-beat kick; the shaker and the (separate) log drum bass do the driving.'
+},
+{
+  id:'house', name:'Four-on-the-Floor (House)', family:'dance', bpm:126, era:'Early 1980s', origin:'Chicago, USA',
+  kick:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'The kick hits every single beat — relentless, hypnotic, built for a room full of moving bodies. Clap on the backbeat, open hats filling the offbeats.',
+  history:'Born at Chicago\'s Warehouse club under DJ Frankie Knuckles, using Roland drum machines to extend and reshape disco records into something rawer and more mechanical.',
+  modern:'The rhythmic bedrock of essentially all EDM, tech house, and mainstream dance-pop production today.',
+  short:'Kick on every beat — the most influential rhythm in dance music.'
+},
+{
+  id:'disco', name:'Disco', family:'dance', bpm:118, era:'1970s', origin:'Philadelphia & New York, USA',
+  kick:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'House music\'s direct ancestor — the same driving four-on-the-floor kick, but with a warmer, live-band feel and open hi-hats splashing on the offbeats to keep the energy lifted.',
+  history:'Credited largely to session drummer Earl Young (The Trammps, MFSB), who is said to have added the steady kick pattern that came to define the genre on tracks like "Rock Your Baby."',
+  modern:'Sampled endlessly in house music, and enjoying a direct nu-disco/pop revival (Dua Lipa, Beyoncé\'s "Renaissance").',
+  short:'The original four-on-the-floor — warmer, looser, built for Studio 54.'
+},
+{
+  id:'ukgarage', name:'UK Garage (2-Step)', family:'dance', bpm:130, era:'Mid-1990s', origin:'London, UK',
+  kick:  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0],
+  hat:   [1,0,0.6,1,0,0.6,1,0,0.6,1,0,0.6,1,0,0.6,1],
+  desc:'Deliberately ditches the constant house kick for a syncopated, "2-step" pattern with swung, shuffled hi-hats — rhythmically unpredictable in a way that feels alive.',
+  history:'Evolved out of UK house and garage when London producers began pitching down vocals and swinging the drums, breaking away from four-on-the-floor entirely.',
+  modern:'A direct ancestor of UK bass music, dubstep, and the garage-revival sound heard in artists like Jorja Smith and early Drake ("One Dance").',
+  short:'Syncopated kick, swung hats — garage without the constant four-on-the-floor pulse.'
+},
+{
+  id:'funk', name:'Funk (The One)', family:'funk', bpm:104, era:'Mid-1960s', origin:'USA (James Brown / The J.B.\'s)',
+  kick:  [1,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
+  desc:'A syncopated 16th-note kick pattern under a hard backbeat snare, all built around an intense downbeat emphasis James Brown called "the one" — everything locks around that first beat.',
+  history:'James Brown shifted funk\'s emphasis from the backbeat to a hard downbeat accent starting with "Out of Sight" (1964), with drummers like Clyde Stubblefield ("Funky Drummer") defining the pocket that hip-hop would later sample more than any other break.',
+  modern:'The single most-sampled rhythmic foundation in hip-hop, breakbeat, and jungle production.',
+  short:'Syncopated 16th kicks, hard backbeat, everything locked around "the one."'
+},
+{
+  id:'motown', name:'Motown Backbeat', family:'funk', bpm:116, era:'1960s', origin:'Detroit, USA',
+  kick:  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'A clean, confident backbeat — kick on 1 and 3, snare cracking on 2 and 4, steady 8th-note hats — built to be felt on the radio and the dance floor in equal measure.',
+  history:'Refined by Motown\'s in-house session drummers (the Funk Brothers, including Benny Benjamin) to give Detroit soul its tight, radio-ready pulse.',
+  modern:'The template beneath most retro-soul, pop, and R&B backbeats produced today.',
+  short:'Clean kick on 1 & 3, snare cracking on 2 & 4 — soul\'s steady heartbeat.'
+},
+{
+  id:'bossanova', name:'Bossa Nova', family:'global', bpm:120, era:'Late 1950s', origin:'Rio de Janeiro, Brazil',
+  kick:  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+  snare: [0,0,0,1,0,0,0,1,0,0,0,1,0,0,1,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'A gentle, syncopated kick pattern under a repeating cross-stick rimclick — deceptively simple, endlessly interlocking, meant to feel effortless rather than driving.',
+  history:'Emerged from João Gilberto and collaborators fusing samba rhythm with cool jazz harmony in late-1950s Rio.',
+  modern:'A lounge and jazz-fusion staple, and a favorite rhythmic texture in lo-fi and chillhop production.',
+  short:'Syncopated kick under a repeating cross-stick — samba meets cool jazz.'
+},
+{
+  id:'samba', name:'Samba', family:'global', bpm:100, era:'Early 20th century–present', origin:'Rio de Janeiro, Brazil',
+  kick:  [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],
+  snare: [0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0],
+  hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  desc:'A fast, constantly-running 16th-note pulse (standing in for the surdo and tamborim of a full bateria) with an interlocking, offbeat-heavy kick and rim pattern underneath.',
+  history:'Rooted in Afro-Brazilian religious and Carnival traditions, formalized in early-20th-century Rio de Janeiro street parades.',
+  modern:'A constant reference point for Latin pop, and a popular source for sampled percussion breaks.',
+  short:'Constant running 16ths standing in for a full Carnival percussion battery.'
+},
+{
+  id:'ska', name:'Ska', family:'global', bpm:140, era:'Late 1950s', origin:'Kingston, Jamaica',
+  kick:  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'A brisk, upbeat-accented rhythm — the direct precursor to reggae — with the emphasis pushed onto the off-beats to give it its signature bounce.',
+  history:'Developed in Jamaican studios blending Caribbean mento and calypso with American R&B and jazz horns, later slowing down into rocksteady and reggae.',
+  modern:'Kept alive by third-wave ska and ska-punk revivals, and still a clear ancestor in reggae\'s DNA.',
+  short:'Brisk, off-beat-accented rhythm — reggae\'s energetic ancestor.'
+},
+{
+  id:'soca', name:'Soca', family:'global', bpm:130, era:'1970s', origin:'Trinidad & Tobago',
+  kick:  [1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  desc:'Disco\'s energetic Caribbean cousin — a busier, more syncopated bass drum pattern under the same driving backbeat, built for Carnival road marches.',
+  history:'Developed in 1970s Trinidad by artists like Lord Shorty, blending calypso with soul and Indian rhythmic influences ("soul of calypso").',
+  modern:'The rhythmic engine of Trinidadian Carnival and a growing influence in Afrobeats and dancehall-adjacent pop.',
+  short:'A busier, syncopated four-on-the-floor built for Carnival road marches.'
+},
+];
+
+/* ============================================================
+   AUDIO ENGINE
+============================================================ */
+let actx = null;
+let noiseBuffer = null;
+
+function ensureAudio(){
+  if(!actx){
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const len = actx.sampleRate * 1;
+    noiseBuffer = actx.createBuffer(1, len, actx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for(let i=0;i<len;i++) data[i] = Math.random()*2-1;
+  }
+  if(actx.state === 'suspended') actx.resume();
+}
+
+function playKick(time, vel=1){
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(150, time);
+  o.frequency.exponentialRampToValueAtTime(42, time + 0.13);
+  g.gain.setValueAtTime(0.9*vel, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.28);
+  o.connect(g); g.connect(actx.destination);
+  o.start(time); o.stop(time + 0.3);
+
+  // click transient for punch
+  const click = actx.createBufferSource();
+  click.buffer = noiseBuffer;
+  const clickFilter = actx.createBiquadFilter();
+  clickFilter.type = 'highpass'; clickFilter.frequency.value = 1000;
+  const clickGain = actx.createGain();
+  clickGain.gain.setValueAtTime(0.35*vel, time);
+  clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+  click.connect(clickFilter); clickFilter.connect(clickGain); clickGain.connect(actx.destination);
+  click.start(time); click.stop(time + 0.03);
+}
+
+function playSnare(time, vel=1){
+  const noise = actx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  const bp = actx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;
+  const ng = actx.createGain();
+  ng.gain.setValueAtTime(0.55*vel, time);
+  ng.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+  noise.connect(bp); bp.connect(ng); ng.connect(actx.destination);
+  noise.start(time); noise.stop(time + 0.2);
+
+  const o = actx.createOscillator();
+  o.type = 'triangle'; o.frequency.value = 190;
+  const og = actx.createGain();
+  og.gain.setValueAtTime(0.35*vel, time);
+  og.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+  o.connect(og); og.connect(actx.destination);
+  o.start(time); o.stop(time + 0.12);
+}
+
+function playHat(time, vel=1, open=false){
+  const noise = actx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  const hp = actx.createBiquadFilter();
+  hp.type = 'highpass'; hp.frequency.value = 7500;
+  const g = actx.createGain();
+  const dur = open ? 0.28 : 0.05;
+  g.gain.setValueAtTime(0.28*vel, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  noise.connect(hp); hp.connect(g); g.connect(actx.destination);
+  noise.start(time); noise.stop(time + dur + 0.02);
+}
+
+function playShaker(time, vel=1){
+  const noise = actx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  const bp = actx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = 6500; bp.Q.value = 0.5;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(0.22*vel, time + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+  noise.connect(bp); bp.connect(g); g.connect(actx.destination);
+  noise.start(time); noise.stop(time + 0.14);
+}
+
+/* ============================================================
+   SEQUENCER STATE + SCHEDULER
+============================================================ */
+const TRACKS = ['kick','snare','hat'];
+let pattern = { kick:new Array(16).fill(0), snare:new Array(16).fill(0), hat:new Array(16).fill(0) };
+let bpm = 96;
+let swing = 0;
+let isPlaying = false;
+let currentStep = 0;
+let nextNoteTime = 0.0;
+const lookahead = 25.0;      // ms
+const scheduleAheadTime = 0.1; // seconds
+let timerID = null;
+let stepTimes = [];           // for playhead visual sync
+
+function stepDuration(){ return 60.0 / bpm / 4; } // 16th note
+
+function scheduleNote(stepIndex, time){
+  const swingOffset = (stepIndex % 2 === 1) ? (swing/100) * stepDuration() * 0.6 : 0;
+  const t = time + swingOffset;
+  TRACKS.forEach(track=>{
+    const vel = pattern[track][stepIndex];
+    if(vel > 0){
+      if(track==='kick') playKick(t, vel);
+      if(track==='snare') playSnare(t, vel);
+      if(track==='hat') playHat(t, vel);
+    }
+  });
+  stepTimes.push({step:stepIndex, time:t});
+}
+
+function scheduler(){
+  while(nextNoteTime < actx.currentTime + scheduleAheadTime){
+    scheduleNote(currentStep, nextNoteTime);
+    nextNoteTime += stepDuration();
+    currentStep = (currentStep + 1) % 16;
+  }
+  timerID = setTimeout(scheduler, lookahead);
+}
+
+function startPlayback(){
+  ensureAudio();
+  if(isPlaying) return;
+  isPlaying = true;
+  currentStep = 0;
+  nextNoteTime = actx.currentTime + 0.05;
+  stepTimes = [];
+  scheduler();
+  requestAnimationFrame(drawPlayhead);
+  document.getElementById('playBtn').classList.add('playing');
+  document.getElementById('playBtn').textContent = '❚❚';
+}
+
+function stopPlayback(){
+  isPlaying = false;
+  clearTimeout(timerID);
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playBtn').textContent = '▶';
+  document.querySelectorAll('.pad.playhead').forEach(p=>p.classList.remove('playhead'));
+}
+
+function drawPlayhead(){
+  if(!isPlaying) return;
+  const now = actx.currentTime;
+  // find most recent scheduled step whose time has passed
+  let displayStep = null;
+  for(let i=stepTimes.length-1;i>=0;i--){
+    if(stepTimes[i].time <= now){ displayStep = stepTimes[i].step; break; }
+  }
+  document.querySelectorAll('.pad.playhead').forEach(p=>p.classList.remove('playhead'));
+  if(displayStep !== null){
+    document.querySelectorAll(`.pad[data-step="${displayStep}"]`).forEach(p=>p.classList.add('playhead'));
+  }
+  // trim old history
+  if(stepTimes.length > 64) stepTimes = stepTimes.slice(-32);
+  requestAnimationFrame(drawPlayhead);
+}
+
+/* ============================================================
+   UI BUILD
+============================================================ */
+const trackMeta = {
+  kick:  {label:'Kick',  cls:'kick'},
+  snare: {label:'Snare', cls:'snare'},
+  hat:   {label:'Hat/Shk', cls:'hat'},
+};
+
+function buildGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  TRACKS.forEach(track=>{
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    const label = document.createElement('div');
+    label.className = 'track-label';
+    label.innerHTML = `<span class="track-dot" style="background:var(--${track==='hat'?'hat':track})"></span>${trackMeta[track].label}`;
+    row.appendChild(label);
+    for(let i=0;i<16;i++){
+      const pad = document.createElement('button');
+      pad.className = 'pad' + (i%4===0?' beat-start':'');
+      pad.dataset.track = track;
+      pad.dataset.step = i;
+      updatePadVisual(pad, track, i);
+      pad.addEventListener('click', ()=>{
+        const cur = pattern[track][i];
+        pattern[track][i] = cur > 0 ? 0 : 1;
+        updatePadVisual(pad, track, i);
+        // audition the sound when turning on
+        if(pattern[track][i] > 0){
+          ensureAudio();
+          const t = actx.currentTime + 0.01;
+          if(track==='kick') playKick(t,1);
+          if(track==='snare') playSnare(t,1);
+          if(track==='hat') playHat(t,1);
+        }
+      });
+      row.appendChild(pad);
+    }
+    grid.appendChild(row);
+  });
+}
+
+function updatePadVisual(pad, track, i){
+  const vel = pattern[track][i];
+  pad.classList.toggle('on', vel > 0);
+  pad.classList.remove('kick','snare','hat','ghost');
+  if(vel > 0){
+    pad.classList.add(track);
+    if(vel < 0.9) pad.classList.add('ghost');
+  }
+}
+
+function refreshAllPads(){
+  document.querySelectorAll('.pad').forEach(pad=>{
+    updatePadVisual(pad, pad.dataset.track, +pad.dataset.step);
+  });
+}
+
+function loadGroove(g){
+  pattern.kick = g.kick.slice();
+  pattern.snare = g.snare.slice();
+  pattern.hat = g.hat.slice();
+  bpm = g.bpm;
+  document.getElementById('bpmSlider').value = bpm;
+  document.getElementById('bpmOut').textContent = bpm;
+  document.getElementById('loadedName').textContent = g.name;
+  refreshAllPads();
+  renderInfo(g);
+  document.querySelectorAll('.groove-card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.id === g.id);
+  });
+}
+
+function renderInfo(g){
+  const fam = FAMILIES[g.family];
+  const panel = document.getElementById('infoPanel');
+  panel.style.setProperty('--info-color', fam.color);
+  panel.innerHTML = `
+    <div class="info-top">
+      <div>
+        <div class="info-fam">${fam.label}</div>
+        <h3>${g.name}</h3>
+      </div>
+      <div class="info-stats">
+        <div class="stat"><span>BPM</span><b>${g.bpm}</b></div>
+        <div class="stat"><span>Era</span><b>${g.era}</b></div>
+        <div class="stat"><span>Origin</span><b>${g.origin}</b></div>
+      </div>
+    </div>
+    <div class="info-body">
+      <div>
+        <h4>The Groove</h4>
+        <p>${g.desc}</p>
+        <h4>Where It Came From</h4>
+        <p>${g.history}</p>
+      </div>
+      <div>
+        <h4>In Modern Music</h4>
+        <p>${g.modern}</p>
+        <h4>Quick Read</h4>
+        <p>${g.short}</p>
+      </div>
+    </div>
+  `;
+}
+
+function buildGrooveCards(filter='all'){
+  const wrap = document.getElementById('grooveGrid');
+  wrap.innerHTML = '';
+  GROOVES.filter(g => filter==='all' || g.family===filter).forEach(g=>{
+    const fam = FAMILIES[g.family];
+    const card = document.createElement('div');
+    card.className = 'groove-card';
+    card.dataset.id = g.id;
+    card.style.setProperty('--fam-color', fam.color);
+    card.innerHTML = `
+      <div class="gc-top">
+        <div class="gc-name">${g.name}</div>
+        <div class="gc-bpm">${g.bpm} BPM</div>
+      </div>
+      <div class="gc-origin">${g.origin} · ${g.era}</div>
+      <div class="gc-desc">${g.short}</div>
+    `;
+    card.addEventListener('click', ()=> loadGroove(g));
+    wrap.appendChild(card);
+  });
+}
+
+function buildFamilyFilters(){
+  const wrap = document.getElementById('familyFilters');
+  wrap.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'fchip active';
+  allChip.textContent = 'All Grooves';
+  allChip.style.background = '#EDEDF0';
+  allChip.addEventListener('click', ()=>{
+    setActiveChip(allChip);
+    buildGrooveCards('all');
+  });
+  wrap.appendChild(allChip);
+
+  Object.entries(FAMILIES).forEach(([key,fam])=>{
+    const chip = document.createElement('button');
+    chip.className = 'fchip';
+    chip.textContent = fam.label;
+    chip.addEventListener('click', ()=>{
+      chip.style.background = fam.color;
+      setActiveChip(chip);
+      buildGrooveCards(key);
+    });
+    wrap.appendChild(chip);
+  });
+
+  function setActiveChip(active){
+    wrap.querySelectorAll('.fchip').forEach(c=>{
+      c.classList.remove('active');
+      if(c !== allChip) c.style.background = 'transparent';
+    });
+    active.classList.add('active');
+  }
+}
+
+/* ============================================================
+   CONTROLS
+============================================================ */
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(isPlaying) stopPlayback(); else startPlayback();
+});
+
+document.getElementById('bpmSlider').addEventListener('input', e=>{
+  bpm = +e.target.value;
+  document.getElementById('bpmOut').textContent = bpm;
+});
+
+document.getElementById('swingSlider').addEventListener('input', e=>{
+  swing = +e.target.value;
+  document.getElementById('swingOut').textContent = swing;
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  TRACKS.forEach(t=> pattern[t] = new Array(16).fill(0));
+  refreshAllPads();
+  document.getElementById('loadedName').textContent = 'Custom (blank)';
+  document.querySelectorAll('.groove-card').forEach(c=>c.classList.remove('active'));
+});
+
+document.getElementById('shuffleBtn').addEventListener('click', ()=>{
+  const densities = {kick:0.3, snare:0.22, hat:0.55};
+  TRACKS.forEach(t=>{
+    pattern[t] = new Array(16).fill(0).map(()=> Math.random() < densities[t] ? (Math.random()<0.2?0.6:1) : 0);
+  });
+  refreshAllPads();
+  document.getElementById('loadedName').textContent = 'Custom (shuffled)';
+  document.querySelectorAll('.groove-card').forEach(c=>c.classList.remove('active'));
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+document.getElementById('dbCount').textContent = `— ${GROOVES.length} patterns across ${Object.keys(FAMILIES).length} traditions`;
+buildGrid();
+buildFamilyFilters();
+buildGrooveCards('all');
+loadGroove(GROOVES[0]);
+</script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETUNE — Tempo &amp; Key Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0B;
+    --bg-panel:#131315;
+    --bg-panel-2:#1a1a1d;
+    --line:#2a2a2e;
+    --amber:#E8A33D;
+    --teal:#3DC9C2;
+    --text:#EDEDEF;
+    --text-dim:#8a8a90;
+    --text-faint:#55555a;
+    --danger:#E8623D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* Header */
+  header{margin-bottom:36px;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--teal);
+    text-transform:uppercase;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:6px;height:6px;
+    background:var(--teal);
+    display:inline-block;
+    border-radius:1px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(32px,6vw,46px);
+    letter-spacing:-0.02em;
+    margin:0 0 8px;
+    line-height:1.02;
+  }
+  h1 span{color:var(--amber);}
+  .sub{
+    color:var(--text-dim);
+    font-size:14.5px;
+    max-width:52ch;
+    line-height:1.5;
+  }
+
+  /* Panels */
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .panel-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:16px;
+  }
+
+  /* Dropzone */
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:8px;
+    padding:36px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    position:relative;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--amber);
+    background:rgba(232,163,61,0.04);
+  }
+  .dropzone input{
+    position:absolute;inset:0;opacity:0;cursor:pointer;
+  }
+  .dz-icon{
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px;
+    color:var(--amber);
+    margin-bottom:10px;
+  }
+  .dz-text{font-size:14px;color:var(--text-dim);}
+  .dz-text b{color:var(--text);font-weight:600;}
+  .dz-sub{font-size:11.5px;color:var(--text-faint);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+  .file-info{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    background:var(--bg-panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .file-info.show{display:flex;}
+  .file-name{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--text);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:60%;
+  }
+  .file-meta{font-size:11.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .clear-btn{
+    background:none;border:none;color:var(--text-faint);
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    cursor:pointer;text-transform:uppercase;letter-spacing:.08em;
+  }
+  .clear-btn:hover{color:var(--danger);}
+
+  /* Grid of controls */
+  .grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media(max-width:600px){.grid-2{grid-template-columns:1fr;}}
+
+  .field-group{
+    background:var(--bg-panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:16px 16px 14px;
+  }
+  .field-group-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  .field-group.original .field-group-title{color:var(--teal);}
+  .field-group.target .field-group-title{color:var(--amber);}
+
+  label{
+    display:block;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    margin-top:12px;
+  }
+  label:first-of-type{margin-top:0;}
+
+  input[type=number], select{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:6px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    padding:10px 12px;
+    outline:none;
+    transition:border-color .15s;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%238a8a90'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    padding-right:30px;
+  }
+  input[type=number]:focus, select:focus{border-color:var(--teal);}
+  .field-group.target input[type=number]:focus, .field-group.target select:focus{border-color:var(--amber);}
+
+  /* Summary readout */
+  .readout{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    margin:16px 0 0;
+  }
+  @media(max-width:600px){.readout{grid-template-columns:1fr;}}
+  .readout-cell{
+    background:var(--bg-panel-2);
+    padding:14px 16px;
+  }
+  .readout-cell .rk{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:4px;
+  }
+  .readout-cell .rv{
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+    font-weight:600;
+  }
+  .rv.pos{color:var(--teal);}
+  .rv.neg{color:var(--amber);}
+
+  /* Process button */
+  .process-btn{
+    width:100%;
+    margin-top:18px;
+    padding:16px;
+    background:var(--amber);
+    color:#0A0A0B;
+    border:none;
+    border-radius:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:.01em;
+    cursor:pointer;
+    transition:opacity .15s, transform .1s;
+  }
+  .process-btn:hover:not(:disabled){opacity:.9;}
+  .process-btn:active:not(:disabled){transform:scale(0.995);}
+  .process-btn:disabled{
+    background:var(--bg-panel-2);
+    color:var(--text-faint);
+    cursor:not-allowed;
+    border:1px solid var(--line);
+  }
+
+  /* Progress */
+  .progress-wrap{
+    display:none;
+    margin-top:14px;
+  }
+  .progress-wrap.show{display:block;}
+  .progress-label{
+    display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+  }
+  .progress-track{
+    height:4px;
+    background:var(--bg-panel-2);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--teal),var(--amber));
+    transition:width .15s;
+  }
+
+  /* Output panel */
+  #outputPanel{display:none;}
+  #outputPanel.show{display:block;}
+
+  .waveform{
+    width:100%;
+    height:72px;
+    display:block;
+    border-radius:6px;
+    background:var(--bg-panel-2);
+    margin-bottom:12px;
+  }
+
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .play-btn{
+    width:44px;height:44px;
+    border-radius:50%;
+    background:var(--teal);
+    border:none;
+    color:#0A0A0B;
+    font-size:14px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    transition:opacity .15s;
+  }
+  .play-btn:hover{opacity:.9;}
+  .player-time{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    min-width:88px;
+  }
+  .seek-track{
+    flex:1;
+    height:3px;
+    background:var(--line);
+    border-radius:2px;
+    position:relative;
+    cursor:pointer;
+  }
+  .seek-fill{
+    position:absolute;left:0;top:0;bottom:0;
+    width:0%;
+    background:var(--teal);
+    border-radius:2px;
+  }
+
+  .download-btn{
+    width:100%;
+    margin-top:18px;
+    padding:15px;
+    background:transparent;
+    color:var(--amber);
+    border:1.5px solid var(--amber);
+    border-radius:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .download-btn:hover{background:var(--amber);color:#0A0A0B;}
+
+  .note{
+    font-size:11.5px;
+    color:var(--text-faint);
+    line-height:1.5;
+    margin-top:14px;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:40px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Signal Processing</div>
+    <h1>RE<span>TUNE</span></h1>
+    <div class="sub">Upload a track, tell it the original tempo and key, then dial in the target. Time-stretch and pitch-shift run independently — change one without dragging the other along.</div>
+  </header>
+
+  <!-- UPLOAD -->
+  <div class="panel">
+    <div class="panel-label">01 — Source Audio</div>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="audio/*">
+      <div class="dz-icon">↑</div>
+      <div class="dz-text"><b>Drop an audio file</b> or click to browse</div>
+      <div class="dz-sub">MP3 · WAV · M4A · OGG</div>
+    </div>
+    <div class="file-info" id="fileInfo" style="margin-top:12px;">
+      <div>
+        <div class="file-name" id="fileName"></div>
+        <div class="file-meta" id="fileMeta"></div>
+      </div>
+      <button class="clear-btn" id="clearFile">Remove</button>
+    </div>
+  </div>
+
+  <!-- BPM / KEY -->
+  <div class="panel" id="controlsPanel" style="display:none;">
+    <div class="panel-label">02 — Set The Conversion</div>
+    <div class="grid-2">
+      <div class="field-group original">
+        <div class="field-group-title">Original</div>
+        <label for="origBpm">Tempo (BPM)</label>
+        <input type="number" id="origBpm" min="20" max="300" step="0.1" value="120">
+        <label for="origKey">Key</label>
+        <select id="origKey"></select>
+      </div>
+      <div class="field-group target">
+        <div class="field-group-title">Target</div>
+        <label for="targetBpm">Tempo (BPM)</label>
+        <input type="number" id="targetBpm" min="20" max="300" step="0.1" value="120">
+        <label for="targetKey">Key</label>
+        <select id="targetKey"></select>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="readout-cell">
+        <div class="rk">Tempo Change</div>
+        <div class="rv" id="rTempo">—</div>
+      </div>
+      <div class="readout-cell">
+        <div class="rk">Pitch Shift</div>
+        <div class="rv" id="rPitch">—</div>
+      </div>
+      <div class="readout-cell">
+        <div class="rk">Est. Duration</div>
+        <div class="rv" id="rDuration">—</div>
+      </div>
+    </div>
+
+    <button class="process-btn" id="processBtn">Process Track</button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressStage">Rendering…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="note">Key shift is calculated as the shortest interval between root notes (±6 semitones), the way harmonic mixing is usually done. Major/minor is metadata only — it doesn't change the audio shift.</div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="panel" id="outputPanel">
+    <div class="panel-label">03 — Result</div>
+
+    <canvas class="waveform" id="waveformCanvas"></canvas>
+    <div class="player-row">
+      <button class="play-btn" id="playBtn">▶</button>
+      <div class="player-time" id="playerTime">0:00 / 0:00</div>
+      <div class="seek-track" id="seekTrack"><div class="seek-fill" id="seekFill"></div></div>
+    </div>
+
+    <button class="download-btn" id="downloadBtn">Download WAV</button>
+  </div>
+
+  <footer>Retune · Runs entirely in your browser</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Constants ----------
+  const NOTES = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
+  const MODES = ["Major","Minor"];
+
+  // ---------- State ----------
+  let audioCtx = null;
+  let decodedBuffer = null;   // original AudioBuffer
+  let sourceFile = null;
+  let resultBuffer = null;    // { channels: [Float32Array,...], sampleRate, length }
+  let resultBlobUrl = null;
+  let resultWavBlob = null;
+
+  let playbackAudio = null;   // HTMLAudioElement for result playback
+  let isPlaying = false;
+
+  // ---------- DOM ----------
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileName = document.getElementById('fileName');
+  const fileMeta = document.getElementById('fileMeta');
+  const clearFile = document.getElementById('clearFile');
+  const controlsPanel = document.getElementById('controlsPanel');
+  const origBpm = document.getElementById('origBpm');
+  const targetBpm = document.getElementById('targetBpm');
+  const origKeySel = document.getElementById('origKey');
+  const targetKeySel = document.getElementById('targetKey');
+  const rTempo = document.getElementById('rTempo');
+  const rPitch = document.getElementById('rPitch');
+  const rDuration = document.getElementById('rDuration');
+  const processBtn = document.getElementById('processBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressPct = document.getElementById('progressPct');
+  const progressStage = document.getElementById('progressStage');
+  const outputPanel = document.getElementById('outputPanel');
+  const waveformCanvas = document.getElementById('waveformCanvas');
+  const playBtn = document.getElementById('playBtn');
+  const playerTime = document.getElementById('playerTime');
+  const seekTrack = document.getElementById('seekTrack');
+  const seekFill = document.getElementById('seekFill');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  // ---------- Populate key dropdowns ----------
+  function buildKeyOptions(sel){
+    MODES.forEach((mode)=>{
+      NOTES.forEach((note, idx)=>{
+        const opt = document.createElement('option');
+        opt.value = idx; // pitch class only
+        opt.textContent = note + ' ' + mode;
+        sel.appendChild(opt);
+      });
+    });
+  }
+  buildKeyOptions(origKeySel);
+  buildKeyOptions(targetKeySel);
+
+  // ---------- File handling ----------
+  dropzone.addEventListener('dragover', e=>{e.preventDefault();dropzone.classList.add('drag');});
+  dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e=>{
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{
+    if(e.target.files.length) handleFile(e.target.files[0]);
+  });
+  clearFile.addEventListener('click', ()=>{
+    sourceFile = null; decodedBuffer = null;
+    fileInfo.classList.remove('show');
+    controlsPanel.style.display='none';
+    outputPanel.classList.remove('show');
+    fileInput.value = '';
+  });
+
+  function fmtBytes(b){
+    if(b<1024) return b+' B';
+    if(b<1024*1024) return (b/1024).toFixed(0)+' KB';
+    return (b/1024/1024).toFixed(1)+' MB';
+  }
+  function fmtTime(sec){
+    if(!isFinite(sec)) return '0:00';
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return m+':'+String(s).padStart(2,'0');
+  }
+
+  async function handleFile(file){
+    sourceFile = file;
+    fileName.textContent = file.name;
+    fileMeta.textContent = fmtBytes(file.size);
+    fileInfo.classList.add('show');
+
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const arrayBuf = await file.arrayBuffer();
+    try{
+      decodedBuffer = await audioCtx.decodeAudioData(arrayBuf);
+    }catch(err){
+      fileMeta.textContent = 'Could not decode this file — try a different format.';
+      return;
+    }
+    fileMeta.textContent = fmtBytes(file.size) + ' · ' + fmtTime(decodedBuffer.duration) + ' · ' + decodedBuffer.sampleRate + 'Hz · ' + decodedBuffer.numberOfChannels + 'ch';
+    controlsPanel.style.display='block';
+    outputPanel.classList.remove('show');
+    updateReadout();
+  }
+
+  // ---------- Readout ----------
+  function shortestSemitoneShift(fromIdx, toIdx){
+    let diff = (toIdx - fromIdx) % 12;
+    if(diff > 6) diff -= 12;
+    if(diff < -6) diff += 12;
+    return diff;
+  }
+
+  function updateReadout(){
+    const ob = parseFloat(origBpm.value)||0;
+    const tb = parseFloat(targetBpm.value)||0;
+    const semis = shortestSemitoneShift(parseInt(origKeySel.value), parseInt(targetKeySel.value));
+
+    if(ob>0 && tb>0){
+      const pct = ((tb/ob - 1)*100);
+      rTempo.textContent = (pct>=0?'+':'') + pct.toFixed(1) + '%';
+      rTempo.className = 'rv ' + (pct>=0?'pos':'neg');
+    } else {
+      rTempo.textContent = '—'; rTempo.className='rv';
+    }
+
+    rPitch.textContent = (semis>0?'+':'') + semis + ' st';
+    rPitch.className = 'rv ' + (semis>=0?'pos':'neg');
+
+    if(decodedBuffer && ob>0 && tb>0){
+      const newDur = decodedBuffer.duration * (ob/tb);
+      rDuration.textContent = fmtTime(newDur);
+    } else {
+      rDuration.textContent = '—';
+    }
+  }
+  [origBpm, targetBpm, origKeySel, targetKeySel].forEach(el=>el.addEventListener('input', updateReadout));
+
+  // ---------- DSP: resample (pitch shift via playback-speed read) ----------
+  function resampleChannel(data, factor){
+    const outLen = Math.max(1, Math.floor(data.length / factor));
+    const out = new Float32Array(outLen);
+    for(let i=0;i<outLen;i++){
+      const pos = i*factor;
+      const idx = Math.floor(pos);
+      const frac = pos - idx;
+      const s0 = data[idx] || 0;
+      const s1 = data[idx+1] !== undefined ? data[idx+1] : s0;
+      out[i] = s0 + (s1-s0)*frac;
+    }
+    return out;
+  }
+
+  function hannWindow(n){
+    const w = new Float32Array(n);
+    for(let i=0;i<n;i++){
+      w[i] = 0.5 - 0.5*Math.cos(2*Math.PI*i/(n-1));
+    }
+    return w;
+  }
+
+  // WSOLA time-stretch. Computes segment start offsets once using a mono
+  // reference signal, then applies the same offsets to every channel so
+  // stereo image stays coherent.
+  async function wsolaStretch(channels, alpha, onProgress){
+    const FRAME = 2048;
+    const HOP = 512;
+    const TOL = 128;
+    const STEP = 4;
+    const CORR_STRIDE = 4;
+    const window = hannWindow(FRAME);
+
+    const inLen = channels[0].length;
+    const outLen = Math.max(FRAME, Math.floor(inLen * alpha));
+
+    // mono reference for correlation search
+    let mono;
+    if(channels.length === 1){
+      mono = channels[0];
+    } else {
+      mono = new Float32Array(inLen);
+      for(let i=0;i<inLen;i++){
+        let sum=0;
+        for(let c=0;c<channels.length;c++) sum += channels[c][i];
+        mono[i] = sum/channels.length;
+      }
+    }
+
+    const outChannels = channels.map(()=> new Float32Array(outLen + FRAME));
+    const overlapLen = FRAME - HOP;
+
+    let naturalPos = 0;
+    let outPos = 0;
+    let iter = 0;
+    const totalIters = Math.ceil(outLen / HOP);
+
+    while(outPos < outLen){
+      let segStart = Math.round(naturalPos);
+
+      if(outPos > 0){
+        // search for best-matching offset by correlating against the
+        // already-placed tail sitting in outChannels' mono-equivalent
+        let bestScore = -Infinity;
+        let bestOffset = 0;
+        const centerGuess = segStart;
+        for(let off=-TOL; off<=TOL; off+=STEP){
+          const candStart = centerGuess + off;
+          if(candStart < 0 || candStart + overlapLen >= mono.length) continue;
+          let score = 0;
+          let norm = 0;
+          for(let k=0;k<overlapLen;k+=CORR_STRIDE){
+            const a = outChannels[0][outPos+k]; // proxy tail (channel 0, pre-normalization ok for matching)
+            const b = mono[candStart+k];
+            score += a*b;
+            norm += b*b;
+          }
+          const normScore = norm>0 ? score/Math.sqrt(norm+1e-9) : score;
+          if(normScore > bestScore){ bestScore = normScore; bestOffset = off; }
+        }
+        segStart = centerGuess + bestOffset;
+      }
+      segStart = Math.max(0, Math.min(inLen - FRAME, segStart));
+
+      for(let c=0;c<channels.length;c++){
+        const src = channels[c];
+        const dst = outChannels[c];
+        for(let i=0;i<FRAME;i++){
+          const idx = segStart+i;
+          const val = (idx < src.length ? src[idx] : 0) * window[i];
+          dst[outPos+i] += val;
+        }
+      }
+
+      naturalPos += HOP/alpha;
+      outPos += HOP;
+      iter++;
+      if(iter % 40 === 0){
+        onProgress(outPos/outLen);
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+    onProgress(1);
+    return outChannels.map(ch=>ch.slice(0, outLen));
+  }
+
+  function peakNormalize(channels, target){
+    let peak = 0;
+    for(const ch of channels){
+      for(let i=0;i<ch.length;i++){
+        const a = Math.abs(ch[i]);
+        if(a>peak) peak = a;
+      }
+    }
+    if(peak <= 1e-9) return;
+    const gain = target/peak;
+    if(gain >= 1) return; // don't boost, only prevent clipping
+    for(const ch of channels){
+      for(let i=0;i<ch.length;i++) ch[i] *= gain;
+    }
+  }
+
+  // ---------- WAV encoding ----------
+  function encodeWav(channels, sampleRate){
+    const numCh = channels.length;
+    const len = channels[0].length;
+    const bytesPerSample = 2;
+    const blockAlign = numCh * bytesPerSample;
+    const dataSize = len * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    function writeStr(offset, str){
+      for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i));
+    }
+
+    writeStr(0,'RIFF');
+    view.setUint32(4, 36+dataSize, true);
+    writeStr(8,'WAVE');
+    writeStr(12,'fmt ');
+    view.setUint32(16,16,true);
+    view.setUint16(20,1,true);
+    view.setUint16(22,numCh,true);
+    view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate*blockAlign,true);
+    view.setUint16(32,blockAlign,true);
+    view.setUint16(34,16,true);
+    writeStr(36,'data');
+    view.setUint32(40,dataSize,true);
+
+    let offset = 44;
+    for(let i=0;i<len;i++){
+      for(let c=0;c<numCh;c++){
+        let s = Math.max(-1, Math.min(1, channels[c][i]));
+        s = s < 0 ? s*0x8000 : s*0x7FFF;
+        view.setInt16(offset, s, true);
+        offset += 2;
+      }
+    }
+    return new Blob([buffer], {type:'audio/wav'});
+  }
+
+  // ---------- Waveform drawing ----------
+  function drawWaveform(canvas, channels){
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight || 72;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr,dpr);
+    ctx.clearRect(0,0,w,h);
+
+    const data = channels[0];
+    const step = Math.max(1, Math.floor(data.length / w));
+    const mid = h/2;
+
+    ctx.strokeStyle = '#3DC9C2';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let x=0; x<w; x++){
+      let min=1, max=-1;
+      const start = x*step;
+      for(let i=0;i<step;i++){
+        const s = data[start+i];
+        if(s===undefined) continue;
+        if(s<min) min=s;
+        if(s>max) max=s;
+      }
+      if(min>max){min=0;max=0;}
+      ctx.moveTo(x, mid + min*mid*0.9);
+      ctx.lineTo(x, mid + max*mid*0.9);
+    }
+    ctx.stroke();
+  }
+
+  // ---------- Process ----------
+  processBtn.addEventListener('click', async ()=>{
+    if(!decodedBuffer) return;
+    const ob = parseFloat(origBpm.value);
+    const tb = parseFloat(targetBpm.value);
+    if(!ob || !tb || ob<=0 || tb<=0){
+      alert('Enter valid BPM values for both original and target.');
+      return;
+    }
+    const semis = shortestSemitoneShift(parseInt(origKeySel.value), parseInt(targetKeySel.value));
+    const pitchRatio = Math.pow(2, semis/12);
+    const tempoRatio = tb/ob;
+    const stretchAlpha = pitchRatio / tempoRatio;
+
+    processBtn.disabled = true;
+    processBtn.textContent = 'Processing…';
+    progressWrap.classList.add('show');
+    progressFill.style.width='0%';
+    progressPct.textContent='0%';
+    outputPanel.classList.remove('show');
+
+    try{
+      // Pull channel data out
+      const numCh = decodedBuffer.numberOfChannels;
+      const srcChannels = [];
+      for(let c=0;c<numCh;c++) srcChannels.push(decodedBuffer.getChannelData(c));
+
+      progressStage.textContent = 'Shifting pitch…';
+      const resampled = srcChannels.map(ch => resampleChannel(ch, pitchRatio));
+      progressFill.style.width='15%'; progressPct.textContent='15%';
+      await new Promise(r=>setTimeout(r,0));
+
+      progressStage.textContent = 'Stretching tempo…';
+      const stretched = await wsolaStretch(resampled, stretchAlpha, (p)=>{
+        const pct = 15 + p*80;
+        progressFill.style.width = pct.toFixed(0)+'%';
+        progressPct.textContent = pct.toFixed(0)+'%';
+      });
+
+      peakNormalize(stretched, 0.97);
+
+      progressStage.textContent = 'Finalizing…';
+      progressFill.style.width='98%'; progressPct.textContent='98%';
+      await new Promise(r=>setTimeout(r,0));
+
+      resultBuffer = { channels: stretched, sampleRate: decodedBuffer.sampleRate };
+      resultWavBlob = encodeWav(stretched, decodedBuffer.sampleRate);
+      if(resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
+      resultBlobUrl = URL.createObjectURL(resultWavBlob);
+
+      setupPlayer(resultBlobUrl, stretched, decodedBuffer.sampleRate);
+
+      progressFill.style.width='100%'; progressPct.textContent='100%';
+      outputPanel.classList.add('show');
+      outputPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }catch(err){
+      console.error(err);
+      alert('Something went wrong while processing this file.');
+    }finally{
+      processBtn.disabled = false;
+      processBtn.textContent = 'Process Track';
+      setTimeout(()=>progressWrap.classList.remove('show'), 600);
+    }
+  });
+
+  // ---------- Player ----------
+  function setupPlayer(url, channels, sampleRate){
+    if(playbackAudio){
+      playbackAudio.pause();
+      playbackAudio.removeAttribute('src');
+    }
+    playbackAudio = new Audio(url);
+    isPlaying = false;
+    playBtn.textContent = '▶';
+    playerTime.textContent = '0:00 / ' + fmtTime(channels[0].length/sampleRate);
+
+    drawWaveform(waveformCanvas, channels);
+
+    playbackAudio.addEventListener('timeupdate', ()=>{
+      const cur = playbackAudio.currentTime;
+      const dur = playbackAudio.duration || (channels[0].length/sampleRate);
+      playerTime.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+      seekFill.style.width = (dur? (cur/dur*100):0) + '%';
+    });
+    playbackAudio.addEventListener('ended', ()=>{
+      isPlaying = false;
+      playBtn.textContent = '▶';
+    });
+  }
+
+  playBtn.addEventListener('click', ()=>{
+    if(!playbackAudio) return;
+    if(isPlaying){
+      playbackAudio.pause();
+      playBtn.textContent = '▶';
+    } else {
+      playbackAudio.play();
+      playBtn.textContent = '❚❚';
+    }
+    isPlaying = !isPlaying;
+  });
+
+  seekTrack.addEventListener('click', (e)=>{
+    if(!playbackAudio || !playbackAudio.duration) return;
+    const rect = seekTrack.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    playbackAudio.currentTime = ratio * playbackAudio.duration;
+  });
+
+  downloadBtn.addEventListener('click', ()=>{
+    if(!resultWavBlob) return;
+    const a = document.createElement('a');
+    const base = sourceFile ? sourceFile.name.replace(/\.[^.]+$/,'') : 'track';
+    const tb = targetBpm.value;
+    a.href = URL.createObjectURL(resultWavBlob);
+    a.download = base + '_' + tb + 'bpm.wav';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+})();
+</script>
+</body>
+</html>

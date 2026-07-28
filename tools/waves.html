@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wave Course — Light &amp; Sound</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --panel:#141A26;
+    --panel-2:#1A2030;
+    --line:#262E40;
+    --light:#F2A340;
+    --light-dim:#6B5630;
+    --sound:#3FCFC4;
+    --sound-dim:#2C5B57;
+    --ink:#E8ECF1;
+    --muted:#7C8499;
+    --good:#7BD88F;
+    --bad:#E85A5A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden;
+  }
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:1;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay;
+  }
+
+  /* ================= PROGRESS BAR ================= */
+  .progress-rail{ position:fixed; top:0; left:0; right:0; height:3px; background:var(--line); z-index:100;}
+  .progress-fill{ height:100%; background:linear-gradient(90deg,var(--light),var(--sound)); width:0%; transition:width .4s ease;}
+
+  /* ================= TOP BAR ================= */
+  .topbar{
+    position:fixed; top:3px; left:0; right:0; z-index:90; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; background:rgba(11,14,20,0.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  }
+  .topbar-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .topbar-exit{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); background:none; border:none;
+    cursor:pointer; padding:6px 8px; border-radius:6px; flex-shrink:0;
+  }
+  .topbar-exit:hover{ color:var(--ink); background:var(--panel-2); }
+  .topbar-title{ font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .topbar-count{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); flex-shrink:0; }
+
+  /* ================= LESSON STAGE ================= */
+  .stage{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:90px 20px 110px; position:relative; z-index:2;
+  }
+  .lesson-card{
+    max-width:640px; width:100%; animation:fadeIn .35s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .lesson-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--sound); margin:0 0 10px; display:flex; align-items:center; gap:8px;
+  }
+  .lesson-eyebrow.amber{ color:var(--light); }
+  .lesson-title{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,4vw,32px);
+    margin:0 0 14px; line-height:1.15; letter-spacing:-0.01em;
+  }
+  .lesson-body{ font-size:15.5px; line-height:1.6; color:#C7CCDA; margin:0 0 22px; }
+  .lesson-body b{ color:var(--ink); }
+  .lesson-body .l{ color:var(--light); font-weight:600; }
+  .lesson-body .s{ color:var(--sound); font-weight:600; }
+
+  .toy{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px;
+    margin-bottom:20px; position:relative; overflow:hidden;
+  }
+  .toy::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--light), transparent 40%, transparent 60%, var(--sound)); opacity:.5;
+  }
+  .toy canvas{ width:100%; display:block; border-radius:10px; background:#070A10; }
+  .toy-label{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;
+  }
+  .toy-label b{ color:var(--ink); font-weight:500; }
+
+  .control{ margin-top:14px; }
+  .control-top{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .control-top label{ color:var(--muted); font-weight:500; }
+  .control-top .val{ font-family:'IBM Plex Mono',monospace; color:var(--ink); }
+  input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px;
+    background:var(--line); outline:none; margin:4px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+    background:var(--ink); cursor:pointer; border:2px solid var(--bg); box-shadow:0 0 0 1px var(--line);
+  }
+  .hint{ font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.4; }
+
+  .toggle-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .toggle-btn{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--muted); cursor:pointer; transition:all .15s ease;
+  }
+  .toggle-btn:hover{ color:var(--ink); border-color:#3a4358; }
+  .toggle-btn.active{ color:var(--ink); border-color:var(--sound); background:rgba(63,207,196,0.08); }
+
+  .compare-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+  @media (max-width:520px){ .compare-row{grid-template-columns:1fr;} }
+  .compare-box{ border-radius:10px; padding:13px 15px; font-size:13.5px; line-height:1.5; }
+  .compare-box.l{ background:rgba(242,163,64,0.08); border:1px solid var(--light-dim); }
+  .compare-box.s{ background:rgba(63,207,196,0.08); border:1px solid var(--sound-dim); }
+  .compare-box b{ display:block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+  .compare-box.l b{ color:var(--light); }
+  .compare-box.s b{ color:var(--sound); }
+
+  .think-box{
+    background:var(--panel-2); border-left:3px solid var(--ink); border-radius:0 10px 10px 0; padding:14px 16px; margin-top:4px;
+  }
+  .think-box .q-label{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); letter-spacing:.06em; margin-bottom:6px; }
+  .think-box p{ margin:0; font-size:13.5px; line-height:1.5; color:#C7CCDA; }
+
+  .check-row{ display:grid; gap:9px; margin-top:6px; }
+  .check-opt{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px 15px;
+    color:var(--ink); font-size:13.5px; cursor:pointer; text-align:left; transition:all .15s ease; font-family:'Inter',sans-serif;
+  }
+  .check-opt:hover{ border-color:#3a4358; }
+  .check-opt.correct{ background:rgba(123,216,143,0.12); border-color:var(--good); }
+  .check-opt.wrong{ background:rgba(232,90,90,0.1); border-color:var(--bad); }
+  .check-feedback{ margin-top:12px; padding:12px 14px; background:var(--panel-2); border-radius:9px; font-size:13px; color:var(--muted); display:none; line-height:1.5; }
+  .check-feedback.show{ display:block; }
+
+  /* ================= NAV FOOTER ================= */
+  .navfoot{
+    position:fixed; bottom:0; left:0; right:0; z-index:90; display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; background:rgba(11,14,20,0.9); backdrop-filter:blur(8px); border-top:1px solid var(--line);
+  }
+  .nav-btn{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:.03em; padding:12px 22px; border-radius:10px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--ink); cursor:pointer; transition:all .15s ease;
+  }
+  .nav-btn:hover{ border-color:#3a4358; }
+  .nav-btn.primary{ background:var(--ink); color:var(--bg); border:none; }
+  .nav-btn.primary:hover{ opacity:.9; }
+  .nav-btn:disabled{ opacity:.3; cursor:default; pointer-events:none; }
+  .nav-dots{ display:flex; gap:5px; }
+  .nav-dot{ width:5px; height:5px; border-radius:50%; background:var(--line); }
+  .nav-dot.done{ background:var(--sound); }
+  .nav-dot.now{ background:var(--ink); width:7px; height:7px; }
+
+  /* ================= LANDING SCREEN ================= */
+  .landing{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 20px; position:relative; z-index:2;}
+  .landing-inner{ max-width:780px; width:100%; text-align:center; }
+  .landing-eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;}
+  .landing h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(34px,6vw,52px); margin:0 0 16px; letter-spacing:-0.01em;}
+  .landing h1 span.l{ color:var(--light); }
+  .landing h1 span.s{ color:var(--sound); }
+  .landing-sub{ color:var(--muted); font-size:16px; max-width:520px; margin:0 auto 44px; line-height:1.6; }
+  .course-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:620px){ .course-grid{grid-template-columns:1fr;} }
+  .course-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:28px 24px; text-align:left;
+    cursor:pointer; transition:all .18s ease; position:relative; overflow:hidden;
+  }
+  .course-card:hover{ transform:translateY(-3px); border-color:#3a4358; }
+  .course-card::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .course-card.a::before{ background:var(--light); }
+  .course-card.b::before{ background:var(--sound); }
+  .course-tag{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+  .course-card.a .course-tag{ color:var(--light); }
+  .course-card.b .course-tag{ color:var(--sound); }
+  .course-card h2{ font-family:'Space Grotesk',sans-serif; font-size:21px; margin:0 0 10px; font-weight:600;}
+  .course-card p{ color:var(--muted); font-size:13.5px; line-height:1.55; margin:0 0 18px;}
+  .course-meta{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; }
+  .course-progress-pill{
+    font-size:10.5px; padding:3px 9px; border-radius:12px; background:var(--panel-2); border:1px solid var(--line);
+  }
+  .course-progress-pill.complete{ color:var(--good); border-color:#2c4a35; }
+
+  /* ================= COMPLETION SCREEN ================= */
+  .complete-screen{ text-align:center; }
+  .complete-badge{
+    width:64px; height:64px; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--light), var(--sound)); font-size:28px;
+  }
+  .quiz-score-big{ font-family:'Space Grotesk',sans-serif; font-size:40px; font-weight:700; margin:6px 0 18px; }
+  .quiz-score-big .frac{ color:var(--muted); font-size:24px; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
+
+<div class="topbar" id="topbar" style="display:none;">
+  <div class="topbar-left">
+    <button class="topbar-exit" id="exit-btn">← Courses</button>
+    <span class="topbar-title" id="topbar-title">—</span>
+  </div>
+  <span class="topbar-count" id="topbar-count">1 / 1</span>
+</div>
+
+<!-- ================= LANDING ================= -->
+<div class="landing" id="landing">
+  <div class="landing-inner">
+    <p class="landing-eyebrow">Wave Course</p>
+    <h1><span class="l">Light</span> &amp; <span class="s">Sound</span></h1>
+    <p class="landing-sub">Two short courses, one lesson at a time. Pick one to start — each builds from the last, with something to play with on almost every screen.</p>
+    <div class="course-grid">
+      <div class="course-card a" id="course-card-physics">
+        <p class="course-tag">Course A</p>
+        <h2>Physics of Waves</h2>
+        <p>Where light and sound come from, how they travel, what happens when they hit something, and how your eyes and ears actually sense them.</p>
+        <div class="course-meta"><span id="physics-lesson-count">13 lessons</span><span class="course-progress-pill" id="physics-progress-pill">Not started</span></div>
+      </div>
+      <div class="course-card b" id="course-card-editing">
+        <p class="course-tag">Course B</p>
+        <h2>Editing &amp; Production</h2>
+        <p>Why the tools you use to edit audio and video are doing the exact same handful of moves — EQ, pitch, compression, dither, and more.</p>
+        <div class="course-meta"><span id="editing-lesson-count">15 lessons</span><span class="course-progress-pill" id="editing-progress-pill">Not started</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LESSON STAGE ================= -->
+<div class="stage" id="stage" style="display:none;">
+  <div class="lesson-card" id="lesson-card"></div>
+</div>
+
+<div class="navfoot" id="navfoot" style="display:none;">
+  <button class="nav-btn" id="back-btn">← Back</button>
+  <div class="nav-dots" id="nav-dots"></div>
+  <button class="nav-btn primary" id="next-btn">Next →</button>
+</div>
+
+<script>
+/* ============================================================
+   PERSISTENCE (in-memory only; no localStorage per platform rules)
+   ============================================================ */
+const progressState = { physics: 0, editing: 0 }; // furthest unlocked-completed index
+
+/* ============================================================
+   SHARED CANVAS HELPERS
+   ============================================================ */
+function fitCanvas(c){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width*dpr; c.height = Math.max(rect.height,1)*dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w:rect.width, h:rect.height};
+}
+function gridLines(ctx,w,h,step=30){
+  ctx.strokeStyle='rgba(124,132,153,0.08)';
+  for(let x=0;x<w;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+}
+
+/* ============================================================
+   COURSE A: PHYSICS OF WAVES
+   ============================================================ */
+const PHYSICS_LESSONS = [
+
+  // ---- 1: Two Waves, One Idea ----
+  {
+    title:'Two Waves, One Idea',
+    eyebrow:'Lesson 1 · Foundations',
+    body:`Light and sound seem like completely different things — one you see, one you hear. But both are <b>waves</b>: a repeating disturbance that carries energy from one place to another. Drag the slider and watch the same idea play out on both.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Live wave — drag to change frequency</span><b id="l1-readout">3.0 Hz</b></div>
+          <canvas id="l1-canvas" height="180"></canvas>
+          <div class="control">
+            <input type="range" id="l1-freq" min="1" max="10" step="0.1" value="3">
+            <p class="hint">Higher frequency means more wave cycles pass by each second — for <span class="l">light</span>, that shifts color; for <span class="s">sound</span>, that raises pitch.</p>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Light</b>An electric field oscillating up and down as it travels.</div>
+          <div class="compare-box s"><b>Sound</b>Air pressure oscillating as it travels.</div>
+        </div>
+      `;
+      const canvas = root.querySelector('#l1-canvas');
+      const slider = root.querySelector('#l1-freq');
+      let freq = 3, raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const midL=h*0.3, midS=h*0.7, amp=h*0.18;
+        ctx.strokeStyle='#F2A340'; ctx.lineWidth=2.4;
+        ctx.beginPath();
+        for(let x=0;x<=w;x+=2){
+          const y = midL + Math.sin((x/w)*Math.PI*2*freq - t*freq*2.4)*amp;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2.4;
+        ctx.beginPath();
+        for(let x=0;x<=w;x+=2){
+          const y = midS + Math.sin((x/w)*Math.PI*2*freq - t*freq*2.4)*amp;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        raf=requestAnimationFrame(draw);
+      }
+      slider.addEventListener('input', ()=>{ freq=parseFloat(slider.value); root.querySelector('#l1-readout').textContent=freq.toFixed(1)+' Hz'; });
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 2: Transverse vs Longitudinal ----
+  {
+    title:'What Is Actually Moving?',
+    eyebrow:'Lesson 2 · Foundations',
+    body:`Here's the real physical difference. Light is a <b>transverse</b> wave — its field oscillates <i>sideways</i> to the direction it travels. Sound is a <b>longitudinal</b> wave — the air itself compresses and stretches <i>along</i> the direction it travels. Toggle between them below.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="l2-label">Transverse (light)</span></div>
+          <canvas id="l2-canvas" height="170"></canvas>
+          <div class="toggle-row">
+            <button class="toggle-btn active" data-mode="light">Light — transverse</button>
+            <button class="toggle-btn" data-mode="sound">Sound — longitudinal</button>
+          </div>
+        </div>
+        <div class="think-box">
+          <div class="q-label">WORTH NOTICING</div>
+          <p>Because light's wiggle is sideways, you can restrict it to one orientation — that's <b>polarization</b>, coming up later. Sound has no real equivalent, because its "wiggle" is already pointed straight ahead.</p>
+        </div>
+      `;
+      const canvas = root.querySelector('#l2-canvas');
+      let mode='light', raf, t0=performance.now();
+      root.querySelectorAll('.toggle-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          root.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active'); mode=btn.dataset.mode;
+          root.querySelector('#l2-label').textContent = mode==='light' ? 'Transverse (light)' : 'Longitudinal (sound)';
+        });
+      });
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const mid=h/2;
+        if(mode==='light'){
+          ctx.strokeStyle='#F2A340'; ctx.lineWidth=2.6;
+          ctx.beginPath();
+          for(let x=0;x<=w;x+=2){
+            const y = mid + Math.sin((x/w)*Math.PI*2*3 - t*6)*h*0.28;
+            if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+          // arrows showing sideways motion
+          for(let x=0;x<w;x+=60){
+            const y = mid + Math.sin((x/w)*Math.PI*2*3 - t*6)*h*0.28;
+            ctx.strokeStyle='rgba(242,163,64,0.4)'; ctx.lineWidth=1.4;
+            ctx.beginPath(); ctx.moveTo(x,mid); ctx.lineTo(x,y); ctx.stroke();
+          }
+          ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+          ctx.fillText('field wiggles ↕ while wave moves →', 10, h-10);
+        } else {
+          const bandCount=40;
+          for(let i=0;i<bandCount;i++){
+            const xf=i/bandCount;
+            const density=(Math.sin(xf*Math.PI*2*3 - t*6)+1)/2;
+            ctx.fillStyle=`rgba(63,207,196,${0.06+density*0.35})`;
+            ctx.fillRect(xf*w, mid-40, w/bandCount+1, 80);
+          }
+          ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+          ctx.beginPath();
+          for(let x=0;x<=w;x+=2){
+            const y = mid + Math.sin((x/w)*Math.PI*2*3 - t*6)*h*0.1;
+            if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+          ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+          ctx.fillText('air compresses ↔ along the same line the wave moves →', 10, h-10);
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 3: How They're Made ----
+  {
+    title:'How They\'re Made',
+    eyebrow:'Lesson 3 · Origins',
+    body:`Both waves come from something moving — just at wildly different scales. Toggle between a natural and an engineered source for each.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Source comparison</span></div>
+          <canvas id="l3-canvas" height="170"></canvas>
+          <div class="toggle-row">
+            <button class="toggle-btn active" data-src="natural">Natural sources</button>
+            <button class="toggle-btn" data-src="engineered">Engineered sources</button>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Light</b><span id="l3-light-text">The Sun — fusion produces light that escapes after a long journey through its core.</span></div>
+          <div class="compare-box s"><b>Sound</b><span id="l3-sound-text">Wind, thunder, voices — anything releasing kinetic energy into the air.</span></div>
+        </div>
+        <div class="think-box">
+          <div class="q-label">WORTH NOTICING</div>
+          <p>A laser produces light where every photon moves in lockstep — <b>coherent</b> light. A speaker just pushes air however the signal tells it to. Is there a sound equivalent to a laser?</p>
+        </div>
+      `;
+      const canvas = root.querySelector('#l3-canvas');
+      let src='natural', raf, t0=performance.now();
+      const lightText = root.querySelector('#l3-light-text');
+      const soundText = root.querySelector('#l3-sound-text');
+      root.querySelectorAll('.toggle-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          root.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active'); src=btn.dataset.src;
+          if(src==='natural'){
+            lightText.textContent='The Sun — fusion produces light that escapes after a long journey through its core.';
+            soundText.textContent='Wind, thunder, voices — anything releasing kinetic energy into the air.';
+          } else {
+            lightText.textContent='LEDs and lasers — electrons dropping energy levels, or stimulated emission in lockstep.';
+            soundText.textContent='Speakers and oscillators — an electromagnet or circuit pushing air on command.';
+          }
+        });
+      });
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        if(src==='natural'){
+          const sunX=w*0.27, sunY=h*0.5, pulse=Math.sin(t*1.5)*3;
+          ctx.fillStyle='#F2A340'; ctx.beginPath(); ctx.arc(sunX,sunY,20+pulse,0,Math.PI*2); ctx.fill();
+          for(let i=0;i<8;i++){
+            const ang=i/8*Math.PI*2+t*0.3;
+            ctx.strokeStyle='rgba(242,163,64,0.5)'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(sunX+Math.cos(ang)*28,sunY+Math.sin(ang)*28); ctx.lineTo(sunX+Math.cos(ang)*44,sunY+Math.sin(ang)*44); ctx.stroke();
+          }
+          const cx=w*0.72, push=Math.sin(t*4)*8;
+          ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2.5;
+          ctx.beginPath(); ctx.moveTo(cx-26,h*0.25); ctx.lineTo(cx+push,h*0.5); ctx.lineTo(cx-26,h*0.75); ctx.stroke();
+          for(let i=0;i<4;i++){
+            const bx=cx+18+i*16+push, density=(Math.sin(bx*0.3-t*4)+1)/2;
+            ctx.fillStyle=`rgba(63,207,196,${0.12+density*0.25})`; ctx.fillRect(bx,h*0.15,9,h*0.7);
+          }
+        } else {
+          const laserX=w*0.22;
+          for(let i=0;i<5;i++){
+            const off=(i-2)*4;
+            ctx.strokeStyle='rgba(242,163,64,0.8)'; ctx.lineWidth=1.5;
+            ctx.beginPath(); ctx.moveTo(laserX,h*0.5+off); ctx.lineTo(laserX+w*0.22,h*0.5+off); ctx.stroke();
+          }
+          ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='10px IBM Plex Mono'; ctx.fillText('coherent (laser)', laserX, h*0.85);
+          const cx=w*0.72, push=Math.sin(t*4)*8;
+          ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2.5;
+          ctx.beginPath(); ctx.moveTo(cx-26,h*0.25); ctx.lineTo(cx+push,h*0.5); ctx.lineTo(cx-26,h*0.75); ctx.stroke();
+          ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.fillText('speaker', cx-20, h*0.85);
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 4: Traveling & Fading ----
+  {
+    title:'The Inverse-Square Law',
+    eyebrow:'Lesson 4 · Traveling',
+    body:`Move twice as far from a light or a speaker, and intensity doesn't drop by half — it drops to a <b>quarter</b>. Both obey the exact same equation, because both are spreading their energy over an ever-expanding sphere.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Distance from source</span><b id="l4-readout">1.0×  ·  100%</b></div>
+          <canvas id="l4-canvas" height="190"></canvas>
+          <div class="control">
+            <input type="range" id="l4-dist" min="10" max="100" step="1" value="10">
+            <p class="hint">Drag right to move away. Both intensities always match — it's pure geometry, not a coincidence.</p>
+          </div>
+        </div>
+      `;
+      const canvas = root.querySelector('#l4-canvas');
+      const slider = root.querySelector('#l4-dist');
+      const readout = root.querySelector('#l4-readout');
+      function draw(){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const dist = parseInt(slider.value)/10;
+        const intensity = 1/(dist*dist);
+        readout.textContent = dist.toFixed(1)+'×  ·  '+Math.round(intensity*100)+'%';
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        // light glow left
+        const glowR = 12+intensity*55;
+        const grad = ctx.createRadialGradient(w*0.27,h/2,2,w*0.27,h/2,glowR);
+        grad.addColorStop(0,`rgba(242,163,64,${Math.min(intensity*1.4,1)})`);
+        grad.addColorStop(1,'rgba(242,163,64,0)');
+        ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(w*0.27,h/2,glowR,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=`rgba(242,163,64,${Math.min(intensity*1.8,1)})`;
+        ctx.beginPath(); ctx.arc(w*0.27,h/2,5,0,Math.PI*2); ctx.fill();
+        // sound rings right
+        const maxR=Math.min(w,h)*0.32;
+        for(let r=8;r<maxR;r+=10){
+          const a=intensity*0.7*(1-r/maxR);
+          ctx.strokeStyle=`rgba(63,207,196,${Math.max(a,0)})`; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.arc(w*0.73,h/2,r,0,Math.PI*2); ctx.stroke();
+        }
+        ctx.fillStyle=`rgba(63,207,196,${Math.min(intensity*1.8,1)})`;
+        ctx.beginPath(); ctx.arc(w*0.73,h/2,5,0,Math.PI*2); ctx.fill();
+      }
+      slider.addEventListener('input', draw);
+      draw();
+      window.addEventListener('resize', draw);
+      return ()=> window.removeEventListener('resize', draw);
+    }
+  },
+
+  // ---- 5: Reflection ----
+  {
+    title:'Reflection',
+    eyebrow:'Lesson 5 · Modifiers',
+    body:`A wave bouncing off a boundary instead of passing through. The rule is identical for both: <b>angle in = angle out</b>, measured from the surface.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Bounce, on loop</span></div>
+          <canvas id="l5-canvas" height="170"></canvas>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Light</b>Mirrors, calm water, polished metal.</div>
+          <div class="compare-box s"><b>Sound</b>Echoes, sonar, concert-hall acoustics.</div>
+        </div>
+      `;
+      const canvas = root.querySelector('#l5-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const surfY=h*0.78;
+        ctx.strokeStyle='#3a4358'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(0,surfY); ctx.lineTo(w,surfY); ctx.stroke();
+        const cyc=(t*0.5)%2, prog=cyc<1?cyc:2-cyc;
+        const x0=w*0.18,x1=w*0.5,x2=w*0.82,y0=h*0.12,y1=surfY;
+        const px=x0+(x1-x0)*Math.min(prog*2,1), py=y0+(y1-y0)*Math.min(prog*2,1);
+        ctx.strokeStyle='#F2A340'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(px,py); ctx.stroke();
+        if(prog>0.5){
+          const p2=(prog-0.5)*2, qx=x1+(x2-x1)*p2, qy=y1+(y0-y1)*p2;
+          ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(qx,qy); ctx.stroke();
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 6: Refraction ----
+  {
+    title:'Refraction',
+    eyebrow:'Lesson 6 · Modifiers',
+    body:`A wave bends when it crosses into a medium where it travels at a different speed. A straw looks bent in water; sound bends downward at night through layered air.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Bending at a boundary</span></div>
+          <canvas id="l6-canvas" height="170"></canvas>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Light</b>Prisms splitting color; a straw looking bent in a glass.</div>
+          <div class="compare-box s"><b>Sound</b>Carries further at night as cool air near the ground bends it down.</div>
+        </div>
+      `;
+      const canvas = root.querySelector('#l6-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const splitX=w*0.45;
+        ctx.fillStyle='rgba(63,207,196,0.06)'; ctx.fillRect(splitX,0,w-splitX,h);
+        ctx.strokeStyle='#3a4358'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(splitX,0); ctx.lineTo(splitX,h); ctx.stroke();
+        const x0=w*0.08,y0=h*0.15,y1=h*0.5;
+        ctx.strokeStyle='#F2A340'; ctx.lineWidth=2.6;
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(splitX,y1); ctx.stroke();
+        const x2=w*0.95, y2=Math.min(y1+(w-splitX)*0.5, h*0.9);
+        ctx.beginPath(); ctx.moveTo(splitX,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+        ctx.fillText('faster medium', 10, 16); ctx.fillText('slower medium', splitX+10, 16);
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 7: Diffraction ----
+  {
+    title:'Diffraction',
+    eyebrow:'Lesson 7 · Modifiers',
+    body:`Waves spread around obstacles and through openings — but not equally. The effect is strong only when the wavelength is close to the size of the gap. Visible light's wavelength is tiny; sound's is not.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Sound bends around the gap; light barely does</span></div>
+          <canvas id="l7-canvas" height="170"></canvas>
+        </div>
+        <div class="think-box">
+          <div class="q-label">WORTH NOTICING</div>
+          <p>You can hear someone around a corner you can't see. That's the wavelength-to-gap-size ratio in action — sound's wavelength (cm–m) competes with doorway sizes; light's (nanometers) doesn't.</p>
+        </div>
+      `;
+      const canvas = root.querySelector('#l7-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const gapY=h*0.5, gapH=12;
+        ctx.strokeStyle='#3a4358'; ctx.lineWidth=8;
+        ctx.beginPath(); ctx.moveTo(w*0.42,0); ctx.lineTo(w*0.42,gapY-gapH); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(w*0.42,gapY+gapH); ctx.lineTo(w*0.42,h); ctx.stroke();
+        for(let r=0;r<5;r++){
+          const radius=((t*45)+r*26)%150;
+          ctx.strokeStyle=`rgba(63,207,196,${0.5-radius/300})`; ctx.lineWidth=1.8;
+          ctx.beginPath(); ctx.arc(w*0.42,gapY,radius,-Math.PI/2.1,Math.PI/2.1); ctx.stroke();
+        }
+        for(let x=0;x<w*0.4;x+=18){
+          ctx.strokeStyle='rgba(242,163,64,0.45)'; ctx.lineWidth=1.6;
+          ctx.beginPath(); ctx.moveTo(x,gapY); ctx.lineTo(x+10,gapY); ctx.stroke();
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 8: Interference ----
+  {
+    title:'Interference',
+    eyebrow:'Lesson 8 · Modifiers',
+    body:`Overlapping waves combine — constructively (louder, brighter) or destructively (quieter, darker). Noise-cancelling headphones and anti-reflective coatings both exploit this trick.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Two sources overlapping</span></div>
+          <canvas id="l8-canvas" height="170"></canvas>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Light</b>Soap bubble colors; anti-reflective lens coatings.</div>
+          <div class="compare-box s"><b>Sound</b>Noise-cancelling headphones; "beating" between close pitches.</div>
+        </div>
+      `;
+      const canvas = root.querySelector('#l8-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        ctx.lineWidth=2;
+        [w*0.3,w*0.7].forEach((cx,i)=>{
+          ctx.strokeStyle = i===0 ? 'rgba(242,163,64,0.55)' : 'rgba(63,207,196,0.55)';
+          for(let r=8;r<140;r+=16){
+            const rr=(r+(t*30)%16);
+            ctx.beginPath(); ctx.arc(cx,h*0.5,rr,0,Math.PI*2); ctx.stroke();
+          }
+        });
+        for(let x=w*0.4;x<w*0.6;x+=3){
+          const v=Math.sin(x*0.5-t*4);
+          ctx.fillStyle = v>0.3 ? 'rgba(232,236,241,0.5)':'rgba(10,12,16,0.4)';
+          ctx.fillRect(x,h*0.1,3,h*0.8);
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 9: Doppler ----
+  {
+    title:'The Doppler Effect',
+    eyebrow:'Lesson 9 · Modifiers',
+    body:`Frequency shifts when a source and an observer move relative to each other. A siren drops in pitch as it passes you; starlight redshifts as galaxies move away — same underlying mechanism.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Source moving left to right</span></div>
+          <canvas id="l9-canvas" height="170"></canvas>
+        </div>
+      `;
+      const canvas = root.querySelector('#l9-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const srcX=(w*0.1+(t*70))%(w*1.3)-w*0.15;
+        for(let r=0;r<7;r++){
+          const age=(t-r*0.26)%1.9;
+          if(age<0) continue;
+          const radius=age*65;
+          const emitX=srcX-age*65*0.6;
+          ctx.strokeStyle=`rgba(63,207,196,${Math.max(0,0.5-age*0.27)})`; ctx.lineWidth=1.8;
+          ctx.beginPath(); ctx.arc(emitX,h*0.5,radius,0,Math.PI*2); ctx.stroke();
+        }
+        ctx.fillStyle='#F2A340'; ctx.beginPath(); ctx.arc(srcX,h*0.5,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+        ctx.fillText('compressed (higher pitch)', 10, h-10);
+        ctx.fillText('stretched (lower pitch)', w*0.62, h-10);
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 10: Polarization ----
+  {
+    title:'Polarization',
+    eyebrow:'Lesson 10 · Modifiers — Light Only',
+    body:`Here's where they finally diverge. Because light's wiggle is sideways (transverse), you can filter it down to one orientation. Sound's "wiggle" runs straight ahead (longitudinal) — there's nothing to filter.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Unpolarized light meets a filter</span></div>
+          <canvas id="l10-canvas" height="170"></canvas>
+        </div>
+        <div class="think-box">
+          <div class="q-label">WORTH NOTICING</div>
+          <p>Polarized sunglasses and LCD screens both rely on this. If sound in air were somehow transverse instead of longitudinal, what kind of "sound polarizer" might exist that doesn't today?</p>
+        </div>
+      `;
+      const canvas = root.querySelector('#l10-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        const filterX=w*0.55;
+        ctx.strokeStyle='rgba(232,236,241,0.25)'; ctx.lineWidth=10;
+        ctx.beginPath(); ctx.moveTo(filterX,h*0.1); ctx.lineTo(filterX,h*0.9); ctx.stroke();
+        for(let i=0;i<6;i++){
+          const x=w*0.06+i*(filterX-w*0.06)/6+10, ang=i*0.6+t*0.5, len=15;
+          ctx.strokeStyle='#F2A340'; ctx.lineWidth=2;
+          ctx.beginPath();
+          ctx.moveTo(x-Math.cos(ang)*len,h*0.5-Math.sin(ang)*len);
+          ctx.lineTo(x+Math.cos(ang)*len,h*0.5+Math.sin(ang)*len);
+          ctx.stroke();
+        }
+        for(let i=0;i<6;i++){
+          const x=filterX+28+i*((w*0.94-filterX-28)/6), len=15;
+          ctx.strokeStyle='#F2A340'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.moveTo(x,h*0.5-len); ctx.lineTo(x,h*0.5+len); ctx.stroke();
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 11: Resonance ----
+  {
+    title:'Resonance',
+    eyebrow:'Lesson 11 · Modifiers',
+    body:`A system absorbs energy most efficiently at its own natural frequency. A wine glass shatters at its matching pitch; atoms absorb very specific wavelengths of light, leaving dark lines in a star's spectrum.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Driven at its natural frequency</span></div>
+          <canvas id="l11-canvas" height="170"></canvas>
+        </div>
+      `;
+      const canvas = root.querySelector('#l11-canvas');
+      let raf, t0=performance.now();
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        ctx.strokeStyle='#3a4358'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(w*0.1,h*0.85); ctx.lineTo(w*0.9,h*0.85); ctx.stroke();
+        const cx=w*0.5, sway=Math.sin(t*1.2*3)*28;
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(cx,h*0.85); ctx.lineTo(cx+sway,h*0.25); ctx.stroke();
+        ctx.fillStyle='#3FCFC4'; ctx.beginPath(); ctx.arc(cx+sway,h*0.25,8,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+        ctx.fillText('matched frequency → big swing', 10, h-10);
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+
+  // ---- 12: Perception ----
+  {
+    title:'How We Perceive Them',
+    eyebrow:'Lesson 12 · Perception',
+    body:`The wave is only half the story. Your eyes and ears do real-time processing of their own. Try all three toggles below.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="l12-label">Masking — a strong signal hides a weak nearby one</span></div>
+          <canvas id="l12-canvas" height="170"></canvas>
+          <div class="toggle-row">
+            <button class="toggle-btn active" data-m="masking">Masking</button>
+            <button class="toggle-btn" data-m="adaptation">Adaptation</button>
+            <button class="toggle-btn" data-m="timbre">Timbre</button>
+          </div>
+        </div>
+        <div class="think-box" id="l12-think">
+          <div class="q-label">WORTH NOTICING</div>
+          <p>Stars are out during the day — sunlight just masks them. A quiet hi-hat is still vibrating the air under a loud bass hit. The signal isn't gone. Your perception just can't pull it out.</p>
+        </div>
+      `;
+      const canvas = root.querySelector('#l12-canvas');
+      const thinkP = root.querySelector('#l12-think p');
+      const label = root.querySelector('#l12-label');
+      let mode='masking', raf, t0=performance.now();
+      const texts = {
+        masking:['Masking — a strong signal hides a weak nearby one', `Stars are out during the day — sunlight just masks them. A quiet hi-hat is still vibrating the air under a loud bass hit. The signal isn't gone. Your perception just can't pull it out.`],
+        adaptation:['Adaptation — both senses recalibrate to the environment', `Dark-adapting your eyes can take 20–30 minutes. Your ears adjust to a quiet room almost instantly. Same basic problem — a sudden change in intensity — very different recalibration speed.`],
+        timbre:['Timbre — same fundamental, different harmonic mix', `A violin and a flute can play the exact same pitch and sound nothing alike. The light equivalent: two bulbs can share a color temperature yet render colors differently underneath.`]
+      };
+      root.querySelectorAll('.toggle-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          root.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active'); mode=btn.dataset.m;
+          label.textContent = texts[mode][0];
+          thinkP.textContent = texts[mode][1];
+        });
+      });
+      function draw(now){
+        const {ctx,w,h} = fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h);
+        gridLines(ctx,w,h);
+        if(mode==='masking'){
+          const sunR=28+Math.sin(t*0.7)*4;
+          const grad=ctx.createRadialGradient(w*0.27,h*0.5,2,w*0.27,h*0.5,sunR*2.2);
+          grad.addColorStop(0,'rgba(255,230,150,0.9)'); grad.addColorStop(1,'rgba(255,230,150,0)');
+          ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(w*0.27,h*0.5,sunR*2.2,0,Math.PI*2); ctx.fill();
+          for(let i=0;i<8;i++){
+            const ang=i/8*Math.PI*2, r=34+(i%3)*13;
+            const sx=w*0.27+Math.cos(ang)*r, sy=h*0.5+Math.sin(ang)*r*0.7;
+            ctx.fillStyle = r>sunR*1.6 ? 'rgba(255,255,255,0.8)':'rgba(255,255,255,0.08)';
+            ctx.beginPath(); ctx.arc(sx,sy,2,0,Math.PI*2); ctx.fill();
+          }
+          const beat=(Math.sin(t*3)+1)/2, bassH=20+beat*45;
+          ctx.fillStyle='rgba(63,207,196,0.6)'; ctx.fillRect(w*0.62,h*0.85-bassH,24,bassH);
+          ctx.fillStyle = beat<0.3 ? 'rgba(255,255,255,0.8)':'rgba(255,255,255,0.08)';
+          ctx.fillRect(w*0.62+30,h*0.78,6,14);
+        } else if(mode==='adaptation'){
+          const cyc=(t*0.35)%1, reveal=Math.min(cyc*2,1);
+          for(let i=0;i<5;i++){
+            ctx.fillStyle=`rgba(242,163,64,${0.05+reveal*0.4})`;
+            ctx.beginPath(); ctx.arc(w*0.12+i*(w*0.08),h*0.5,8,0,Math.PI*2); ctx.fill();
+          }
+          ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono'; ctx.fillText('eyes (slow)', 10, h-10);
+          const earGain=Math.min(cyc*6,1);
+          ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+          ctx.beginPath();
+          for(let x=w*0.58;x<w*0.92;x+=2){
+            const y=h*0.5+Math.sin(x*0.5-t*4)*h*0.18*(0.3+earGain*0.7);
+            if(x===w*0.58) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+          ctx.fillText('ears (fast)', w*0.58, h-10);
+        } else {
+          for(let c=0;c<2;c++){
+            const ox=c===0?10:w*0.55, ow=w*0.4;
+            ctx.strokeStyle = c===0? '#F2A340':'#3FCFC4'; ctx.lineWidth=2;
+            ctx.beginPath();
+            for(let x=0;x<=ow;x+=2){
+              const xf=x/ow;
+              let y;
+              if(c===0) y=h*0.5+(Math.sin(xf*Math.PI*4-t*3)+Math.sin(xf*Math.PI*8-t*3)*0.5+Math.sin(xf*Math.PI*12-t*3)*0.3)*h*0.18;
+              else y=h*0.5+Math.sin(xf*Math.PI*4-t*3)*h*0.24;
+              if(x===0) ctx.moveTo(ox+x,y); else ctx.lineTo(ox+x,y);
+            }
+            ctx.stroke();
+            ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='10px IBM Plex Mono';
+            ctx.fillText(c===0?'rich harmonics':'pure tone', ox, h-10);
+          }
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=> cancelAnimationFrame(raf);
+    }
+  },
+];
+
+/* ============================================================
+   COURSE B: EDITING & PRODUCTION
+   ============================================================ */
+const EDITING_LESSONS = [
+
+  {
+    title:'Same Trick, Two Toolkits',
+    eyebrow:'Lesson 1 · Foundations',
+    body:`Editing audio is editing sound waves. Editing video is editing light waves. Every tool below is doing one of a handful of moves — splitting a signal into bands, scaling it, smearing it across time, or trading one variable for another.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>The handful of moves</span></div>
+          <canvas id="b1-canvas" height="160"></canvas>
+        </div>
+        <div class="compare-row">
+          <div class="compare-box l"><b>Audio editing</b>EQ, compression, pitch, reverb, noise reduction, panning.</div>
+          <div class="compare-box s"><b>Video editing</b>Curves, contrast, speed, motion blur, denoise, framing.</div>
+        </div>
+      `;
+      const canvas = root.querySelector('#b1-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let x=0;x<w*0.46;x+=2){ const y=h*0.5+Math.sin(x*0.1-t*3)*h*0.25; if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const cols=18;
+        for(let i=0;i<cols;i++){
+          const x=w*0.55+i*(w*0.42/cols), v=(Math.sin(i*0.6+t)+1)/2;
+          ctx.fillStyle=`rgb(${Math.round(v*235)+10},${Math.round(v*180)+10},${Math.round(v*90)+10})`;
+          ctx.fillRect(x,h*0.25,w*0.42/cols+1,h*0.5);
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'EQ ↔ Curves',
+    eyebrow:'Lesson 2 · Editing Tools',
+    body:`Both split a signal into bands and let you push each one independently. EQ works on frequency bands (bass/mid/treble). Curves work on brightness bands (shadows/mids/highlights).`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>EQ bars (left) vs. a curves S-curve (right)</span></div>
+          <canvas id="b2-canvas" height="170"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b2-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const midX=w*0.5;
+        ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(midX,0); ctx.lineTo(midX,h); ctx.stroke();
+        const bands=8;
+        for(let i=0;i<bands;i++){
+          const bw=(midX-20)/bands, x=10+i*bw;
+          const boost=Math.sin(t*1.3+i*0.7)*0.5, barH=(h*0.35)+boost*h*0.3;
+          ctx.fillStyle = i<bands/2 ? 'rgba(63,207,196,0.7)':'rgba(63,207,196,0.4)';
+          ctx.fillRect(x,h*0.85-Math.max(barH,4),bw-4,Math.max(barH,4));
+        }
+        const cx0=midX+30,cx1=w-20,cy0=h*0.88,cy1=h*0.12,shift=Math.sin(t*1.3)*18;
+        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(cx0,cy0); ctx.lineTo(cx1,cy0); ctx.lineTo(cx1,cy1); ctx.stroke();
+        ctx.strokeStyle='#F2A340'; ctx.lineWidth=2.6;
+        ctx.beginPath(); ctx.moveTo(cx0,cy0);
+        ctx.bezierCurveTo(cx0+(cx1-cx0)*0.3,cy0-(cy0-cy1)*0.15-shift, cx0+(cx1-cx0)*0.7,cy1+(cy0-cy1)*0.15+shift, cx1,cy1);
+        ctx.stroke();
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Pitch ↔ Speed',
+    eyebrow:'Lesson 3 · Editing Tools',
+    body:`Speeding up audio raises its pitch — more wave cycles per second. Speeding up video compresses motion the same way — more original frames per second of playback. Drag the rate slider.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Rate</span><b id="b3-readout">1.00×</b></div>
+          <canvas id="b3-canvas" height="170"></canvas>
+          <div class="control"><input type="range" id="b3-rate" min="40" max="220" step="1" value="100"></div>
+        </div>
+      `;
+      const canvas=root.querySelector('#b3-canvas');
+      const slider=root.querySelector('#b3-rate');
+      const readout=root.querySelector('#b3-readout');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        const speed=parseInt(slider.value)/100;
+        readout.textContent=speed.toFixed(2)+'×';
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let x=0;x<w;x+=2){ const y=h*0.35+Math.sin(x*0.08*speed-t*4)*h*0.18; if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const fw=26/speed;
+        ctx.strokeStyle='rgba(242,163,64,0.6)'; ctx.lineWidth=1.5;
+        for(let x=0;x<w;x+=fw){ ctx.beginPath(); ctx.moveTo(x,h*0.62); ctx.lineTo(x,h*0.92); ctx.stroke(); }
+        raf=requestAnimationFrame(draw);
+      }
+      slider.addEventListener('input', ()=>{});
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Compression ↔ Contrast / Tone Mapping',
+    eyebrow:'Lesson 4 · Editing Tools',
+    body:`Both take a wide range of values and squeeze it into a usable range. Audio compression narrows loudness; tone mapping narrows a wide dynamic range (like HDR) into what a normal screen can show.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Range narrowing</span></div>
+          <canvas id="b4-canvas" height="170"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b4-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const squeeze=(Math.sin(t*0.9)+1)/2;
+        const rangeTop=h*0.15+squeeze*h*0.18, rangeBot=h*0.85-squeeze*h*0.18;
+        ctx.fillStyle='rgba(63,207,196,0.15)'; ctx.fillRect(15,rangeTop,w*0.4,rangeBot-rangeTop);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let x=15;x<w*0.42;x+=2){
+          const raw=Math.sin(x*0.2+t*3)*h*0.35;
+          const y=h*0.5+Math.max(Math.min(raw,(rangeBot-rangeTop)/2),-(rangeBot-rangeTop)/2);
+          if(x===15) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        const gradT=ctx.createLinearGradient(0,rangeTop,0,rangeBot);
+        gradT.addColorStop(0,'#1a1a1a'); gradT.addColorStop(1,'#e8c98a');
+        ctx.fillStyle=gradT; ctx.fillRect(w*0.55,rangeTop,w*0.4,rangeBot-rangeTop);
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Gain / Volume ↔ Exposure',
+    eyebrow:'Lesson 5 · Editing Tools',
+    body:`The simplest move in either toolkit: scale the whole signal up or down, uniformly. Push too far and you clip — a flat-topped waveform, or a blown-out highlight with no detail.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Level</span><b id="b5-readout">50%</b></div>
+          <canvas id="b5-canvas" height="170"></canvas>
+          <div class="control"><input type="range" id="b5-level" min="10" max="100" step="1" value="50"></div>
+        </div>
+      `;
+      const canvas=root.querySelector('#b5-canvas');
+      const slider=root.querySelector('#b5-level');
+      const readout=root.querySelector('#b5-readout');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        const level=parseInt(slider.value)/100*1.6;
+        readout.textContent=Math.round(level*62.5)+'%';
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let x=15;x<w*0.42;x+=2){ const y=h*0.5+Math.sin(x*0.2+t*3)*h*0.35*level; if(x===15) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const clip=level>0.78;
+        ctx.fillStyle = clip? 'rgba(232,90,90,0.5)':'rgba(255,255,255,0.25)';
+        ctx.fillRect(15,h*0.5-h*0.42,w*0.4,4); ctx.fillRect(15,h*0.5+h*0.38,w*0.4,4);
+        const brightness=Math.min(level,1);
+        ctx.fillStyle=`rgba(${242*brightness+10},${163*brightness+10},${64*brightness+10},1)`;
+        ctx.fillRect(w*0.55,h*0.15,w*0.4,h*0.7);
+        if(clip){ ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(w*0.55,h*0.15,w*0.4,h*0.7); }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Noise Reduction ↔ Denoise',
+    eyebrow:'Lesson 6 · Editing Tools',
+    body:`Both detect unwanted random signal and suppress it — at the cost of fine detail if overused. Push either too far and things start sounding underwater or looking waxy.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Noisy waveform / grainy image</span></div>
+          <canvas id="b6-canvas" height="170"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b6-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=1.5;
+        ctx.beginPath();
+        for(let x=15;x<w*0.42;x+=2){ const n=(Math.random()-0.5)*h*0.12; const y=h*0.5+Math.sin(x*0.2+t*3)*h*0.22+n; if(x===15) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const imgData=ctx.createImageData(Math.floor(w*0.4),Math.floor(h*0.7));
+        for(let i=0;i<imgData.data.length;i+=4){
+          const base=130+Math.sin(i*0.0005+t)*30, n=(Math.random()-0.5)*70;
+          imgData.data[i]=base+n; imgData.data[i+1]=base+n*0.8; imgData.data[i+2]=base+n*0.6; imgData.data[i+3]=255;
+        }
+        ctx.putImageData(imgData,w*0.55,h*0.15);
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Reverb / Delay ↔ Motion Blur',
+    eyebrow:'Lesson 7 · Editing Tools',
+    body:`Both smear a signal across time. Reverb is almost always added after the fact in a mix. Motion blur is usually baked in at capture time by shutter speed — much harder to add convincingly afterward.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Trailing decay</span></div>
+          <canvas id="b7-canvas" height="160"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b7-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const x0=w*0.1+((t*55)%(w*0.3));
+        for(let i=5;i>=0;i--){ const decay=i/5; ctx.fillStyle=`rgba(63,207,196,${0.5*(1-decay)})`; ctx.beginPath(); ctx.arc(x0-i*10,h*0.5,5,0,Math.PI*2); ctx.fill(); }
+        const bx=w*0.55+((t*55)%(w*0.3));
+        for(let i=6;i>=0;i--){ ctx.fillStyle=`rgba(242,163,64,${0.45*(1-i/6)})`; ctx.beginPath(); ctx.arc(bx-i*7,h*0.5,9,0,Math.PI*2); ctx.fill(); }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Panning ↔ Framing / Composition',
+    eyebrow:'Lesson 8 · Editing Tools',
+    body:`Both position something within a perceptual field — stereo pan on a left–right axis, framing within a two-dimensional image.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>1D field (audio) vs. 2D field (video)</span></div>
+          <canvas id="b8-canvas" height="160"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b8-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const panPos=Math.sin(t*1.1);
+        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(15,h*0.5); ctx.lineTo(w*0.42,h*0.5); ctx.stroke();
+        ctx.fillStyle='#3FCFC4'; ctx.beginPath(); ctx.arc(15+(w*0.42-15)*(panPos+1)/2,h*0.5,7,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.strokeRect(w*0.55,h*0.15,w*0.4,h*0.7);
+        const fx=w*0.55+(w*0.4)*((Math.sin(t*0.9)+1)/2), fy=h*0.15+(h*0.7)*((Math.cos(t*0.7)+1)/2);
+        ctx.fillStyle='#F2A340'; ctx.beginPath(); ctx.arc(fx,fy,8,0,Math.PI*2); ctx.fill();
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Filters ↔ Blur / Sharpen',
+    eyebrow:'Lesson 9 · Editing Tools',
+    body:`A low-pass filter removes high frequencies (dulling a sound) — that's literally what blur does to an image. A high-pass filter thins a sound out; sharpening exaggerates edges the same way.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Smoothed waveform / blurred columns</span></div>
+          <canvas id="b9-canvas" height="160"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b9-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let x=15;x<w*0.42;x+=2){ const lp=Math.sin(x*0.15)*h*0.18+Math.sin(x*0.9+t*6)*h*0.03; const y=h*0.5+lp; if(x===15) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const cols=24;
+        for(let i=0;i<cols;i++){ const x=w*0.55+i*(w*0.4/cols), blur=Math.sin(i*0.5)*0.5+0.5; ctx.fillStyle=`rgba(${200*blur+30},${200*blur+30},${200*blur+30},1)`; ctx.fillRect(x,h*0.2,w*0.4/cols+1,h*0.6); }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'Making Sounds &amp; Shapes',
+    eyebrow:'Lesson 10 · Synthesis',
+    body:`Every synthesizer starts from a handful of basic waveforms — sine, saw, square, triangle. Procedural visuals start from comparably simple primitives — noise fields, gradients, tiling — that get layered into something complex.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span>Four basic waveforms</span></div>
+          <canvas id="b10-canvas" height="160"></canvas>
+        </div>
+      `;
+      const canvas=root.querySelector('#b10-canvas');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const shapes=['sine','saw','square','triangle']; const wCell=w/4;
+        shapes.forEach((shape,i)=>{
+          const cx0=i*wCell+8, cx1=(i+1)*wCell-8;
+          ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2; ctx.beginPath();
+          for(let x=cx0;x<=cx1;x+=2){
+            const xf=(x-cx0)/(cx1-cx0); const phase=xf*Math.PI*2*2-t*3; let v;
+            if(shape==='sine') v=Math.sin(phase);
+            else if(shape==='saw') v=((phase/(Math.PI*2))%1)*2-1;
+            else if(shape==='square') v=Math.sin(phase)>=0?1:-1;
+            else v=1-4*Math.abs(Math.round(phase/(Math.PI*2)-0.25)-(phase/(Math.PI*2)-0.25))*2;
+            const y=h*0.55+v*h*0.28; if(x===cx0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+          ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='9px IBM Plex Mono'; ctx.fillText(shape,cx0,h*0.92);
+        });
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'ADSR Envelope ↔ Animation Easing',
+    eyebrow:'Lesson 11 · Synthesis · Play Zone',
+    body:`An ADSR envelope shapes loudness over time: Attack, Decay, Sustain, Release. An easing curve shapes how an animated value moves. Same idea — drag the sliders.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="b11-readout">A 0.15s · D 0.20s · S 60% · R 0.30s</span></div>
+          <canvas id="b11-canvas" height="160"></canvas>
+          <div class="control" style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div><div class="control-top"><label>Attack</label></div><input type="range" id="b11-a" min="2" max="90" step="1" value="15"></div>
+            <div><div class="control-top"><label>Decay</label></div><input type="range" id="b11-d" min="2" max="90" step="1" value="20"></div>
+            <div><div class="control-top"><label>Sustain</label></div><input type="range" id="b11-s" min="0" max="100" step="1" value="60"></div>
+            <div><div class="control-top"><label>Release</label></div><input type="range" id="b11-r" min="2" max="90" step="1" value="30"></div>
+          </div>
+        </div>
+      `;
+      const canvas=root.querySelector('#b11-canvas');
+      const aS=root.querySelector('#b11-a'), dS=root.querySelector('#b11-d'), sS=root.querySelector('#b11-s'), rS=root.querySelector('#b11-r');
+      const readout=root.querySelector('#b11-readout');
+      function envLevel(t,A,D,S,R,hold){
+        if(t<A) return t/A;
+        if(t<A+D) return 1-(1-S)*((t-A)/D);
+        if(t<hold) return S;
+        const rt=t-hold;
+        if(rt<R) return S*(1-rt/R);
+        return 0;
+      }
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const A=parseInt(aS.value)/100, D=parseInt(dS.value)/100, S=parseInt(sS.value)/100, R=parseInt(rS.value)/100;
+        readout.textContent=`A ${A.toFixed(2)}s · D ${D.toFixed(2)}s · S ${Math.round(S*100)}% · R ${R.toFixed(2)}s`;
+        const hold=A+D+0.4, total=hold+R;
+        const t=((now-t0)/1000)%(total+0.3);
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2.4; ctx.beginPath();
+        for(let x=0;x<=w;x+=2){ const xf=x/w; const lvl=envLevel(xf*total,A,D,S,R,hold); const y=h-10-lvl*(h-20); if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const playX=(t/total)*w, playLvl=envLevel(t,A,D,S,R,hold), playY=h-10-playLvl*(h-20);
+        ctx.fillStyle='#F2A340'; ctx.beginPath(); ctx.arc(playX,playY,5,0,Math.PI*2); ctx.fill();
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+
+  {
+    title:'How Finely Do We Digitize This?',
+    eyebrow:'Lesson 12 · Going Deeper · Play Zone',
+    body:`Every digital signal has two axes: how finely you slice the domain (sample rate / resolution) and how finely you slice the range (bit depth / color depth). Drag either slider.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="b12-readout">100% domain · 16-bit</span></div>
+          <canvas id="b12-canvas" height="160"></canvas>
+          <div class="control"><div class="control-top"><label>Domain resolution</label></div><input type="range" id="b12-domain" min="2" max="100" step="1" value="100"></div>
+          <div class="control"><div class="control-top"><label>Bit depth</label></div><input type="range" id="b12-bits" min="1" max="16" step="1" value="16"></div>
+        </div>
+      `;
+      const canvas=root.querySelector('#b12-canvas');
+      const domainS=root.querySelector('#b12-domain'), bitsS=root.querySelector('#b12-bits');
+      const readout=root.querySelector('#b12-readout');
+      function quantize(v,levels){ if(levels>=64) return v; const steps=Math.max(levels,2); return Math.round(v*(steps-1))/(steps-1); }
+      function draw(){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const domainPct=parseFloat(domainS.value), bits=parseInt(bitsS.value), levels=Math.pow(2,bits);
+        readout.textContent=`${domainPct}% domain · ${bits}-bit`;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const sampleCount=Math.max(Math.round(4+(domainPct/100)*100),4), samplePx=w*0.42/sampleCount;
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=2; ctx.beginPath();
+        for(let i=0;i<=sampleCount;i++){
+          const xf=i/sampleCount, raw=Math.sin(xf*Math.PI*2*2.4)*0.42;
+          const q=quantize(raw+0.5,levels)-0.5, x=15+i*samplePx, y=h/2-q*h*0.85;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        const gridCols=Math.max(Math.round(4+(domainPct/100)*40),4), gridRows=Math.round(gridCols*0.7);
+        const cw=(w*0.4)/gridCols, ch=h/gridRows;
+        for(let gy=0;gy<gridRows;gy++) for(let gx=0;gx<gridCols;gx++){
+          const u=gx/gridCols,v=gy/gridRows,dx=u-0.5,dy=v-0.5,dist=Math.sqrt(dx*dx+dy*dy)*1.6;
+          let val=quantize(1-Math.min(dist,1),levels);
+          const c=Math.round(val*235)+10;
+          ctx.fillStyle=`rgb(${Math.min(c+10,255)},${Math.round(c*0.78)},${Math.round(c*0.42)})`;
+          ctx.fillRect(w*0.55+gx*cw,gy*ch,cw+0.5,ch+0.5);
+        }
+      }
+      domainS.addEventListener('input',draw); bitsS.addEventListener('input',draw);
+      draw(); window.addEventListener('resize',draw);
+      return ()=>window.removeEventListener('resize',draw);
+    }
+  },
+
+  {
+    title:'Dither: Fixing Banding With Noise',
+    eyebrow:'Lesson 13 · Going Deeper · Play Zone',
+    body:`Push bit depth low and you get harsh steps. The fix sounds backwards: add tiny random noise before quantizing. Toggle dither on a low bit depth.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="b13-readout">2-bit · dither off</span></div>
+          <canvas id="b13-canvas" height="160"></canvas>
+          <div class="control"><div class="control-top"><label>Bit depth</label></div><input type="range" id="b13-bits" min="1" max="5" step="1" value="2"></div>
+          <div class="toggle-row"><button class="toggle-btn" id="b13-toggle">Turn dither ON</button></div>
+        </div>
+      `;
+      const canvas=root.querySelector('#b13-canvas');
+      const bitsS=root.querySelector('#b13-bits'); const toggle=root.querySelector('#b13-toggle');
+      const readout=root.querySelector('#b13-readout');
+      let ditherOn=false;
+      function quantize(v,levels,dither){
+        const steps=Math.max(levels,2); let val=v;
+        if(dither) val+=(Math.random()-0.5)*(1/(steps-1));
+        val=Math.min(Math.max(val,0),1);
+        return Math.round(val*(steps-1))/(steps-1);
+      }
+      function draw(){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const bits=parseInt(bitsS.value), levels=Math.pow(2,bits);
+        readout.textContent=`${bits}-bit · dither ${ditherOn?'on':'off'}`;
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=1.6; ctx.beginPath();
+        for(let x=0;x<w*0.42;x+=1){ const xf=x/(w*0.42); const raw=(Math.sin(xf*Math.PI*2*1.6)*0.5+0.5); const q=quantize(raw,levels,ditherOn); const y=h-q*h*0.85-h*0.05; if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.stroke();
+        const cols=Math.round(w*0.4);
+        for(let x=0;x<cols;x++){ const xf=x/cols; const q=quantize(xf,levels,ditherOn); const c=Math.round(q*235)+10; ctx.fillStyle=`rgb(${Math.min(c+8,255)},${Math.round(c*0.82)},${Math.round(c*0.5)})`; ctx.fillRect(w*0.55+x,0,2,h); }
+      }
+      bitsS.addEventListener('input',draw);
+      toggle.addEventListener('click',()=>{ ditherOn=!ditherOn; toggle.classList.toggle('active',ditherOn); toggle.textContent=ditherOn?'Turn dither OFF':'Turn dither ON'; draw(); });
+      draw(); window.addEventListener('resize',draw);
+      return ()=>window.removeEventListener('resize',draw);
+    }
+  },
+
+  {
+    title:'Lossy Compression: What Gets Thrown Away',
+    eyebrow:'Lesson 14 · Going Deeper · Play Zone',
+    body:`MP3 and JPEG use a model of human perception to decide exactly what to discard. Drag quality down and watch each degrade in its own characteristic way.`,
+    setup(root){
+      root.innerHTML = `
+        <div class="toy">
+          <div class="toy-label"><span id="b14-readout">High quality</span></div>
+          <canvas id="b14-canvas" height="160"></canvas>
+          <div class="control"><div class="control-top"><label>Quality</label></div><input type="range" id="b14-q" min="1" max="100" step="1" value="100"></div>
+        </div>
+        <div class="think-box">
+          <div class="q-label">ALSO TRUE</div>
+          <p>Most video already stores far less color detail than brightness detail per pixel (chroma subsampling) — and audio's stereo channels get compressed the same way, sharing information rather than storing both in full.</p>
+        </div>
+      `;
+      const canvas=root.querySelector('#b14-canvas');
+      const qS=root.querySelector('#b14-q'); const readout=root.querySelector('#b14-readout');
+      let raf,t0=performance.now();
+      function draw(now){
+        const {ctx,w,h}=fitCanvas(canvas);
+        const t=(now-t0)/1000;
+        const q=parseInt(qS.value)/100;
+        readout.textContent = q>0.7?'High quality':q>0.35?'Medium quality':q>0.12?'Low quality':'Very low quality';
+        ctx.clearRect(0,0,w,h); gridLines(ctx,w,h);
+        const degradation=1-q;
+        ctx.strokeStyle='#3FCFC4'; ctx.lineWidth=1.8; ctx.beginPath();
+        const blockSize=6+degradation*36;
+        for(let x=0;x<w*0.42;x+=1){
+          const blockX=Math.floor(x/blockSize)*blockSize;
+          const warble=Math.sin(blockX*0.3+t*5)*degradation*0.25, base=Math.sin(x*0.1-t*3);
+          const y=h/2+(base*0.6+warble)*h*0.35;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        const blockPx=Math.max(2,Math.round(2+degradation*22));
+        const cols=Math.ceil(w*0.4/blockPx), rows=Math.ceil(h/blockPx);
+        for(let gy=0;gy<rows;gy++) for(let gx=0;gx<cols;gx++){
+          const u=(gx*blockPx)/(w*0.4), v=(gy*blockPx)/h, dx=u-0.5,dy=v-0.5, dist=Math.sqrt(dx*dx+dy*dy)*1.6;
+          let val=1-Math.min(dist,1);
+          if(degradation>0.5) val+=Math.sin(dist*30-t*2)*(degradation-0.5)*0.15;
+          val=Math.min(Math.max(val,0),1);
+          const c=Math.round(val*235)+10;
+          ctx.fillStyle=`rgb(${Math.min(c+10,255)},${Math.round(c*0.78)},${Math.round(c*0.42)})`;
+          ctx.fillRect(w*0.55+gx*blockPx,gy*blockPx,blockPx,blockPx);
+        }
+        raf=requestAnimationFrame(draw);
+      }
+      raf=requestAnimationFrame(draw);
+      return ()=>cancelAnimationFrame(raf);
+    }
+  },
+];
+
+/* ============================================================
+   QUIZ DEFINITIONS (capstones)
+   ============================================================ */
+const PHYSICS_QUIZ = [
+  { q:'What is the fundamental physical difference between light and sound?', options:['Light is transverse and needs no medium; sound is longitudinal and needs a medium','Light is longitudinal; sound is transverse','They are physically identical','Light is a particle, sound is a wave'], correct:0,
+    explain:'Light is an electromagnetic transverse wave needing no medium. Sound is a mechanical longitudinal wave that requires one.' },
+  { q:'Move twice as far from a light or speaker. What happens to intensity?', options:['Drops by half','Drops to a quarter','Stays the same','Doubles'], correct:1,
+    explain:'Both obey the inverse-square law — intensity falls as 1/distance², so doubling distance leaves a quarter of the original intensity.' },
+  { q:'Why is diffraction so much more obvious for sound than visible light?', options:['Sound is louder','Visible wavelengths are tiny relative to most objects; audible wavelengths are comparable to them','Light cannot diffract','It only happens underwater'], correct:1,
+    explain:'Diffraction is strongest when wavelength is close to the obstacle size. Light\'s wavelength is nanometers; sound\'s is centimeters to meters.' },
+  { q:'Why does light have polarization but sound in air does not?', options:['Sound is too loud','Polarizers haven\'t been invented for sound','Polarization requires a transverse wave; sound in air is longitudinal','Light moves too fast'], correct:2,
+    explain:'Polarization restricts the orientation of a transverse oscillation. Sound\'s oscillation runs along its direction of travel, so there\'s no orientation to restrict.' },
+  { q:'A violin and a flute play the same pitch but sound different. Why?', options:['They aren\'t really the same pitch','The unique mix of harmonics/overtones — timbre — riding on the shared fundamental','Random chance','Loudness differences only'], correct:1,
+    explain:'Pitch is the fundamental frequency; timbre is the harmonic fingerprint on top of it, shaped by the instrument.' },
+  { q:'Stars are invisible in the daytime sky. Why?', options:['Stars turn off during the day','Sunlight scattered through the atmosphere masks the much fainter starlight at similar wavelengths','Stars are too far away during the day','There is no real reason'], correct:1,
+    explain:'This is masking — a strong nearby signal makes a weaker one undetectable, even though it\'s still physically present.' },
+];
+
+const EDITING_QUIZ = [
+  { q:'An audio EQ splits sound into frequency bands. What\'s the video equivalent?', options:['The crop tool','Curves or color wheels, splitting the image into shadows/mids/highlights','Export settings','There is no equivalent'], correct:1,
+    explain:'EQ bands are defined by frequency (Hz); curves bands are defined by brightness — both let you push a band independently.' },
+  { q:'Why does speeding up audio raise its pitch, and speeding up video change how motion looks?', options:['Unrelated coincidences','Both pack more of the original content into less time, changing the rate of cycles or frames','Audio pitch never changes with speed','Video has no equivalent to pitch'], correct:1,
+    explain:'Speeding up audio packs more wave cycles into each second (raising frequency/pitch); speeding up video packs more motion into less playback time.' },
+  { q:'What is the closest video equivalent to audio dynamic-range compression?', options:['File compression (smaller file size)','Tone mapping — squeezing a wide dynamic range like HDR into a narrower displayable range','Cropping the frame','Subtitles'], correct:1,
+    explain:'Both squeeze a wide range of values (loudness or brightness) into a narrower usable range while trying to preserve detail at both ends.' },
+  { q:'What is the video equivalent of an ADSR envelope?', options:['Frame rate','Color depth','Keyframe easing curves — how a value moves between two points over time','Resolution'], correct:2,
+    explain:'Both describe how a value changes over time using named segments or curve shapes — a fast attack reads as percussive sound or a snappy animation.' },
+  { q:'Why would adding random noise (dither) ever make a low-bit-depth signal look or sound better?', options:['It doesn\'t — dither is a myth','It breaks up harsh structured steps/bands into a less noticeable random texture','It increases the real bit depth','Only helps audio, not video'], correct:1,
+    explain:'Dither trades a structured, obvious error (visible bands, audible steps) for an unstructured one (faint grain/hiss) that human perception finds far less objectionable.' },
+  { q:'MP3 and JPEG are both "lossy." What do they actually decide to throw away first?', options:['Random data, chosen arbitrarily','Exactly what a model of human perception predicts you are least likely to notice is missing','The most important parts of the signal','Nothing — they keep everything'], correct:1,
+    explain:'Both are built on a perceptual model — masking for audio, sensitivity-to-spatial-frequency for video — and discard what that model says matters least.' },
+];
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+const courses = {
+  physics: { title:'Physics of Waves', lessons:PHYSICS_LESSONS, quiz:PHYSICS_QUIZ, eyebrowClass:'' },
+  editing: { title:'Editing & Production', lessons:EDITING_LESSONS, quiz:EDITING_QUIZ, eyebrowClass:'amber' }
+};
+
+let activeCourse = null;   // 'physics' | 'editing'
+let lessonIndex = 0;       // 0-based index into lessons array; lessons.length == quiz screen
+let cleanupFn = null;
+let quizState = { qIndex:0, score:0, answered:false };
+
+const landing = document.getElementById('landing');
+const stage = document.getElementById('stage');
+const navfoot = document.getElementById('navfoot');
+const topbar = document.getElementById('topbar');
+const lessonCard = document.getElementById('lesson-card');
+const progressFill = document.getElementById('progress-fill');
+const topbarTitle = document.getElementById('topbar-title');
+const topbarCount = document.getElementById('topbar-count');
+const backBtn = document.getElementById('back-btn');
+const nextBtn = document.getElementById('next-btn');
+const navDots = document.getElementById('nav-dots');
+
+function showLanding(){
+  activeCourse = null;
+  if(cleanupFn){ cleanupFn(); cleanupFn=null; }
+  landing.style.display='flex';
+  stage.style.display='none';
+  navfoot.style.display='none';
+  topbar.style.display='none';
+  progressFill.style.width='0%';
+  updateLandingPills();
+}
+function updateLandingPills(){
+  const pPill = document.getElementById('physics-progress-pill');
+  const ePill = document.getElementById('editing-progress-pill');
+  function setPill(pill, idx, total){
+    if(idx===0){ pill.textContent='Not started'; pill.classList.remove('complete'); }
+    else if(idx>=total){ pill.textContent='Complete'; pill.classList.add('complete'); }
+    else { pill.textContent=`${idx} / ${total}`; pill.classList.remove('complete'); }
+  }
+  setPill(pPill, progressState.physics, PHYSICS_LESSONS.length+1);
+  setPill(ePill, progressState.editing, EDITING_LESSONS.length+1);
+}
+
+function startCourse(key){
+  activeCourse = key;
+  lessonIndex = Math.min(progressState[key], courses[key].lessons.length); // resume, capped at quiz slot
+  landing.style.display='none';
+  stage.style.display='flex';
+  navfoot.style.display='flex';
+  topbar.style.display='flex';
+  renderCurrent();
+}
+
+function totalScreens(key){ return courses[key].lessons.length + 1; } // +1 for quiz
+
+function renderDots(){
+  const key = activeCourse;
+  const total = totalScreens(key);
+  navDots.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const dot = document.createElement('span');
+    dot.className = 'nav-dot' + (i<lessonIndex?' done':'') + (i===lessonIndex?' now':'');
+    navDots.appendChild(dot);
+  }
+}
+
+function renderCurrent(){
+  if(cleanupFn){ cleanupFn(); cleanupFn=null; }
+  const key = activeCourse;
+  const course = courses[key];
+  const total = totalScreens(key);
+  progressFill.style.width = Math.round((lessonIndex/total)*100)+'%';
+  topbarTitle.textContent = course.title;
+  topbarCount.textContent = `${Math.min(lessonIndex+1,total)} / ${total}`;
+  renderDots();
+  backBtn.disabled = lessonIndex===0;
+
+  if(lessonIndex < course.lessons.length){
+    const lesson = course.lessons[lessonIndex];
+    nextBtn.textContent = (lessonIndex===course.lessons.length-1) ? 'Final Quiz →' : 'Next →';
+    nextBtn.disabled = false;
+    lessonCard.innerHTML = `
+      <p class="lesson-eyebrow ${key==='editing'?'amber':''}">${lesson.eyebrow}</p>
+      <h2 class="lesson-title">${lesson.title}</h2>
+      <p class="lesson-body">${lesson.body}</p>
+      <div id="lesson-slot"></div>
+    `;
+    const slot = lessonCard.querySelector('#lesson-slot');
+    if(lesson.setup){ cleanupFn = lesson.setup(slot); }
+    progressState[key] = Math.max(progressState[key], lessonIndex);
+  } else {
+    nextBtn.textContent = 'Restart course';
+    nextBtn.disabled = false;
+    renderQuizScreen();
+    progressState[key] = Math.max(progressState[key], course.lessons.length+1);
+  }
+}
+
+function renderQuizScreen(){
+  const key = activeCourse;
+  const quiz = courses[key].quiz;
+  quizState = { qIndex:0, score:0, answered:false };
+  renderQuizQuestion();
+
+  function renderQuizQuestion(){
+    if(quizState.qIndex >= quiz.length){
+      lessonCard.innerHTML = `
+        <div class="complete-screen">
+          <div class="complete-badge">🎓</div>
+          <p class="lesson-eyebrow ${key==='editing'?'amber':''}" style="justify-content:center;">Capstone Complete</p>
+          <h2 class="lesson-title">${courses[key].title}</h2>
+          <div class="quiz-score-big">${quizState.score}<span class="frac"> / ${quiz.length}</span></div>
+          <p class="lesson-body">${quizState.score===quiz.length ? 'Clean sweep — every idea landed.' : 'Solid work. Replay any lesson via Back, or head to the other course.'}</p>
+        </div>
+      `;
+      nextBtn.textContent = 'Restart course';
+      backBtn.disabled = false;
+      return;
+    }
+    const item = quiz[quizState.qIndex];
+    lessonCard.innerHTML = `
+      <p class="lesson-eyebrow ${key==='editing'?'amber':''}">Capstone Quiz · ${quizState.qIndex+1} / ${quiz.length} · Score ${quizState.score}</p>
+      <h2 class="lesson-title">${item.q}</h2>
+      <div class="check-row" id="quiz-opts">
+        ${item.options.map((opt,i)=>`<button class="check-opt" data-i="${i}">${opt}</button>`).join('')}
+      </div>
+      <div class="check-feedback" id="quiz-feedback">${item.explain}</div>
+    `;
+    quizState.answered = false;
+    nextBtn.textContent = 'Select an answer';
+    nextBtn.disabled = true;
+    const opts = lessonCard.querySelectorAll('.check-opt');
+    opts.forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(quizState.answered) return;
+        quizState.answered = true;
+        const i = parseInt(opt.dataset.i);
+        if(i===item.correct){ opt.classList.add('correct'); quizState.score++; }
+        else { opt.classList.add('wrong'); opts[item.correct].classList.add('correct'); }
+        lessonCard.querySelector('#quiz-feedback').classList.add('show');
+        nextBtn.textContent = (quizState.qIndex===quiz.length-1) ? 'See results →' : 'Next question →';
+        nextBtn.disabled = false;
+      });
+    });
+  }
+
+  // expose for nav button
+  lessonCard.dataset.quizActive = '1';
+  window.__advanceQuiz = ()=>{
+    quizState.qIndex++;
+    renderQuizQuestion();
+  };
+}
+
+backBtn.addEventListener('click', ()=>{
+  if(lessonIndex>0){ lessonIndex--; renderCurrent(); }
+});
+nextBtn.addEventListener('click', ()=>{
+  const key = activeCourse;
+  const course = courses[key];
+  if(lessonIndex < course.lessons.length){
+    lessonIndex++;
+    renderCurrent();
+  } else {
+    // we're on the quiz screen
+    if(lessonCard.dataset.quizActive==='1' && quizState.qIndex < course.quiz.length){
+      if(quizState.answered){ window.__advanceQuiz(); }
+      return;
+    }
+    // quiz finished or restart requested
+    lessonIndex = 0;
+    progressState[key] = 0;
+    renderCurrent();
+  }
+});
+
+document.getElementById('exit-btn').addEventListener('click', showLanding);
+document.getElementById('course-card-physics').addEventListener('click', ()=> startCourse('physics'));
+document.getElementById('course-card-editing').addEventListener('click', ()=> startCourse('editing'));
+
+updateLandingPills();
+</script>
+</body>
+</html>

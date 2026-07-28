@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPLICE — Record, Trim, Export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
+<style>
+  :root{
+    --bg:#0A0A0B;
+    --panel:#111214;
+    --panel-2:#0D0E0F;
+    --line:#232427;
+    --amber:#E8A33D;
+    --teal:#3DC9C2;
+    --red:#E85D4D;
+    --text:#EDEDEE;
+    --dim:#7A7B80;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px;
+  }
+  .unit{
+    width:100%;
+    max-width:640px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .strip{height:4px; background:linear-gradient(90deg,var(--amber),var(--teal));}
+  .head{
+    padding:20px 22px 16px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .head h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.04em;
+  }
+  .head .id{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:0.05em;
+  }
+  .body{padding:24px;}
+  .hidden{display:none !important;}
+
+  /* ---------- Record screen ---------- */
+  .status-row{
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:28px; justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; letter-spacing:0.05em; color:var(--dim);
+    text-transform:uppercase;
+  }
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--dim); transition:background .2s, box-shadow .2s;}
+  .dot.live{background:var(--red); box-shadow:0 0 8px var(--red); animation:pulse 1.2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.45;}}
+
+  .record-wrap{
+    display:flex; flex-direction:column; align-items:center;
+    padding:20px 0 8px;
+  }
+  #recordBtn{
+    width:132px; height:132px;
+    border-radius:50%;
+    border:3px solid var(--red);
+    background:radial-gradient(circle at 50% 45%, #2a1512, #0A0A0B 70%);
+    position:relative;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .1s;
+  }
+  #recordBtn:active{transform:scale(0.96);}
+  #recordBtn .core{
+    width:56px; height:56px; border-radius:50%;
+    background:var(--red);
+    transition:all .2s;
+  }
+  #recordBtn.recording .core{
+    width:40px; height:40px;
+    border-radius:8px;
+  }
+  #recordBtn.recording{
+    animation:ringPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes ringPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(232,93,77,0.35);}
+    50%{box-shadow:0 0 0 14px rgba(232,93,77,0);}
+  }
+  .record-label{
+    margin-top:16px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--dim);
+  }
+  .record-time{
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px;
+    color:var(--amber);
+    letter-spacing:0.02em;
+  }
+
+  .meter-frame{
+    background:#000; border:1px solid var(--line); border-radius:4px;
+    padding:12px; margin-top:22px;
+  }
+  #liveMeter{display:block; width:100%; height:64px;}
+
+  .note{
+    margin-top:20px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:11.5px; line-height:1.5; color:var(--dim);
+  }
+  .note strong{color:var(--text); font-weight:500;}
+  .err{
+    margin-top:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--red);
+    display:none; line-height:1.5;
+  }
+
+  /* ---------- Editor screen ---------- */
+  .editor-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:14px;
+  }
+  .editor-head .label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em;
+  }
+  .link-btn{
+    background:none; border:none; color:var(--teal);
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    cursor:pointer; text-decoration:underline; letter-spacing:.03em;
+  }
+
+  .wave-frame{
+    background:#000; border:1px solid var(--line); border-radius:4px;
+    padding:0; margin-bottom:12px; position:relative;
+  }
+  #waveCanvas{display:block; width:100%; height:140px; touch-action:none; cursor:crosshair;}
+
+  .time-row{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--dim);
+    margin-bottom:18px;
+  }
+  .time-row b{color:var(--amber); font-weight:500;}
+
+  .transport{
+    display:flex; gap:10px; margin-bottom:10px;
+  }
+  .transport button{
+    flex:1;
+    font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:12.5px; letter-spacing:.04em; text-transform:uppercase;
+    padding:12px; border-radius:4px; border:1px solid var(--line);
+    background:transparent; color:var(--text); cursor:pointer;
+    transition:all .15s;
+  }
+  .transport button:hover:not(:disabled){border-color:var(--dim);}
+  .transport button:disabled{opacity:.35; cursor:not-allowed;}
+  .transport .primary{background:var(--teal); color:#0A0A0B; border-color:var(--teal);}
+  .transport .primary:hover:not(:disabled){filter:brightness(1.1);}
+  .transport .split{background:var(--amber); color:#0A0A0B; border-color:var(--amber);}
+  .transport .split:hover:not(:disabled){filter:brightness(1.1);}
+
+  .segments-frame{
+    margin-top:18px; border-top:1px solid var(--line); padding-top:16px;
+  }
+  .segments-frame .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--dim);
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;
+  }
+  .seg-row{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 10px; background:var(--panel-2);
+    border:1px solid var(--line); border-radius:4px; margin-bottom:6px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  }
+  .seg-row .idx{color:var(--teal); font-weight:700; width:22px;}
+  .seg-row .range{flex:1; color:var(--text);}
+  .seg-row .dur{color:var(--dim);}
+  .seg-row button{
+    background:none; border:1px solid var(--line); color:var(--dim);
+    border-radius:3px; padding:4px 8px; font-family:'JetBrains Mono',monospace;
+    font-size:10px; cursor:pointer; text-transform:uppercase;
+  }
+  .seg-row button:hover{border-color:var(--teal); color:var(--teal);}
+
+  .export-frame{
+    margin-top:18px; border-top:1px solid var(--line); padding-top:16px;
+  }
+  .export-row{
+    display:flex; gap:10px; align-items:center;
+  }
+  select{
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    background:var(--panel-2); color:var(--text);
+    border:1px solid var(--line); border-radius:4px;
+    padding:12px 10px;
+  }
+  #exportBtn{
+    flex:1;
+    font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:13px; letter-spacing:.04em; text-transform:uppercase;
+    padding:13px; border-radius:4px; border:1px solid var(--amber);
+    background:var(--amber); color:#0A0A0B; cursor:pointer;
+  }
+  #exportBtn:hover:not(:disabled){filter:brightness(1.1);}
+  #exportBtn:disabled{opacity:.35; cursor:not-allowed;}
+
+  .export-status{
+    margin-top:10px;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--dim);
+    min-height:14px;
+  }
+
+  .orig-row{
+    margin-top:14px;
+  }
+  .orig-row a{
+    display:block; text-align:center; padding:10px;
+    border:1px solid var(--line); border-radius:4px;
+    color:var(--dim); text-decoration:none;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+  }
+  .orig-row a:hover{border-color:var(--dim); color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="unit">
+  <div class="strip"></div>
+  <div class="head">
+    <h1>SPLICE</h1>
+    <div class="id" id="modeId">SYS.AUDIO</div>
+  </div>
+  <div class="body">
+
+    <!-- RECORD SCREEN -->
+    <div id="recordScreen">
+      <div class="status-row">
+        <div class="dot" id="dot"></div>
+        <span id="statusText">Idle</span>
+      </div>
+
+      <div class="record-wrap">
+        <div id="recordBtn"><div class="core"></div></div>
+        <div class="record-label" id="recordLabel">Record</div>
+        <div class="record-time" id="recordTime">00:00</div>
+      </div>
+
+      <div class="meter-frame">
+        <canvas id="liveMeter"></canvas>
+      </div>
+
+      <div class="err" id="errBox"></div>
+
+      <div class="note" id="noteBox">
+        <strong>How this works —</strong> tap the button and your browser will ask you to pick a tab, window, or screen to share. Choose the source that's playing the audio you want, and make sure "Share audio" is checked — otherwise nothing will be recorded. Works with anything playing on your computer, not just the browser, if you share your entire screen.
+      </div>
+    </div>
+
+    <!-- EDITOR SCREEN -->
+    <div id="editorScreen" class="hidden">
+      <div class="editor-head">
+        <span class="label">Trim &amp; Segment</span>
+        <button class="link-btn" id="recordAgainBtn">← Record again</button>
+      </div>
+
+      <div class="wave-frame">
+        <canvas id="waveCanvas"></canvas>
+      </div>
+
+      <div class="time-row">
+        <span>In: <b id="inTime">00:00.00</b></span>
+        <span>Out: <b id="outTime">00:00.00</b></span>
+        <span>Selected: <b id="selDur">00:00.00</b></span>
+      </div>
+
+      <div class="transport">
+        <button class="primary" id="playBtn">▶ Play</button>
+        <button class="split" id="splitBtn">✂ Split Here</button>
+        <button id="clearSplitsBtn">Clear Splits</button>
+      </div>
+
+      <div class="segments-frame">
+        <div class="label">Segments (<span id="segCount">1</span>)</div>
+        <div id="segList"></div>
+      </div>
+
+      <div class="export-frame">
+        <div class="export-row">
+          <select id="formatSelect">
+            <option value="wav">WAV (lossless)</option>
+            <option value="mp3">MP3 (compressed)</option>
+          </select>
+          <button id="exportBtn">Export</button>
+        </div>
+        <div class="export-status" id="exportStatus"></div>
+        <div class="orig-row">
+          <a id="originalLink" href="#" download="original.webm">Download original full take (.webm, untouched)</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let audioCtx;
+let mediaRecorder, stream, chunks = [];
+let analyser, dataArray, meterAnimId;
+let mode = 'system'; // 'system' | 'mic'
+let recStartTime, recTimerInterval;
+
+let decodedBuffer = null;   // full recorded AudioBuffer
+let originalBlobUrl = null;
+let duration = 0;
+let trimStart = 0, trimEnd = 0;
+let splits = [];            // sorted array of split times (seconds)
+let playhead = 0;
+let peaks = null;
+
+let previewSource = null, previewPlaying = false, previewStartCtxTime = 0, previewStartOffset = 0;
+let playheadRAF = null;
+
+const MIN_GAP = 0.15; // seconds, minimum region size
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const modeId = document.getElementById('modeId');
+const dot = document.getElementById('dot');
+const statusText = document.getElementById('statusText');
+const recordBtn = document.getElementById('recordBtn');
+const recordLabel = document.getElementById('recordLabel');
+const recordTime = document.getElementById('recordTime');
+const liveMeter = document.getElementById('liveMeter');
+const liveMeterCtx = liveMeter.getContext('2d');
+const errBox = document.getElementById('errBox');
+const noteBox = document.getElementById('noteBox');
+
+const recordScreen = document.getElementById('recordScreen');
+const editorScreen = document.getElementById('editorScreen');
+const recordAgainBtn = document.getElementById('recordAgainBtn');
+
+const waveCanvas = document.getElementById('waveCanvas');
+const waveCtx = waveCanvas.getContext('2d');
+const inTimeEl = document.getElementById('inTime');
+const outTimeEl = document.getElementById('outTime');
+const selDurEl = document.getElementById('selDur');
+const playBtn = document.getElementById('playBtn');
+const splitBtn = document.getElementById('splitBtn');
+const clearSplitsBtn = document.getElementById('clearSplitsBtn');
+const segCount = document.getElementById('segCount');
+const segList = document.getElementById('segList');
+const formatSelect = document.getElementById('formatSelect');
+const exportBtn = document.getElementById('exportBtn');
+const exportStatus = document.getElementById('exportStatus');
+const originalLink = document.getElementById('originalLink');
+
+/* ============================================================
+   UTIL
+   ============================================================ */
+function showError(msg){ errBox.textContent = msg; errBox.style.display = 'block'; }
+function clearError(){ errBox.style.display = 'none'; errBox.textContent = ''; }
+
+function fmtClock(seconds){
+  const s = Math.max(0, seconds);
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(Math.floor(s%60)).padStart(2,'0');
+  return mm+':'+ss;
+}
+function fmtPrecise(seconds){
+  const s = Math.max(0, seconds);
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = (s%60).toFixed(2).padStart(5,'0');
+  return mm+':'+ss;
+}
+
+function ensureAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/* ============================================================
+   MODE DETECTION
+   ============================================================ */
+const NOTES = {
+  system: 'Tap the button and your browser will ask you to pick a tab, window, or screen to share. Choose the source that\'s playing the audio you want, and make sure "Share audio" is checked — otherwise nothing will be recorded. Works with anything playing on your computer, not just the browser, if you share your entire screen.',
+  mic: 'System audio capture isn\'t available on mobile browsers (an OS restriction). This will record through your microphone instead — whatever is audible in the room. For a clean digital capture of anything playing on your computer, use this on a desktop browser.'
+};
+function setMode(m){
+  mode = m;
+  modeId.textContent = m === 'system' ? 'SYS.AUDIO' : 'MIC.AUDIO';
+  noteBox.innerHTML = '<strong>How this works —</strong> ' + NOTES[m];
+}
+function checkSupport(){
+  if(!window.isSecureContext){
+    showError('This page isn\'t running in a secure context (needs https:// or localhost). Open the downloaded file directly in your browser rather than through an embedded preview.');
+    recordBtn.style.pointerEvents = 'none';
+    recordBtn.style.opacity = '.35';
+    return false;
+  }
+  const hasDisplayCapture = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+  const hasMic = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if(hasDisplayCapture){ setMode('system'); return true; }
+  if(hasMic){ setMode('mic'); return true; }
+  showError('Neither screen-audio capture nor microphone access is available here. Try opening this file directly in a browser tab instead of an embedded preview.');
+  recordBtn.style.pointerEvents = 'none';
+  recordBtn.style.opacity = '.35';
+  return false;
+}
+
+/* ============================================================
+   LIVE METER (during recording)
+   ============================================================ */
+function resizeLiveMeter(){
+  const rect = liveMeter.getBoundingClientRect();
+  liveMeter.width = rect.width * devicePixelRatio;
+  liveMeter.height = rect.height * devicePixelRatio;
+}
+window.addEventListener('resize', resizeLiveMeter);
+
+function drawLiveMeter(){
+  meterAnimId = requestAnimationFrame(drawLiveMeter);
+  analyser.getByteTimeDomainData(dataArray);
+  const w = liveMeter.width, h = liveMeter.height;
+  liveMeterCtx.fillStyle = '#000';
+  liveMeterCtx.fillRect(0,0,w,h);
+  liveMeterCtx.lineWidth = 2 * devicePixelRatio;
+  liveMeterCtx.strokeStyle = '#3DC9C2';
+  liveMeterCtx.beginPath();
+  const slice = w / dataArray.length;
+  let x = 0;
+  for(let i=0;i<dataArray.length;i++){
+    const v = dataArray[i]/128.0;
+    const y = (v*h)/2;
+    if(i===0) liveMeterCtx.moveTo(x,y); else liveMeterCtx.lineTo(x,y);
+    x += slice;
+  }
+  liveMeterCtx.stroke();
+}
+
+/* ============================================================
+   RECORDING
+   ============================================================ */
+recordBtn.addEventListener('click', () => {
+  if(mediaRecorder && mediaRecorder.state === 'recording'){
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
+
+async function startRecording(){
+  clearError();
+  if(!checkSupport()) return;
+  if(mode === 'system') await startSystemRecording();
+  else await startMicRecording();
+}
+
+async function startSystemRecording(){
+  try{
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+    });
+  } catch(err){
+    showError('Capture cancelled or denied: ' + err.message);
+    return;
+  }
+  const audioTracks = stream.getAudioTracks();
+  if(audioTracks.length === 0){
+    showError('No audio track was shared. Re-run and make sure "Share audio" is checked in the picker.');
+    stream.getTracks().forEach(t=>t.stop());
+    return;
+  }
+  stream.getVideoTracks().forEach(t => t.stop());
+  const audioOnlyStream = new MediaStream(audioTracks);
+  audioTracks[0].addEventListener('ended', () => {
+    if(mediaRecorder && mediaRecorder.state !== 'inactive') stopRecording();
+  });
+  beginRecording(audioOnlyStream);
+}
+
+async function startMicRecording(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+    });
+  } catch(err){
+    showError('Microphone access denied or unavailable: ' + err.message);
+    return;
+  }
+  beginRecording(stream);
+}
+
+function beginRecording(audioStream){
+  ensureAudioCtx();
+  const source = audioCtx.createMediaStreamSource(audioStream);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  source.connect(analyser);
+  resizeLiveMeter();
+  drawLiveMeter();
+
+  chunks = [];
+  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+  mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+  mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+  mediaRecorder.onstop = onRecordingStopped;
+  mediaRecorder.start(250);
+
+  recStartTime = Date.now();
+  recTimerInterval = setInterval(() => {
+    recordTime.textContent = fmtClock((Date.now()-recStartTime)/1000);
+  }, 200);
+
+  dot.classList.add('live');
+  statusText.textContent = 'Recording';
+  recordBtn.classList.add('recording');
+  recordLabel.textContent = 'Stop';
+}
+
+function stopRecording(){
+  if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if(stream) stream.getTracks().forEach(t => t.stop());
+  cancelAnimationFrame(meterAnimId);
+  clearInterval(recTimerInterval);
+  dot.classList.remove('live');
+  statusText.textContent = 'Idle';
+  recordBtn.classList.remove('recording');
+  recordLabel.textContent = 'Record';
+}
+
+async function onRecordingStopped(){
+  const mimeType = mediaRecorder.mimeType || 'audio/webm';
+  const blob = new Blob(chunks, { type: mimeType });
+  originalBlobUrl = URL.createObjectURL(blob);
+  originalLink.href = originalBlobUrl;
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  originalLink.download = `splice-original-${stamp}.webm`;
+
+  statusText.textContent = 'Decoding…';
+  try{
+    const arrayBuf = await blob.arrayBuffer();
+    ensureAudioCtx();
+    decodedBuffer = await audioCtx.decodeAudioData(arrayBuf.slice(0));
+  } catch(err){
+    showError('Recording finished, but decoding it for editing failed: ' + err.message + '. You can still use the original download link below.');
+    statusText.textContent = 'Idle';
+    return;
+  }
+
+  duration = decodedBuffer.duration;
+  trimStart = 0;
+  trimEnd = duration;
+  splits = [];
+  playhead = 0;
+
+  openEditor();
+}
+
+/* ============================================================
+   EDITOR
+   ============================================================ */
+function openEditor(){
+  recordScreen.classList.add('hidden');
+  editorScreen.classList.remove('hidden');
+  resizeWaveCanvas();
+  peaks = computePeaks(decodedBuffer, waveCanvas.width);
+  drawWaveform();
+  updateTimeLabels();
+  renderSegments();
+}
+
+recordAgainBtn.addEventListener('click', () => {
+  stopPreview();
+  editorScreen.classList.add('hidden');
+  recordScreen.classList.remove('hidden');
+  recordTime.textContent = '00:00';
+  clearError();
+});
+
+function resizeWaveCanvas(){
+  const rect = waveCanvas.getBoundingClientRect();
+  waveCanvas.width = rect.width * devicePixelRatio;
+  waveCanvas.height = rect.height * devicePixelRatio;
+}
+window.addEventListener('resize', () => {
+  if(decodedBuffer){
+    resizeWaveCanvas();
+    peaks = computePeaks(decodedBuffer, waveCanvas.width);
+    drawWaveform();
+  }
+});
+
+function computePeaks(buffer, width){
+  const channelData = buffer.getChannelData(0);
+  const blockSize = Math.max(1, Math.floor(channelData.length / width));
+  const result = new Float32Array(width);
+  for(let i=0;i<width;i++){
+    const start = i*blockSize;
+    let max = 0;
+    const end = Math.min(channelData.length, start+blockSize);
+    for(let j=start;j<end;j++){
+      const v = Math.abs(channelData[j]);
+      if(v>max) max = v;
+    }
+    result[i] = max;
+  }
+  return result;
+}
+
+function timeToX(t){ return (t/duration) * waveCanvas.width; }
+function xToTime(x){ return Math.max(0, Math.min(duration, (x/waveCanvas.width) * duration)); }
+
+function drawWaveform(){
+  const w = waveCanvas.width, h = waveCanvas.height;
+  waveCtx.fillStyle = '#000';
+  waveCtx.fillRect(0,0,w,h);
+  if(!peaks) return;
+
+  const mid = h/2;
+  const startX = timeToX(trimStart);
+  const endX = timeToX(trimEnd);
+
+  // waveform bars
+  for(let i=0;i<peaks.length;i++){
+    const amp = peaks[i]*h*0.9;
+    const inSelection = i >= startX && i <= endX;
+    waveCtx.strokeStyle = inSelection ? '#3DC9C2' : '#3a3b3f';
+    waveCtx.lineWidth = 1;
+    waveCtx.beginPath();
+    waveCtx.moveTo(i, mid - amp/2);
+    waveCtx.lineTo(i, mid + amp/2);
+    waveCtx.stroke();
+  }
+
+  // dim regions outside trim
+  waveCtx.fillStyle = 'rgba(0,0,0,0.55)';
+  waveCtx.fillRect(0,0,startX,h);
+  waveCtx.fillRect(endX,0,w-endX,h);
+
+  // split markers
+  splits.forEach(t => {
+    const x = timeToX(t);
+    waveCtx.strokeStyle = '#E8A33D';
+    waveCtx.lineWidth = 2*devicePixelRatio;
+    waveCtx.beginPath();
+    waveCtx.moveTo(x,0);
+    waveCtx.lineTo(x,h);
+    waveCtx.stroke();
+    // hit target diamond at top
+    waveCtx.fillStyle = '#E8A33D';
+    waveCtx.beginPath();
+    const d = 6*devicePixelRatio;
+    waveCtx.moveTo(x, 2);
+    waveCtx.lineTo(x+d, 2+d);
+    waveCtx.lineTo(x, 2+2*d);
+    waveCtx.lineTo(x-d, 2+d);
+    waveCtx.closePath();
+    waveCtx.fill();
+  });
+
+  // trim handles
+  [startX, endX].forEach(x => {
+    waveCtx.fillStyle = '#3DC9C2';
+    waveCtx.fillRect(x-2*devicePixelRatio, 0, 4*devicePixelRatio, h);
+    waveCtx.beginPath();
+    waveCtx.arc(x, h/2, 7*devicePixelRatio, 0, Math.PI*2);
+    waveCtx.fill();
+  });
+
+  // playhead
+  const px = timeToX(playhead);
+  waveCtx.strokeStyle = '#EDEDEE';
+  waveCtx.lineWidth = 1.5*devicePixelRatio;
+  waveCtx.beginPath();
+  waveCtx.moveTo(px,0);
+  waveCtx.lineTo(px,h);
+  waveCtx.stroke();
+}
+
+function updateTimeLabels(){
+  inTimeEl.textContent = fmtPrecise(trimStart);
+  outTimeEl.textContent = fmtPrecise(trimEnd);
+  selDurEl.textContent = fmtPrecise(trimEnd - trimStart);
+}
+
+/* ---- pointer interaction ---- */
+let dragging = null; // 'start' | 'end' | 'scrub'
+const HIT_PX = 14;
+
+function pointerX(e){
+  const rect = waveCanvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  return (clientX - rect.left) * devicePixelRatio;
+}
+
+waveCanvas.addEventListener('pointerdown', (e) => {
+  const x = pointerX(e);
+  const t = xToTime(x);
+  const startX = timeToX(trimStart);
+  const endX = timeToX(trimEnd);
+
+  // check split marker removal (top diamond area)
+  for(let i=0;i<splits.length;i++){
+    const sx = timeToX(splits[i]);
+    if(Math.abs(x-sx) < HIT_PX*devicePixelRatio && pointerYNearTop(e)){
+      splits.splice(i,1);
+      drawWaveform();
+      renderSegments();
+      return;
+    }
+  }
+
+  if(Math.abs(x-startX) < HIT_PX*devicePixelRatio){
+    dragging = 'start';
+  } else if(Math.abs(x-endX) < HIT_PX*devicePixelRatio){
+    dragging = 'end';
+  } else {
+    dragging = 'scrub';
+    playhead = Math.max(trimStart, Math.min(trimEnd, t));
+    drawWaveform();
+  }
+  waveCanvas.setPointerCapture(e.pointerId);
+});
+
+function pointerYNearTop(e){
+  const rect = waveCanvas.getBoundingClientRect();
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return (clientY - rect.top) < 24;
+}
+
+waveCanvas.addEventListener('pointermove', (e) => {
+  if(!dragging) return;
+  const t = xToTime(pointerX(e));
+
+  if(dragging === 'start'){
+    const maxAllowed = (splits[0] !== undefined ? splits[0] : trimEnd) - MIN_GAP;
+    trimStart = Math.max(0, Math.min(t, maxAllowed));
+  } else if(dragging === 'end'){
+    const minAllowed = (splits.length ? splits[splits.length-1] : trimStart) + MIN_GAP;
+    trimEnd = Math.min(duration, Math.max(t, minAllowed));
+  } else if(dragging === 'scrub'){
+    playhead = Math.max(trimStart, Math.min(trimEnd, t));
+  }
+  updateTimeLabels();
+  drawWaveform();
+});
+
+['pointerup','pointercancel'].forEach(evt => {
+  waveCanvas.addEventListener(evt, () => {
+    if(dragging === 'start' || dragging === 'end') renderSegments();
+    dragging = null;
+  });
+});
+
+/* ---- split / clear ---- */
+splitBtn.addEventListener('click', () => {
+  const t = playhead;
+  if(t <= trimStart + MIN_GAP || t >= trimEnd - MIN_GAP) return;
+  if(splits.some(s => Math.abs(s-t) < MIN_GAP)) return;
+  splits.push(t);
+  splits.sort((a,b)=>a-b);
+  drawWaveform();
+  renderSegments();
+});
+
+clearSplitsBtn.addEventListener('click', () => {
+  splits = [];
+  drawWaveform();
+  renderSegments();
+});
+
+/* ---- segments list ---- */
+function getSegments(){
+  const bounds = [trimStart, ...splits, trimEnd];
+  const segs = [];
+  for(let i=0;i<bounds.length-1;i++){
+    segs.push([bounds[i], bounds[i+1]]);
+  }
+  return segs;
+}
+
+function renderSegments(){
+  const segs = getSegments();
+  segCount.textContent = segs.length;
+  segList.innerHTML = '';
+  segs.forEach((seg, i) => {
+    const row = document.createElement('div');
+    row.className = 'seg-row';
+    row.innerHTML = `
+      <span class="idx">${i+1}</span>
+      <span class="range">${fmtPrecise(seg[0])} → ${fmtPrecise(seg[1])}</span>
+      <span class="dur">${fmtPrecise(seg[1]-seg[0])}</span>
+      <button data-i="${i}" class="preview-seg">▶</button>
+    `;
+    segList.appendChild(row);
+  });
+  segList.querySelectorAll('.preview-seg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.i);
+      const seg = getSegments()[i];
+      previewRange(seg[0], seg[1]);
+    });
+  });
+}
+
+/* ============================================================
+   PREVIEW PLAYBACK
+   ============================================================ */
+playBtn.addEventListener('click', () => {
+  if(previewPlaying){
+    stopPreview();
+  } else {
+    previewRange(playhead >= trimStart && playhead < trimEnd ? playhead : trimStart, trimEnd);
+  }
+});
+
+function previewRange(from, to){
+  stopPreview();
+  ensureAudioCtx();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+
+  previewSource = audioCtx.createBufferSource();
+  previewSource.buffer = decodedBuffer;
+  previewSource.connect(audioCtx.destination);
+  previewStartOffset = from;
+  previewStartCtxTime = audioCtx.currentTime;
+  previewSource.start(0, from, Math.max(0.01, to - from));
+  previewSource.onended = () => {
+    previewPlaying = false;
+    playBtn.textContent = '▶ Play';
+    cancelAnimationFrame(playheadRAF);
+  };
+  previewPlaying = true;
+  playBtn.textContent = '⏸ Pause';
+
+  function tick(){
+    if(!previewPlaying) return;
+    const elapsed = audioCtx.currentTime - previewStartCtxTime;
+    playhead = Math.min(to, previewStartOffset + elapsed);
+    drawWaveform();
+    if(playhead < to) playheadRAF = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function stopPreview(){
+  if(previewSource){
+    try{ previewSource.onended = null; previewSource.stop(); } catch(e){}
+    previewSource = null;
+  }
+  previewPlaying = false;
+  playBtn.textContent = '▶ Play';
+  cancelAnimationFrame(playheadRAF);
+}
+
+/* ============================================================
+   EXPORT — WAV / MP3 encoding + ZIP bundling
+   ============================================================ */
+function sliceBuffer(buffer, startSec, endSec){
+  const sr = buffer.sampleRate;
+  const startSample = Math.floor(startSec*sr);
+  const endSample = Math.min(buffer.length, Math.floor(endSec*sr));
+  const frameCount = Math.max(1, endSample - startSample);
+  const out = audioCtx.createBuffer(buffer.numberOfChannels, frameCount, sr);
+  for(let ch=0; ch<buffer.numberOfChannels; ch++){
+    const data = buffer.getChannelData(ch).subarray(startSample, endSample);
+    out.copyToChannel(new Float32Array(data), ch, 0);
+  }
+  return out;
+}
+
+function floatTo16BitPCM(float32Array){
+  const output = new Int16Array(float32Array.length);
+  for(let i=0;i<float32Array.length;i++){
+    let s = Math.max(-1, Math.min(1, float32Array[i]));
+    output[i] = s<0 ? s*0x8000 : s*0x7FFF;
+  }
+  return output;
+}
+
+function interleave(left, right){
+  const length = left.length + right.length;
+  const result = new Float32Array(length);
+  let index=0, inputIndex=0;
+  while(index<length){
+    result[index++] = left[inputIndex];
+    result[index++] = right[inputIndex];
+    inputIndex++;
+  }
+  return result;
+}
+
+function writeString(view, offset, str){
+  for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i));
+}
+
+function encodeWAV(buffer){
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const bitDepth = 16;
+
+  let samples;
+  if(numChannels === 2){
+    samples = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+  } else {
+    samples = buffer.getChannelData(0);
+  }
+  const pcm = floatTo16BitPCM(samples);
+  const dataLength = pcm.length * 2;
+  const buf = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(buf);
+
+  writeString(view,0,'RIFF');
+  view.setUint32(4, 36+dataLength, true);
+  writeString(view,8,'WAVE');
+  writeString(view,12,'fmt ');
+  view.setUint32(16,16,true);
+  view.setUint16(20,1,true);
+  view.setUint16(22,numChannels,true);
+  view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*numChannels*bitDepth/8,true);
+  view.setUint16(32,numChannels*bitDepth/8,true);
+  view.setUint16(34,bitDepth,true);
+  writeString(view,36,'data');
+  view.setUint32(40,dataLength,true);
+
+  let offset = 44;
+  for(let i=0;i<pcm.length;i++,offset+=2){
+    view.setInt16(offset, pcm[i], true);
+  }
+
+  return new Blob([view], { type:'audio/wav' });
+}
+
+function encodeMP3(buffer){
+  const channels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const kbps = 192;
+  const encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+  const mp3Data = [];
+  const blockSize = 1152;
+
+  const left = floatTo16BitPCM(buffer.getChannelData(0));
+  const right = channels > 1 ? floatTo16BitPCM(buffer.getChannelData(1)) : null;
+
+  for(let i=0; i<left.length; i+=blockSize){
+    const leftChunk = left.subarray(i, i+blockSize);
+    const rightChunk = right ? right.subarray(i, i+blockSize) : undefined;
+    const mp3buf = right ? encoder.encodeBuffer(leftChunk, rightChunk) : encoder.encodeBuffer(leftChunk);
+    if(mp3buf.length > 0) mp3Data.push(new Uint8Array(mp3buf));
+  }
+  const end = encoder.flush();
+  if(end.length > 0) mp3Data.push(new Uint8Array(end));
+
+  return new Blob(mp3Data, { type:'audio/mp3' });
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+}
+
+exportBtn.addEventListener('click', async () => {
+  const format = formatSelect.value;
+  const segs = getSegments();
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+
+  exportBtn.disabled = true;
+  exportStatus.textContent = 'Encoding…';
+
+  try{
+    if(segs.length === 1){
+      const seg = sliceBuffer(decodedBuffer, segs[0][0], segs[0][1]);
+      const blob = format === 'wav' ? encodeWAV(seg) : encodeMP3(seg);
+      downloadBlob(blob, `splice-${stamp}.${format}`);
+      exportStatus.textContent = 'Done — file downloaded.';
+    } else {
+      const zip = new JSZip();
+      for(let i=0;i<segs.length;i++){
+        exportStatus.textContent = `Encoding segment ${i+1} of ${segs.length}…`;
+        // yield to UI thread
+        await new Promise(r => setTimeout(r, 0));
+        const seg = sliceBuffer(decodedBuffer, segs[i][0], segs[i][1]);
+        const blob = format === 'wav' ? encodeWAV(seg) : encodeMP3(seg);
+        zip.file(`segment-${String(i+1).padStart(2,'0')}.${format}`, blob);
+      }
+      exportStatus.textContent = 'Zipping…';
+      const zipBlob = await zip.generateAsync({ type:'blob' });
+      downloadBlob(zipBlob, `splice-segments-${stamp}.zip`);
+      exportStatus.textContent = `Done — ${segs.length} segments downloaded as ZIP.`;
+    }
+  } catch(err){
+    exportStatus.textContent = 'Export failed: ' + err.message;
+  } finally {
+    exportBtn.disabled = false;
+  }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+resizeLiveMeter();
+checkSupport();
+</script>
+</body>
+</html>
