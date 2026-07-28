@@ -162,20 +162,20 @@
 
   // Edit this list to point your real tools at real URLs.
   var PAGES = [
-    { name:'chop',      url:'https://staylookingout.com/',       desc:'in/out point' },
-    { name:'bpmkey',    url:'https://staylookingout.com/tools/bpmkey.html', desc:'BPM / key detection tool' },
-    { name:'varispeed', url:'https://staylookingout.com/tools/', desc:'pitch/time stretch' },
-    { name:'retune',    url:'#', desc:'any song' },
-    { name:'record',    url:'#', desc:'anything playing', color:'#fe5f75' },
-    { name:'playlist',  url:'#', desc:'play/filter songs' },
+    { name:'chop',      url:'https://staylookingout.com/tools/chop.html',      desc:'in/out point' },
+    { name:'bpmkey',    url:'https://staylookingout.com/tools/bpmkey.html',    desc:'BPM / key detection tool' },
+    { name:'varispeed', url:'https://staylookingout.com/tools/varispeed.html', desc:'pitch/time stretch' },
+    { name:'retune',    url:'https://staylookingout.com/tools/retune.html',   desc:'any song' },
+    { name:'record',    url:'https://staylookingout.com/tools/record.html',   desc:'anything playing', color:'#fe5f75' },
+    { name:'playlist',  url:'https://staylookingout.com/tools/playlist.html', desc:'play/filter songs' },
     { name:'bmpcc',     url:'https://staylookingout.github.io/staylookingout-site/tools/rig/', desc:'BMPCC camera control app' }
   ];
 
   // Shown instead of PAGES when the prompt is sitting in user:/read
   var READ_PAGES = [
-    { name:'character', url:'#', desc:'people in religious text' },
-    { name:'parable',   url:'#', desc:'lessons from around the world' },
-    { name:'waves',     url:'#', desc:'light/audio relationship' }
+    { name:'character', url:'https://staylookingout.com/tools/character.html', desc:'people in religious text' },
+    { name:'parable',   url:'https://staylookingout.com/tools/parable.html',   desc:'lessons from around the world' },
+    { name:'waves',     url:'https://staylookingout.com/tools/waves.html',     desc:'light/audio relationship' }
   ];
 
   function currentPages(){ return promptPath === 'read' ? READ_PAGES : PAGES; }
@@ -321,7 +321,6 @@
       }],
       [120, function(){ pushLine(colorize('import Tools from "./tools/index";'), null, true); }],
       [120, function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
-      [120, function(){ pushLine(colorize('link staylookingout.com ........ OK'), null, true); }],
       [160, function(){ sys('> File loaded: src/core/main.js'); }],
       [220, function(){ state.phase = 'ready'; state.showPrompt = true; renderPromptRow(); updateRootAnim(); focusInput(); }]
     ];
