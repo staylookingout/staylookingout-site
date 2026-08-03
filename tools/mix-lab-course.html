@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIX LAB · Interactive Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B0C0E; --panel:#131519; --panel2:#0F1114; --card:#15181D;
+  --line:#23262C; --line2:#2C3038; --mute:#767C88; --mute2:#4A4F58;
+  --read:#E9EEF2; --go:#38E08A; --warn:#F0654A; --cool:#5AA9FF;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--read);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono)}
+.eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.wrap{display:grid;grid-template-columns:238px 1fr;min-height:100vh}
+nav{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);background:var(--panel2);padding:18px 13px}
+main{padding:26px 30px 90px;max-width:840px}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+
+.brand{font-family:var(--mono);font-weight:700;font-size:16px;letter-spacing:.12em}
+.brandsub{font-size:11px;color:var(--mute);margin-bottom:16px}
+.navsec{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute2);margin:14px 8px 6px}
+.navlink{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:var(--mute);font-size:13px;cursor:pointer;transition:.12s}
+.navlink:hover{background:var(--panel);color:var(--read)}
+.navlink.active{background:var(--panel);color:var(--read)}
+.navlink .n{font-family:var(--mono);font-size:10px;color:var(--mute2);min-width:16px}
+.navlink .tag{margin-left:auto;font-family:var(--mono);font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:var(--go);border:1px solid rgba(56,224,138,.35);border-radius:3px;padding:1px 4px}
+
+h1.title{font-family:var(--mono);font-size:24px;font-weight:700;margin:6px 0 8px}
+.lead{color:var(--mute);font-size:14px;line-height:1.65;margin:0 0 18px}
+.lead b{color:var(--read)}
+h3.step{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--go);margin:22px 0 8px}
+p{font-size:14px;line-height:1.7;color:#C7CDD4}
+p b{color:var(--read);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+
+/* lab */
+.lab{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+canvas{display:block;width:100%;border-radius:8px;background:#08090B;border:1px solid var(--line)}
+.transport{display:flex;gap:9px;align-items:center;margin:14px 0 6px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--line2);color:var(--read);border-radius:8px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:.12s}
+.btn:hover{border-color:var(--go)}
+.btn.play{background:var(--go);border-color:var(--go);color:#052;font-weight:700}
+.btn.on{border-color:var(--go);color:var(--go)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;color:var(--mute);padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+.seg button.active{background:var(--panel);color:var(--read)}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px 16px;margin-top:14px}
+.ctl label{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-bottom:5px}
+.ctl label .v{font-family:var(--mono);color:var(--read)}
+input[type=range]{width:100%;accent-color:var(--go);height:4px}
+.readout{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--mute)}
+.readout b{color:var(--go)}
+.explain{background:linear-gradient(180deg,rgba(56,224,138,.05),transparent);border:1px solid var(--line);border-left:3px solid var(--go);border-radius:8px;padding:12px 15px;font-size:13px;line-height:1.6;color:var(--mute);margin-top:14px}
+.explain b{color:var(--read)}
+.hint{font-size:12px;color:var(--mute2);margin-top:8px;font-style:italic}
+
+.toggles{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.tgl{padding:7px 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--mute);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.tgl .dot{width:9px;height:9px;border-radius:50%;background:var(--mute2)}
+.tgl.on{color:var(--read);border-color:currentColor}
+.mistakes{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:9px;padding:13px 16px;margin-top:16px}
+.mistakes .eyebrow{color:var(--warn);margin-bottom:8px}
+.mistake{font-size:13px;color:var(--mute);line-height:1.5;padding:3px 0 3px 16px;position:relative}
+.mistake::before{content:'✕';position:absolute;left:0;color:var(--warn);font-size:11px}
+.roadmap .rl{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--panel)}
+.roadmap .rl:last-child{border:none}
+.roadmap .rn{font-family:var(--mono);font-size:12px;color:var(--go);min-width:26px}
+.roadmap .rt b{color:var(--read);font-size:14px}
+.roadmap .rt div{color:var(--mute);font-size:12.5px;margin-top:2px;line-height:1.5}
+.foot{color:var(--mute2);font-size:11px;text-align:center;margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
+.ear{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--cool);border-radius:10px;padding:14px 16px;margin-top:18px}
+.eartop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.eartop .eyebrow{color:var(--cool)}
+.eartop .score{font-family:var(--mono);font-size:12px;color:var(--read)}
+.earq{font-size:13.5px;color:var(--read);margin:0 0 11px;line-height:1.5}
+.earctrl{margin-bottom:11px}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{background:var(--panel);border:1px solid var(--line2);color:var(--read);border-radius:7px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:var(--sans);transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cool)}
+.opt:disabled{cursor:default}
+.opt.right{background:rgba(56,224,138,.15);border-color:var(--go);color:var(--go)}
+.opt.wrong{background:rgba(240,101,74,.12);border-color:var(--warn);color:var(--warn)}
+.earres{font-size:13px;line-height:1.55;color:var(--mute);margin:11px 0}
+.earres .ok{color:var(--go);font-weight:600}.earres .no{color:var(--warn);font-weight:600}
+.btn.play2{background:var(--cool);border-color:var(--cool);color:#04203f;font-weight:700}
+.btn.j-next{margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand">MIX LAB</div>
+    <div class="brandsub">learn to hear it</div>
+    <div id="navlinks"></div>
+  </nav>
+  <main>
+    <div id="content"></div>
+    <div class="foot mono">interactive course prototype · audio runs in your browser</div>
+  </main>
+</div>
+
+<script>
+// ============ shared audio ============
+let AC=null, master=null;
+function ac(){
+  if(!AC){
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain(); master.gain.value=0.5;
+    const safety=AC.createDynamicsCompressor(); // ear protection
+    safety.threshold.value=-6; safety.ratio.value=6; safety.attack.value=0.003; safety.release.value=0.1;
+    master.connect(safety); safety.connect(AC.destination);
+  }
+  if(AC.state==='suspended') AC.resume();
+  return AC;
+}
+let _noise,_music,_dyn;
+function noiseBuf(){ if(_noise)return _noise; const c=ac(),len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);
+  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let i=0;i<len;i++){const w=Math.random()*2-1;
+    b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.96900*b2+w*0.1538520;b3=0.86650*b3+w*0.3104856;b4=0.55000*b4+w*0.5329522;b5=-0.7616*b5-w*0.0168980;
+    d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926;}
+  _noise=b; return b; }
+function musicBuf(){ if(_music)return _music; const c=ac(),sr=c.sampleRate,len=sr*2,b=c.createBuffer(1,len,sr),d=b.getChannelData(0);
+  const notes=[220,261.63,329.63,440], step=0.25;
+  for(let s=0;s<8;s++){ const f=notes[s%notes.length]*(s>=4?1:1); const start=Math.floor(s*step*sr), dur=Math.floor(0.3*sr);
+    for(let i=0;i<dur && start+i<len;i++){ const env=Math.exp(-i/(0.12*sr));
+      d[start+i]+= (Math.sin(2*Math.PI*f*i/sr)*0.5 + Math.sin(2*Math.PI*f*2*i/sr)*0.2 + Math.sin(2*Math.PI*f*3*i/sr)*0.1)*env*0.5; } }
+  _music=b; return b; }
+function dynBuf(){ if(_dyn)return _dyn; const c=ac(),sr=c.sampleRate,len=sr*2,b=c.createBuffer(1,len,sr),d=b.getChannelData(0);
+  const hits=[[0,1],[0.25,0.35],[0.5,0.9],[0.75,0.3],[1,1],[1.25,0.4],[1.5,0.85],[1.75,0.3]];
+  hits.forEach(([t,a])=>{ const start=Math.floor(t*sr),dur=Math.floor(0.2*sr);
+    for(let i=0;i<dur && start+i<len;i++){ const env=Math.exp(-i/(0.05*sr));
+      d[start+i]+= Math.sin(2*Math.PI*150*i/sr)*env*a*0.7 + (Math.random()*2-1)*Math.exp(-i/(0.003*sr))*a*0.3; } });
+  _dyn=b; return b; }
+const dpr=()=>Math.min(2,window.devicePixelRatio||1);
+function fitCanvas(cv,h){ const w=cv.clientWidth; cv.width=w*dpr(); cv.height=h*dpr(); const g=cv.getContext('2d'); g.setTransform(dpr(),0,0,dpr(),0,0); return g; }
+const xLog=(f,w)=>Math.log(f/20)/Math.log(20000/20)*w;
+
+// ============ lessons ============
+let cleanup=null;
+const LESSONS=[
+  {id:'welcome',sec:'Start',name:'Welcome',render:renderWelcome},
+  {id:'gain',sec:'Foundations',name:'Gain & Metering',tag:'live',render:renderGain},
+  {id:'eq',sec:'Core concepts',name:'EQ Explorer',tag:'live',render:renderEQ},
+  {id:'comp',sec:'Core concepts',name:'Compressor Explorer',tag:'live',render:renderComp},
+  {id:'sat',sec:'Core concepts',name:'Saturation Lab',tag:'live',render:renderSat},
+  {id:'space',sec:'Balance & space',name:'Frequency Space',tag:'live',render:renderSpace},
+  {id:'stereo',sec:'Balance & space',name:'Stereo Field',tag:'live',render:renderStereo},
+  {id:'reverb',sec:'Depth',name:'Reverb & Depth',tag:'live',render:renderReverb},
+  {id:'roadmap',sec:'Course',name:'Full roadmap',render:renderRoadmap},
+];
+
+function renderWelcome(el){
+  el.innerHTML=`<div class="eyebrow">Interactive course</div><h1 class="title">Learn to hear it</h1>
+  <p class="lead">Most people learn mixing as numbers to copy — "cut 300 Hz, 4:1 ratio." You can follow a recipe but you can't hear <b>why</b>. This course teaches the why by making every concept <b>visual and audible</b>: move a control, see the shape change, hear the sound change.</p>
+  <div class="card"><div class="eyebrow" style="margin-bottom:10px">How each concept works — see · hear · do</div>
+  <p style="margin:0"><b>1 · What it is</b> — one clear mental model, plain language.<br><b>2 · See &amp; hear it</b> — the interactive lab: move it, watch it, hear it. This is where it clicks.<br><b>3 · How to use it</b> — the practical moves per instrument.<br><b>4 · Common mistakes</b> — the traps to recognize and avoid.</p></div>
+  <p>Two flagship labs are live right now: the <b>EQ Explorer</b> and the <b>Compressor Explorer</b> run real audio through your browser so you can A/B what these tools actually do. <b>Frequency Space</b> and <b>Stereo Field</b> show how elements share the mix. The full curriculum is in the roadmap.</p>
+  <p class="hint">Headphones or decent speakers help. Audio starts only when you press play in a lab.</p>`;
+}
+
+// ---- EQ ----
+function renderEQ(el){
+  el.innerHTML=`<div class="eyebrow">Core concept · 03</div><h1 class="title">EQ Explorer</h1>
+  <p class="lead">EQ is just a <b>volume knob for a slice of the frequency spectrum</b>. Turn a slice up (boost) or down (cut). That's the whole idea — everything else is which slice and how wide.</p>
+  <div class="lab">
+    <canvas id="eqc" height="240"></canvas>
+    <div class="transport">
+      <button class="btn play" id="eqPlay">▶ Play</button>
+      <button class="btn" id="eqByp">Bypass (A/B)</button>
+      <div class="seg" id="eqSrc"><button data-s="pink" class="active">Pink noise</button><button data-s="music">Music loop</button></div>
+    </div>
+    <div class="seg" id="eqType" style="margin-top:4px">
+      <button data-t="highpass" class="active">High-pass</button><button data-t="lowshelf">Low shelf</button>
+      <button data-t="peaking">Bell</button><button data-t="highshelf">High shelf</button><button data-t="lowpass">Low-pass</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label>Frequency <span class="v" id="eqFv">1000 Hz</span></label><input type="range" id="eqF" min="20" max="20000" value="1000"></div>
+      <div class="ctl"><label>Gain <span class="v" id="eqGv">0 dB</span></label><input type="range" id="eqG" min="-18" max="18" value="0" step="0.5"></div>
+      <div class="ctl"><label>Q / width <span class="v" id="eqQv">1.0</span></label><input type="range" id="eqQ" min="0.3" max="8" value="1" step="0.1"></div>
+    </div>
+    <div class="explain" id="eqEx"></div>
+    <div class="hint">Green line = your EQ curve. Faint bars = the live sound's frequency content. Toggle Bypass to hear the difference.</div>
+  </div>
+  <h3 class="step">How to use it</h3>
+  <p><b>Subtractive before additive.</b> Cutting the bad usually beats boosting the good — it's cleaner and doesn't add level. High-pass anything that doesn't need low end (vocals, hats, keys) to unclutter the mix. Use a <b>narrow</b> cut to remove a specific ugly resonance; use a <b>wide</b> gentle boost to flatter a whole region.</p>
+  <div class="mistakes"><div class="eyebrow">Common mistakes</div>
+    <div class="mistake">Boosting everything — if every track is boosted, nothing stands out. Cut to make room.</div>
+    <div class="mistake">Narrow boosts — they ring and sound unnatural. Boost wide, cut narrow.</div>
+    <div class="mistake">EQ'ing in solo — a track that sounds great alone can clash in the mix. Judge in context.</div></div>
+  <div id="eqChal"></div>`;
+  initEQ();
+}
+function initEQ(){
+  const c=ac(); const cv=document.getElementById('eqc'); let g=fitCanvas(cv,240);
+  const filter=c.createBiquadFilter(); filter.type='highpass'; filter.frequency.value=1000; filter.Q.value=1; filter.gain.value=0;
+  const analyser=c.createAnalyser(); analyser.fftSize=2048; analyser.smoothingTimeConstant=0.8;
+  const fd=new Uint8Array(analyser.frequencyBinCount);
+  analyser.connect(master);
+  let srcNode=null, playing=false, bypass=false, srcType='pink', raf=null;
+  function connect(){ if(!srcNode)return; try{srcNode.disconnect();}catch(e){} try{filter.disconnect();}catch(e){}
+    if(bypass){ srcNode.connect(analyser); } else { srcNode.connect(filter); filter.connect(analyser); } }
+  function start(){ srcNode=c.createBufferSource(); srcNode.buffer=srcType==='pink'?noiseBuf():musicBuf(); srcNode.loop=true; connect(); srcNode.start(); playing=true; document.getElementById('eqPlay').textContent='⏸ Stop'; document.getElementById('eqPlay').classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('eqPlay'); if(p){p.textContent='▶ Play';p.classList.add('play');} }
+  const fpts=[]; for(let i=0;i<200;i++) fpts.push(20*Math.pow(1000,i/199));
+  const fArr=new Float32Array(fpts), mArr=new Float32Array(fpts.length), pArr=new Float32Array(fpts.length);
+  function draw(){ raf=requestAnimationFrame(draw); const w=cv.clientWidth,h=240; g.clearRect(0,0,w,h);
+    // grid
+    g.strokeStyle='#16191E'; g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono, monospace'; g.textAlign='center';
+    [50,100,500,1000,5000,10000].forEach(f=>{const x=xLog(f,w);g.beginPath();g.moveTo(x,0);g.lineTo(x,h-12);g.stroke();g.fillText(f>=1000?f/1000+'k':f,x,h-2);});
+    g.textAlign='right'; [12,0,-12].forEach(db=>{const y=h/2-(db/24)*(h/2-14);g.fillText(db>0?'+'+db:db,w-3,y-2);g.strokeStyle='#13161A';g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();});
+    // live spectrum
+    if(playing){ analyser.getByteFrequencyData(fd); g.beginPath(); let started=false;
+      for(let i=1;i<fd.length;i++){ const f=i*c.sampleRate/analyser.fftSize; if(f<20||f>20000)continue; const x=xLog(f,w); const y=(h-12)-(fd[i]/255)*(h-24);
+        if(!started){g.moveTo(x,h-12);started=true;} g.lineTo(x,y); }
+      g.lineTo(w,h-12); g.fillStyle='rgba(90,169,255,.10)'; g.fill(); }
+    // EQ curve
+    filter.getFrequencyResponse(fArr,mArr,pArr);
+    g.beginPath();
+    for(let i=0;i<fArr.length;i++){ const db=20*Math.log10(mArr[i]||0.0001); const x=xLog(fArr[i],w); const y=h/2-(Math.max(-24,Math.min(24,db))/24)*(h/2-14); if(i===0)g.moveTo(x,y); else g.lineTo(x,y); }
+    g.strokeStyle=bypass?'#4A4F58':'#38E08A'; g.lineWidth=2.2; g.stroke();
+  }
+  draw();
+  const usesGain=t=>t==='peaking'||t==='lowshelf'||t==='highshelf';
+  const EX={highpass:"<b>High-pass filter:</b> removes everything below the frequency. The go-to for clearing low-end mud from anything that doesn't need bass. Q sets the steepness/resonance.",
+    lowpass:"<b>Low-pass filter:</b> removes everything above the frequency. Tames harshness/hiss, or darkens a sound (great on reverb tails).",
+    peaking:"<b>Bell:</b> boosts or cuts a slice around the frequency. Narrow (high Q) = surgical resonance removal; wide (low Q) = musical tone shaping.",
+    lowshelf:"<b>Low shelf:</b> boosts or cuts everything below the frequency by a fixed amount. Adds weight/warmth or thins the bottom.",
+    highshelf:"<b>High shelf:</b> boosts or cuts everything above the frequency. The 'air'/brightness control on vocals and cymbals."};
+  function upd(){ const t=filter.type; document.getElementById('eqEx').innerHTML=EX[t];
+    document.getElementById('eqG').parentElement.style.opacity=usesGain(t)?1:0.35; }
+  function setType(t){ filter.type=t; [...document.querySelectorAll('#eqType button')].forEach(b=>b.classList.toggle('active',b.dataset.t===t)); upd(); }
+  document.getElementById('eqType').onclick=e=>{const b=e.target.closest('button');if(b)setType(b.dataset.t);};
+  document.getElementById('eqF').oninput=e=>{filter.frequency.value=+e.target.value; document.getElementById('eqFv').textContent=(+e.target.value>=1000?(+e.target.value/1000).toFixed(1)+'k':e.target.value)+' Hz';};
+  document.getElementById('eqG').oninput=e=>{filter.gain.value=+e.target.value; document.getElementById('eqGv').textContent=(+e.target.value>0?'+':'')+e.target.value+' dB';};
+  document.getElementById('eqQ').oninput=e=>{filter.Q.value=+e.target.value; document.getElementById('eqQv').textContent=(+e.target.value).toFixed(1);};
+  document.getElementById('eqPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  document.getElementById('eqByp').onclick=e=>{ bypass=!bypass; e.target.classList.toggle('on',bypass); e.target.textContent=bypass?'Bypassed':'Bypass (A/B)'; connect(); };
+  document.getElementById('eqSrc').onclick=e=>{const b=e.target.closest('button');if(!b)return; srcType=b.dataset.s; [...document.querySelectorAll('#eqSrc button')].forEach(x=>x.classList.toggle('active',x===b)); if(playing){stop();start();}};
+  window.addEventListener('resize',()=>g=fitCanvas(cv,240));
+  upd();
+  let chFreq=1000,chTmp=null; function chStop(){if(chTmp){try{chTmp.stop();}catch(e){}chTmp=null;}}
+  function chPlay(){ chStop(); const s=c.createBufferSource(); s.buffer=noiseBuf(); s.loop=true; const f=c.createBiquadFilter(); f.type='peaking'; f.frequency.value=chFreq; f.Q.value=1.4; f.gain.value=15; s.connect(f); f.connect(master); s.start(); s.stop(c.currentTime+2.2); chTmp=s; }
+  earTrain(document.getElementById('eqChal'),{ prompt:'A big boost was added to one band. Which region got louder?', options:['Low ~100 Hz','Mid ~1 kHz','High ~8 kHz'], setup:()=>{ const o=[100,1000,8000]; const i=Math.floor(Math.random()*3); chFreq=o[i]; return i; }, play:chPlay, explain:()=>'Boosts are easiest to spot at the extremes — lows add weight/boom, highs add air/edge, mids add honk/presence.' });
+  cleanup=()=>{ if(raf)cancelAnimationFrame(raf); stop(); chStop(); try{analyser.disconnect();}catch(e){} };
+}
+
+// ---- Compressor ----
+function renderComp(el){
+  el.innerHTML=`<div class="eyebrow">Core concept · 04</div><h1 class="title">Compressor Explorer</h1>
+  <p class="lead">A compressor is an <b>automatic volume knob</b>: when the signal gets louder than the <b>threshold</b>, it turns it down by the <b>ratio</b>. That shrinks the gap between loud and quiet — so the whole thing sits steadier and, with makeup gain, feels louder and denser.</p>
+  <div class="lab">
+    <canvas id="cpc" height="220"></canvas>
+    <div class="transport">
+      <button class="btn play" id="cpPlay">▶ Play</button>
+      <button class="btn" id="cpByp">Bypass (A/B)</button>
+      <div class="readout">GR <b id="cpGR">0.0</b> dB</div>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label>Threshold <span class="v" id="cpTv">-24 dB</span></label><input type="range" id="cpT" min="-60" max="0" value="-24"></div>
+      <div class="ctl"><label>Ratio <span class="v" id="cpRv">4:1</span></label><input type="range" id="cpR" min="1" max="20" value="4" step="0.5"></div>
+      <div class="ctl"><label>Attack <span class="v" id="cpAv">10 ms</span></label><input type="range" id="cpA" min="0" max="150" value="10"></div>
+      <div class="ctl"><label>Release <span class="v" id="cpRLv">120 ms</span></label><input type="range" id="cpRL" min="20" max="600" value="120"></div>
+      <div class="ctl"><label>Knee <span class="v" id="cpKv">6 dB</span></label><input type="range" id="cpK" min="0" max="30" value="6"></div>
+      <div class="ctl"><label>Makeup <span class="v" id="cpMv">0 dB</span></label><input type="range" id="cpM" min="0" max="18" value="0" step="0.5"></div>
+    </div>
+    <div class="explain" id="cpEx"></div>
+    <div class="hint">The curve maps input level (x) to output level (y). Below threshold it's 1:1 (diagonal); above, it bends flatter. The moving dot is the live signal; the bar shows gain reduction.</div>
+  </div>
+  <h3 class="step">The one that matters most: attack</h3>
+  <p><b>Slow attack = punch.</b> A slow attack lets the initial spike (the transient) through before the compressor clamps down — so the hit stays snappy and only the body gets controlled. <b>Fast attack</b> grabs the transient too, softening the punch but taming peaks harder. Try it: play the loop, set a low threshold, and sweep attack from 0 to 150 ms — listen to the punch come and go.</p>
+  <div class="mistakes"><div class="eyebrow">Common mistakes</div>
+    <div class="mistake">Too much gain reduction — 3–6 dB is plenty for most things. 15 dB is usually a level problem, not a comp problem.</div>
+    <div class="mistake">Fast attack on everything — you squash the life out of drums. Slow down to keep punch.</div>
+    <div class="mistake">Forgetting makeup gain — then comparing, the louder (compressed) version always "sounds better." Match levels to judge honestly.</div></div>
+  <div id="cpChal"></div>`;
+  initComp();
+}
+function initComp(){
+  const c=ac(); const cv=document.getElementById('cpc'); let g=fitCanvas(cv,220);
+  const comp=c.createDynamicsCompressor();
+  comp.threshold.value=-24; comp.ratio.value=4; comp.attack.value=0.01; comp.release.value=0.12; comp.knee.value=6;
+  const makeup=c.createGain(); makeup.gain.value=1;
+  const analyser=c.createAnalyser(); analyser.fftSize=1024;
+  makeup.connect(analyser); analyser.connect(master);
+  let srcNode=null, playing=false, bypass=false, raf=null;
+  function connect(){ if(!srcNode)return; try{srcNode.disconnect();}catch(e){} try{comp.disconnect();}catch(e){}
+    if(bypass){ srcNode.connect(makeup); } else { srcNode.connect(comp); comp.connect(makeup); } }
+  function start(){ srcNode=c.createBufferSource(); srcNode.buffer=dynBuf(); srcNode.loop=true; connect(); srcNode.start(); playing=true; const p=document.getElementById('cpPlay'); p.textContent='⏸ Stop'; p.classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('cpPlay'); if(p){p.textContent='▶ Play';p.classList.add('play');} }
+  const td=new Uint8Array(analyser.fftSize);
+  function outDb(inDb){ const thr=comp.threshold.value, ratio=comp.ratio.value, k=comp.knee.value;
+    if(inDb<thr-k/2) return inDb; if(inDb>thr+k/2) return thr+(inDb-thr)/ratio;
+    const x=inDb-(thr-k/2); const slope=(1/ratio-1); return inDb+slope*x*x/(2*k); }
+  function draw(){ raf=requestAnimationFrame(draw); const w=cv.clientWidth,h=220; g.clearRect(0,0,w,h);
+    const pad=28, gw=w-pad-8, gh=h-pad-8, x0=pad, y0=8;
+    const X=db=>x0+((db+60)/60)*gw, Y=db=>y0+(1-(db+60)/60)*gh;
+    // grid
+    g.strokeStyle='#14171B'; g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono, monospace';
+    for(let db=-60;db<=0;db+=12){ g.beginPath();g.moveTo(X(db),y0);g.lineTo(X(db),y0+gh);g.stroke(); g.beginPath();g.moveTo(x0,Y(db));g.lineTo(x0+gw,Y(db));g.stroke();
+      g.textAlign='center'; g.fillText(db,X(db),y0+gh+11); g.textAlign='right'; g.fillText(db,x0-3,Y(db)+3); }
+    // 1:1 reference
+    g.strokeStyle='#2A2E35'; g.setLineDash([3,3]); g.beginPath(); g.moveTo(X(-60),Y(-60)); g.lineTo(X(0),Y(0)); g.stroke(); g.setLineDash([]);
+    // transfer curve
+    g.beginPath(); for(let db=-60;db<=0;db+=1){ const o=bypass?db:outDb(db); if(db===-60)g.moveTo(X(db),Y(o)); else g.lineTo(X(db),Y(o)); }
+    g.strokeStyle=bypass?'#4A4F58':'#38E08A'; g.lineWidth=2.4; g.stroke();
+    // threshold marker
+    if(!bypass){ g.strokeStyle='rgba(240,101,74,.6)'; g.beginPath(); g.moveTo(X(comp.threshold.value),y0); g.lineTo(X(comp.threshold.value),y0+gh); g.stroke();
+      g.fillStyle='#F0654A'; g.textAlign='left'; g.fillText('thr', X(comp.threshold.value)+3, y0+10); }
+    // live signal dot
+    if(playing){ analyser.getByteTimeDomainData(td); let peak=0; for(let i=0;i<td.length;i++){const v=Math.abs(td[i]-128)/128; if(v>peak)peak=v;}
+      const inDb=20*Math.log10(peak||0.0001); const o=bypass?inDb:outDb(inDb);
+      if(inDb>-60){ g.fillStyle='#5AA9FF'; g.beginPath(); g.arc(X(inDb),Y(o),4,0,7); g.fill(); }
+      // GR meter
+      let r=comp.reduction; if(typeof r==='object'&&r) r=r.value; document.getElementById('cpGR').textContent=Math.abs(r||0).toFixed(1);
+      const grw=(Math.min(20,Math.abs(r||0))/20)*(w-16); g.fillStyle='rgba(240,101,74,.5)'; g.fillRect(8,y0,grw,3);
+    }
+  }
+  draw();
+  function note(which){ const el=document.getElementById('cpEx'); if(!el)return;
+    const thr=comp.threshold.value, ratio=comp.ratio.value, atk=comp.attack.value*1000, rel=comp.release.value*1000, kn=comp.knee.value, mk=20*Math.log10(makeup.gain.value||0.0001);
+    let h='';
+    if(which==='thr') h = thr<-38 ? "<b>Threshold — low:</b> even quieter parts cross it, so almost everything gets compressed. Denser and more aggressive."
+      : thr<-15 ? "<b>Threshold — medium:</b> only the louder parts get caught; quieter material passes untouched. The usual working range."
+      : "<b>Threshold — high:</b> only the biggest peaks trip it. Gentle peak-catching, most of the signal left alone. It's the level where compression starts.";
+    else if(which==='ratio') h = ratio<2.5 ? "<b>Ratio — low:</b> gentle leveling, very transparent. Great for mix-bus glue. Ratio is how hard it turns down once over threshold."
+      : ratio<6 ? "<b>Ratio — moderate:</b> the workhorse for vocals and drums — clear control without squashing. 4:1 means 4 dB in makes 1 dB out."
+      : "<b>Ratio — high:</b> heavy control, approaching limiting. Clamps hard on anything above the threshold.";
+    else if(which==='atk') h = atk<5 ? "<b>Attack — fast:</b> grabs transients the instant they cross the threshold. Peaks tightly controlled, but the punch softens."
+      : atk>40 ? "<b>Attack — slow:</b> the transient punches through before the compressor reacts, so hits stay snappy while the body is controlled. This is how you keep punch."
+      : "<b>Attack — medium:</b> some transient through, some control. A safe default for vocals and the mix bus. Attack sets how fast it clamps once over threshold.";
+    else if(which==='rel') h = rel<80 ? "<b>Release — fast:</b> recovers quickly and feels lively, but too fast can 'pump' or distort the low end. Release is how fast it lets go after the signal drops."
+      : rel<250 ? "<b>Release — medium:</b> breathes naturally with the groove. The safe default — try matching it to the tempo."
+      : "<b>Release — slow:</b> smooth, steady gain reduction. Very transparent, but too slow can dull the dynamics.";
+    else if(which==='knee') h = kn<6 ? "<b>Knee — hard:</b> compression snaps on abruptly right at the threshold. Punchy and obvious — good for control and effect."
+      : kn>18 ? "<b>Knee — soft:</b> compression eases in gradually around the threshold. Smoother and more transparent — good for vocals and the bus."
+      : "<b>Knee — medium:</b> a balance between the smoothness of a soft knee and the grip of a hard one. Knee is how gradually it engages.";
+    else if(which==='mk') h = mk<0.5 ? "<b>Makeup — off:</b> compression makes the signal quieter, so Bypass will sound louder and 'better' unfairly. Add makeup to match levels."
+      : "<b>Makeup gain:</b> adds back the level compression removed, so A/B is honest — and this is where that 'louder, denser' feeling comes from.";
+    el.innerHTML=h; }
+  document.getElementById('cpT').oninput=e=>{comp.threshold.value=+e.target.value; document.getElementById('cpTv').textContent=e.target.value+' dB'; note('thr');};
+  document.getElementById('cpR').oninput=e=>{comp.ratio.value=+e.target.value; document.getElementById('cpRv').textContent=(+e.target.value)+':1'; note('ratio');};
+  document.getElementById('cpA').oninput=e=>{comp.attack.value=+e.target.value/1000; document.getElementById('cpAv').textContent=e.target.value+' ms'; note('atk');};
+  document.getElementById('cpRL').oninput=e=>{comp.release.value=+e.target.value/1000; document.getElementById('cpRLv').textContent=e.target.value+' ms'; note('rel');};
+  document.getElementById('cpK').oninput=e=>{comp.knee.value=+e.target.value; document.getElementById('cpKv').textContent=e.target.value+' dB'; note('knee');};
+  document.getElementById('cpM').oninput=e=>{makeup.gain.value=Math.pow(10,(+e.target.value)/20); document.getElementById('cpMv').textContent=(+e.target.value>0?'+':'')+e.target.value+' dB'; note('mk');};
+  document.getElementById('cpPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  document.getElementById('cpByp').onclick=e=>{ bypass=!bypass; e.target.classList.toggle('on',bypass); e.target.textContent=bypass?'Bypassed':'Bypass (A/B)'; connect(); };
+  window.addEventListener('resize',()=>g=fitCanvas(cv,220));
+  note('atk');
+  let chOn=true,chTmp=null; function chStop(){if(chTmp){try{chTmp.stop();}catch(e){}chTmp=null;}}
+  function chPlay(){ chStop(); const s=c.createBufferSource(); s.buffer=dynBuf(); s.loop=true; if(chOn){ const k=c.createDynamicsCompressor(); k.threshold.value=-32;k.ratio.value=10;k.attack.value=0.004;k.release.value=0.14; const mk=c.createGain(); mk.gain.value=1.7; s.connect(k);k.connect(mk);mk.connect(master);} else { const mk=c.createGain(); mk.gain.value=1.0; s.connect(mk); mk.connect(master);} s.start(); s.stop(c.currentTime+2.6); chTmp=s; }
+  earTrain(document.getElementById('cpChal'),{ prompt:'Is this loop being compressed, or left alone?', options:['Compressed','Not compressed'], setup:()=>{ chOn=Math.random()<0.5; return chOn?0:1; }, play:chPlay, explain:()=>'Compression evens the hits — loud and soft strikes sit closer together. Uncompressed, the dynamics jump around more.' });
+  cleanup=()=>{ if(raf)cancelAnimationFrame(raf); stop(); chStop(); try{analyser.disconnect();}catch(e){} };
+}
+
+// ---- Frequency Space ----
+function renderSpace(el){
+  el.innerHTML=`<div class="eyebrow">Core concept · 05</div><h1 class="title">Frequency Space</h1>
+  <p class="lead">A mix is <b>real estate</b>. Every instrument occupies a range of frequencies, and when two sit in the same spot they <b>mask</b> each other — fighting for the same space, both losing clarity. Mixing is largely about giving each its own room.</p>
+  <div class="lab">
+    <canvas id="spc" height="260"></canvas>
+    <div class="toggles" id="spTgl"></div>
+    <div class="explain" id="spEx">Toggle instruments on and off. Watch the <b>red zones</b> — that's where active instruments overlap and mask each other. The worst clashes: <b>kick vs bass</b> in the lows, and <b>vocal vs keys</b> in the mids.</div>
+  </div>
+  <h3 class="step">How to fix masking</h3>
+  <p><b>Carve, don't just boost.</b> When two things clash, cut one where the other needs to shine — dip the keys at 3 kHz so the vocal's presence cuts through, or duck the bass under the kick down low. The clearest way to make something stand out is to stop everything else competing in its band.</p>`;
+  initSpace();
+}
+function initSpace(){
+  const cv=document.getElementById('spc'); let g=fitCanvas(cv,260);
+  const INST=[
+    {name:'Kick',lo:30,hi:120,c:'#F0654A',on:true},
+    {name:'Bass',lo:40,hi:400,c:'#E8A33D',on:true},
+    {name:'Snare',lo:150,hi:400,c:'#C77DFF',on:true},
+    {name:'Vocal',lo:150,hi:8000,c:'#38E08A',on:true},
+    {name:'Keys',lo:250,hi:6000,c:'#5AA9FF',on:true},
+    {name:'Hats',lo:5000,hi:16000,c:'#9AA0A8',on:true},
+  ];
+  const tg=document.getElementById('spTgl');
+  tg.innerHTML=INST.map((n,i)=>`<div class="tgl on" data-i="${i}" style="color:${n.c}"><span class="dot" style="background:${n.c}"></span>${n.name}</div>`).join('');
+  tg.onclick=e=>{const t=e.target.closest('.tgl');if(!t)return;const i=+t.dataset.i;INST[i].on=!INST[i].on;t.classList.toggle('on',INST[i].on);draw();};
+  function draw(){ const w=cv.clientWidth,h=260; g.clearRect(0,0,w,h);
+    g.strokeStyle='#16191E'; g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono, monospace'; g.textAlign='center';
+    [50,100,500,1000,5000,10000].forEach(f=>{const x=xLog(f,w);g.beginPath();g.moveTo(x,0);g.lineTo(x,h-30);g.stroke();g.fillText(f>=1000?f/1000+'k':f,x,h-18);});
+    const active=INST.filter(n=>n.on); const laneH=Math.min(26,(h-46)/active.length); 
+    // collision map along frequency
+    const cols=new Float32Array(w); active.forEach(n=>{for(let x=Math.max(0,xLog(n.lo,w));x<xLog(n.hi,w);x++)cols[Math.floor(x)]++;});
+    for(let x=0;x<w;x++){ if(cols[x]>1){ g.fillStyle=`rgba(240,101,74,${Math.min(.28,(cols[x]-1)*0.12)})`; g.fillRect(x,0,1,h-30); } }
+    // lanes
+    active.forEach((n,i)=>{ const y=6+i*laneH; const x1=xLog(n.lo,w),x2=xLog(n.hi,w);
+      g.fillStyle=n.c+'2E'; g.strokeStyle=n.c; g.lineWidth=1.2; g.beginPath(); g.rect(x1,y,x2-x1,laneH-5); g.fill(); g.stroke();
+      g.fillStyle=n.c; g.font='10px Inter, sans-serif'; g.textAlign='left'; g.fillText(n.name,x1+5,y+laneH/2+1); });
+    g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono'; g.textAlign='center'; g.fillText('LOW  ·  frequency  ·  HIGH', w/2, h-4);
+  }
+  draw(); window.addEventListener('resize',()=>{g=fitCanvas(cv,260);draw();});
+  cleanup=()=>{};
+}
+
+// ---- Stereo Field ----
+function renderStereo(el){
+  el.innerHTML=`<div class="eyebrow">Core concept · 06</div><h1 class="title">Stereo Field</h1>
+  <p class="lead">You have a width to work with — <b>left to right</b>. Spreading elements across it gives a mix space and clarity (two things panned apart stop fighting). But the <b>low end and lead vocal stay centered</b>, and everything must still work in <b>mono</b>.</p>
+  <div class="lab">
+    <canvas id="stc" height="200"></canvas>
+    <div class="transport">
+      <button class="btn play" id="stPlay">▶ Play noise</button>
+      <button class="btn" id="stMono">Collapse to mono</button>
+      <div class="ctl" style="min-width:200px"><label>Pan <span class="v" id="stPv">C</span></label><input type="range" id="stPan" min="-100" max="100" value="0"></div>
+    </div>
+    <div class="explain">The dots show a typical arrangement. Kick, bass, and lead vocal sit <b>center</b> (mono-safe, powerful). Snare near center. Hats, keys, doubles spread <b>wide</b>. Drag the Pan slider and hear a sound move; hit mono to hear the field collapse.</div>
+  </div>
+  <h3 class="step">The rules</h3>
+  <p><b>Keep the low end mono.</b> Bass and kick panned or wide-stereo lose power and collapse badly on club/phone systems. <b>Balance the sides</b> — if you pan a guitar left, answer it with something right, or the mix leans. <b>Check mono</b> often: phones, clubs, and Bluetooth speakers sum to mono, and wide tricks can vanish or phase out there.</p>`;
+  initStereo();
+}
+function initStereo(){
+  const cv=document.getElementById('stc'); let g=fitCanvas(cv,200);
+  const EL=[{n:'Kick',p:0},{n:'Bass',p:0},{n:'Vocal',p:0},{n:'Snare',p:-8},{n:'Keys',p:-55},{n:'Gtr',p:60},{n:'Hats',p:40},{n:'Perc',p:-70}];
+  let mono=false;
+  function draw(){ const w=cv.clientWidth,h=200; g.clearRect(0,0,w,h); const cx=w/2, midY=h/2;
+    g.strokeStyle='#16191E'; g.beginPath(); g.moveTo(cx,10); g.lineTo(cx,h-24); g.stroke();
+    g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono'; g.textAlign='center';
+    g.fillText('L',18,midY); g.fillText('C',cx,h-8); g.fillText('R',w-18,midY);
+    g.strokeStyle='#14171B'; g.beginPath(); g.moveTo(10,midY); g.lineTo(w-10,midY); g.stroke();
+    EL.forEach((e,i)=>{ const p=mono?0:e.p; const x=cx+(p/100)*(w/2-24); const y=24+(i/(EL.length-1))*(h-58);
+      const center=Math.abs(p)<12; g.fillStyle=center?'#38E08A':'#5AA9FF'; g.beginPath(); g.arc(x,y,6,0,7); g.fill();
+      g.fillStyle='#C7CDD4'; g.font='10px Inter'; g.textAlign='left'; g.fillText(e.n,x+10,y+3); });
+    if(mono){ g.fillStyle='#F0654A'; g.font='10px JetBrains Mono'; g.textAlign='center'; g.fillText('MONO — everything sums to center',cx,16); }
+  }
+  draw();
+  const c=()=>ac(); let srcNode=null,panner=null,playing=false;
+  function start(){ const cx=c(); srcNode=cx.createBufferSource(); srcNode.buffer=noiseBuf(); srcNode.loop=true;
+    panner=cx.createStereoPanner(); panner.pan.value=(+document.getElementById('stPan').value)/100*(mono?0:1);
+    srcNode.connect(panner); panner.connect(master); srcNode.start(); playing=true; document.getElementById('stPlay').textContent='⏸ Stop'; document.getElementById('stPlay').classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('stPlay'); if(p){p.textContent='▶ Play noise';p.classList.add('play');} }
+  document.getElementById('stPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  document.getElementById('stPan').oninput=e=>{ const v=+e.target.value; document.getElementById('stPv').textContent=Math.abs(v)<8?'C':(v<0?'L'+Math.abs(v):'R'+v); if(panner)panner.pan.value=mono?0:v/100; };
+  document.getElementById('stMono').onclick=e=>{ mono=!mono; e.target.classList.toggle('on',mono); e.target.textContent=mono?'Back to stereo':'Collapse to mono'; if(panner)panner.pan.value=mono?0:(+document.getElementById('stPan').value)/100; draw(); };
+  window.addEventListener('resize',()=>{g=fitCanvas(cv,200);draw();});
+  cleanup=()=>{ stop(); };
+}
+
+// ---- Roadmap ----
+function renderRoadmap(el){
+  const mods=[
+    ['0','How sound works','Waves, frequency, amplitude, the spectrum, dB, gain vs volume, headroom.'],
+    ['1','Signal chain & gain staging','Mic → pre → converter → DAW. Headroom and clean levels.'],
+    ['2','Recording well','Mic choice & placement, the room, monitoring, take comping.'],
+    ['3','EQ — shaping tone','Filter types, subtractive vs additive, carving space. ▸ live lab'],
+    ['4','Compression & dynamics','Threshold/ratio/attack/release, punch, parallel & serial. ▸ live lab'],
+    ['5','Balance & frequency space','The mix as real estate, level-first, masking. ▸ live lab'],
+    ['6','Stereo & panning','Width, LCR, mono compatibility, low-end mono. ▸ live lab'],
+    ['7','Saturation & harmonics','Warmth, translation on small speakers, loudness without peaks.'],
+    ['8','Reverb & delay','Depth, sends, pre-delay, ducking, luxury vs cheesy.'],
+    ['9','Automation','Rides, section moves, FX throws — a static mix becomes a performance.'],
+    ['10','The mix process','The top-down workflow, referencing, translation checks.'],
+    ['11','Loudness & the master','Limiting, LUFS, true-peak, clean loudness.'],
+    ['★','Capstone','Mix a full song start to finish with the template.'],
+  ];
+  el.innerHTML=`<div class="eyebrow">Course</div><h1 class="title">Full roadmap</h1>
+  <p class="lead">The complete path from "what is sound" to a finished master. The four <b>live labs</b> are the prototype you're using now; the rest fill in around them.</p>
+  <div class="card roadmap">${mods.map(m=>`<div class="rl"><div class="rn">${m[0]}</div><div class="rt"><b>${m[1]}</b><div>${m[2]}</div></div></div>`).join('')}</div>
+  <p class="hint">Teaching model throughout: what it is → see &amp; hear it → how to use it → common mistakes. Reference constantly, level before processing, carve space.</p>`;
+  cleanup=()=>{};
+}
+
+// ============ shared: ear-training + fx helpers ============
+function earTrain(host, cfg){ if(!host)return; let correct=cfg.setup(), score=0, total=0, answered=false;
+  host.innerHTML=`<div class="ear"><div class="eartop"><span class="eyebrow">Ear check</span><span class="score">0/0</span></div>
+    <p class="earq">${cfg.prompt}</p><div class="earctrl"><button class="btn play2 j-play">▶ Play mystery</button></div>
+    <div class="opts">${cfg.options.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('')}</div>
+    <div class="earres j-res"></div><button class="btn j-next" style="display:none">Next round →</button></div>`;
+  const q=s=>host.querySelector(s);
+  q('.j-play').onclick=()=>cfg.play();
+  host.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ if(answered)return; answered=true; total++; const i=+b.dataset.i, ok=i===correct;
+    if(ok)score++; host.querySelectorAll('.opt').forEach((x,idx)=>{ if(idx===correct)x.classList.add('right'); else if(idx===i)x.classList.add('wrong'); x.disabled=true; });
+    q('.earres').innerHTML=(ok?'<span class="ok">✓ Correct.</span> ':'<span class="no">✗ It was “'+cfg.options[correct]+'”.</span> ')+(cfg.explain?cfg.explain():'');
+    q('.score').textContent=score+'/'+total; q('.j-next').style.display=''; });
+  q('.j-next').onclick=()=>{ answered=false; correct=cfg.setup(); host.querySelectorAll('.opt').forEach(x=>{x.className='opt';x.disabled=false;}); q('.earres').innerHTML=''; q('.j-next').style.display='none'; };
+}
+function makeCurve(type, amount){ const n=1024, curve=new Float32Array(n), k=1+amount*12;
+  for(let i=0;i<n;i++){ const x=(i/(n-1))*2-1; let y;
+    if(type==='tape') y=Math.tanh(x*k)/Math.tanh(k);
+    else if(type==='tube') y = x>=0 ? Math.tanh(x*k)/Math.tanh(k) : (Math.tanh(x*k*0.55)/Math.tanh(k*0.55))*0.92;
+    else { const kk=1+amount*30; y=Math.max(-0.85,Math.min(0.85,x*kk)); }
+    curve[i]=y; }
+  return curve; }
+function makeIR(ctx, seconds){ const len=Math.max(1,Math.floor(ctx.sampleRate*seconds)), ir=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<len;i++){ const env=Math.pow(1-i/len,2.6); d[i]=(Math.random()*2-1)*env; } }
+  return ir; }
+
+// ---- Gain & Metering ----
+function renderGain(el){
+  el.innerHTML=`<div class="eyebrow">Foundations · 01</div><h1 class="title">Gain &amp; Metering</h1>
+  <p class="lead">Before any plugin: <b>set good levels</b>. Every stage of your chain sounds best fed a healthy signal with <b>headroom</b> — room left below 0 dBFS, the digital ceiling. Too low and you fight noise; too hot and you clip. Metering is how you see it.</p>
+  <div class="lab">
+    <canvas id="gnc" height="220"></canvas>
+    <div class="transport"><button class="btn play" id="gnPlay">▶ Play</button>
+      <div class="ctl" style="min-width:230px"><label>Input gain <span class="v" id="gnGv">0 dB</span></label><input type="range" id="gnG" min="-24" max="24" value="0" step="0.5"></div></div>
+    <div class="explain">Push the input gain and watch the meter. <b>Peak</b> is the loudest instant (what clips); <b>RMS</b> is the average (what you hear as loudness). Land peaks in the green target band with the top clear of 0. The instant the CLIP light hits, you've gone too far — and it's audible.</div>
+  </div>
+  <h3 class="step">Why headroom matters</h3>
+  <p>Digital has a hard ceiling at <b>0 dBFS</b> — cross it and the waveform's tops get sliced off, adding harsh distortion you can't undo. Leaving headroom (peaks around <b>−12 to −6</b>) means every plugin downstream, and your master limiter, has room to work cleanly. <b>Loud comes at the end</b>, from the limiter — not from slamming levels early.</p>
+  <div class="mistakes"><div class="eyebrow">Common mistakes</div>
+    <div class="mistake">Mixing with everything near 0 — no headroom, and the master has nowhere to go.</div>
+    <div class="mistake">Confusing loud with good — turn it down and mix the balance, not the level.</div>
+    <div class="mistake">Ignoring gain into plugins — many react to input level, so feed them sanely.</div></div>
+  <div id="gnChal"></div>`;
+  initGain();
+}
+function initGain(){
+  const c=ac(); const cv=document.getElementById('gnc'); let g=fitCanvas(cv,220);
+  const inGain=c.createGain(); inGain.gain.value=1;
+  const clip=c.createWaveShaper(); { const n=1024,cu=new Float32Array(n); for(let i=0;i<n;i++){const x=(i/(n-1))*2-1;cu[i]=Math.max(-1,Math.min(1,x));} clip.curve=cu; clip.oversample='4x'; }
+  const analyser=c.createAnalyser(); analyser.fftSize=1024;
+  inGain.connect(clip); clip.connect(analyser); analyser.connect(master);
+  let srcNode=null,playing=false,raf=null,peakHold=-60,holdT=0; const td=new Uint8Array(analyser.fftSize);
+  function start(){ srcNode=c.createBufferSource(); srcNode.buffer=musicBuf(); srcNode.loop=true; srcNode.connect(inGain); srcNode.start(); playing=true; const p=document.getElementById('gnPlay');p.textContent='⏸ Stop';p.classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('gnPlay'); if(p){p.textContent='▶ Play';p.classList.add('play');} }
+  function draw(){ raf=requestAnimationFrame(draw); const w=cv.clientWidth,h=220; g.clearRect(0,0,w,h);
+    let peak=0,sum=0; if(playing){ analyser.getByteTimeDomainData(td); for(let i=0;i<td.length;i++){const v=(td[i]-128)/128; peak=Math.max(peak,Math.abs(v)); sum+=v*v;} }
+    const rms=Math.sqrt(sum/td.length)||0, peakDb=20*Math.log10(peak||0.0001), rmsDb=20*Math.log10(rms||0.0001);
+    if(peakDb>peakHold){peakHold=peakDb;holdT=performance.now();} else if(performance.now()-holdT>900){peakHold=Math.max(peakDb,peakHold-0.6);}
+    const mx=w*0.30, mw=48, my=14, mh=h-40, Y=db=>my+(1-(db+60)/60)*mh;
+    g.fillStyle='#0d1f16'; g.fillRect(mx,Y(-6),mw,Y(-60)-Y(-6));
+    g.fillStyle='#241a0e'; g.fillRect(mx,Y(-1),mw,Y(-6)-Y(-1));
+    g.fillStyle='#25100e'; g.fillRect(mx,Y(0),mw,Y(-1)-Y(0));
+    g.strokeStyle='rgba(56,224,138,.5)'; g.setLineDash([4,3]); g.strokeRect(mx-3,Y(-6),mw+6,Y(-12)-Y(-6)); g.setLineDash([]);
+    if(playing){ const lv=Math.max(-60,rmsDb); g.fillStyle=peakDb>-1?'#F0654A':(peakDb>-6?'#E8A33D':'#38E08A'); g.fillRect(mx,Y(lv),mw,Y(-60)-Y(lv));
+      g.strokeStyle='#E9EEF2'; g.lineWidth=1.5; g.beginPath(); g.moveTo(mx,Y(peakHold)); g.lineTo(mx+mw,Y(peakHold)); g.stroke(); }
+    g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono'; g.textAlign='right'; for(let db=0;db>=-60;db-=6){ g.fillText(db,mx-6,Y(db)+3); g.strokeStyle='#16191E'; g.beginPath();g.moveTo(mx,Y(db));g.lineTo(mx+mw,Y(db));g.stroke(); }
+    const clipping=peakDb>-0.1, tx=mx+mw+34;
+    g.fillStyle=clipping?'#F0654A':'#2A2E35'; g.beginPath(); g.arc(tx,my+8,7,0,7); g.fill(); g.fillStyle=clipping?'#F0654A':'#4A4F58'; g.font='10px JetBrains Mono'; g.textAlign='left'; g.fillText('CLIP',tx+12,my+11);
+    g.fillStyle='#E9EEF2'; g.font='12px JetBrains Mono'; g.fillText('peak  '+(playing?peakDb.toFixed(1):'—')+' dB',tx,my+38); g.fillText('rms   '+(playing?rmsDb.toFixed(1):'—')+' dB',tx,my+56);
+    let msg=!playing?'Press play, then push the input gain.':peakDb>-0.1?'Too hot — clipping. Pull it down.':peakDb>-3?'Hot — a little more headroom is safer.':rmsDb<-30?'Very low — you\'ll fight the noise floor.':'Good — peaks with headroom, nothing near 0.';
+    g.fillStyle='#767C88'; g.font='12px Inter'; g.fillText(msg,tx,my+82);
+  }
+  draw();
+  document.getElementById('gnPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  document.getElementById('gnG').oninput=e=>{ inGain.gain.value=Math.pow(10,(+e.target.value)/20); document.getElementById('gnGv').textContent=(+e.target.value>0?'+':'')+e.target.value+' dB'; };
+  window.addEventListener('resize',()=>g=fitCanvas(cv,220));
+  let chHot=false,chTmp=null; function chStop(){if(chTmp){try{chTmp.stop();}catch(e){}chTmp=null;}}
+  function chPlay(){ chStop(); const s=c.createBufferSource(); s.buffer=musicBuf(); s.loop=true; const gg=c.createGain(); gg.gain.value=chHot?4.2:0.7; const cl=c.createWaveShaper(); {const n=512,cu=new Float32Array(n);for(let i=0;i<n;i++){const x=(i/(n-1))*2-1;cu[i]=Math.max(-1,Math.min(1,x));}cl.curve=cu;cl.oversample='2x';} s.connect(gg);gg.connect(cl);cl.connect(master); s.start(); s.stop(c.currentTime+2.2); chTmp=s; }
+  earTrain(document.getElementById('gnChal'),{ prompt:'One take is pushed so hard it clips. Is this one clipping, or clean?', options:['Clipping','Clean'], setup:()=>{ chHot=Math.random()<0.5; return chHot?0:1; }, play:chPlay, explain:()=>'Clipping adds a harsh, crackly edge and squares off the peaks; clean playback keeps its natural dynamics.' });
+  cleanup=()=>{ if(raf)cancelAnimationFrame(raf); stop(); chStop(); try{analyser.disconnect();}catch(e){} };
+}
+
+// ---- Saturation ----
+function renderSat(el){
+  el.innerHTML=`<div class="eyebrow">Core concept · 07</div><h1 class="title">Saturation Lab</h1>
+  <p class="lead">Saturation <b>adds harmonics</b> — new frequencies at whole-number multiples of what's already there. That's what we hear as warmth, richness, and "analog." It also helps sounds <b>translate on small speakers</b>. Use the pure tone and literally watch the harmonics appear.</p>
+  <div class="lab">
+    <canvas id="stc2" height="240"></canvas>
+    <div class="transport">
+      <button class="btn play" id="saPlay">▶ Play</button>
+      <button class="btn" id="saByp">Bypass (A/B)</button>
+      <div class="seg" id="saSrc"><button data-s="tone" class="active">Pure tone</button><button data-s="music">Music loop</button></div>
+    </div>
+    <div class="seg" id="saType" style="margin-top:4px"><button data-t="tube" class="active">Tube (even)</button><button data-t="tape">Tape (odd)</button><button data-t="fuzz">Fuzz (hard)</button></div>
+    <div class="controls">
+      <div class="ctl"><label>Drive <span class="v" id="saDv">40%</span></label><input type="range" id="saD" min="0" max="100" value="40"></div>
+      <div class="ctl"><label>Mix <span class="v" id="saMv">100%</span></label><input type="range" id="saM" min="0" max="100" value="100"></div>
+      <div class="ctl"><label>Output <span class="v" id="saOv">0 dB</span></label><input type="range" id="saO" min="-18" max="6" value="0" step="0.5"></div>
+    </div>
+    <div class="explain" id="saEx"></div>
+    <div class="hint">On the pure tone, the tall spike is the fundamental. Drive up, and watch new spikes appear at 2×, 3×, 4×… — those are the harmonics being generated.</div>
+  </div>
+  <h3 class="step">How to use it</h3>
+  <p><b>Even harmonics (tube)</b> sound warm and musical; <b>odd harmonics (tape/fuzz)</b> sound edgier and more aggressive. A little on a bass or 808 makes it audible on laptops; a little on a whole mix adds glue and perceived loudness with no peak cost. Drive is a taste knob — most of the magic is subtle.</p>
+  <div class="mistakes"><div class="eyebrow">Common mistakes</div>
+    <div class="mistake">Too much drive — harmonics pile into harshness and mud. Back off.</div>
+    <div class="mistake">Not level-matching — saturation adds level, so it always "sounds better." Use Output to match, then judge.</div>
+    <div class="mistake">Saturating everything — pick what needs warmth or translation, not the whole session.</div></div>
+  <div id="saChal"></div>`;
+  initSat();
+}
+function initSat(){
+  const c=ac(); const cv=document.getElementById('stc2'); let g=fitCanvas(cv,240);
+  const shaper=c.createWaveShaper(); shaper.oversample='4x';
+  const dry=c.createGain(), wet=c.createGain(), out=c.createGain(); dry.gain.value=0; wet.gain.value=1; out.gain.value=1;
+  const analyser=c.createAnalyser(); analyser.fftSize=4096; analyser.smoothingTimeConstant=0.75; const fd=new Uint8Array(analyser.frequencyBinCount);
+  dry.connect(out); shaper.connect(wet); wet.connect(out); out.connect(analyser); analyser.connect(master);
+  let srcNode=null,playing=false,bypass=false,srcType='tone',type='tube',drive=0.4,raf=null;
+  function setCurve(){ shaper.curve=makeCurve(type,drive); }
+  function connect(){ if(!srcNode)return; try{srcNode.disconnect();}catch(e){} if(bypass){ srcNode.connect(out); } else { srcNode.connect(shaper); srcNode.connect(dry); } }
+  function start(){ if(srcType==='tone'){ const o=c.createOscillator(); o.type='sine'; o.frequency.value=220; srcNode=o; } else { const s=c.createBufferSource(); s.buffer=musicBuf(); s.loop=true; srcNode=s; } connect(); srcNode.start(); playing=true; const p=document.getElementById('saPlay');p.textContent='⏸ Stop';p.classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('saPlay'); if(p){p.textContent='▶ Play';p.classList.add('play');} }
+  function draw(){ raf=requestAnimationFrame(draw); const w=cv.clientWidth,h=240; g.clearRect(0,0,w,h);
+    g.strokeStyle='#16191E'; g.fillStyle='#4A4F58'; g.font='9px JetBrains Mono'; g.textAlign='center';
+    [100,220,440,660,1000,2000,5000,10000].forEach(f=>{const x=xLog(f,w);g.beginPath();g.moveTo(x,0);g.lineTo(x,h-12);g.stroke();g.fillText(f>=1000?f/1000+'k':(f===220?'220':f),x,h-2);});
+    if(playing){ analyser.getByteFrequencyData(fd); g.beginPath(); let started=false;
+      for(let i=1;i<fd.length;i++){ const f=i*c.sampleRate/analyser.fftSize; if(f<20||f>20000)continue; const x=xLog(f,w); const y=(h-12)-(fd[i]/255)*(h-24); if(!started){g.moveTo(x,h-12);started=true;} g.lineTo(x,y); }
+      g.lineTo(w,h-12); g.fillStyle='rgba(56,224,138,.12)'; g.fill(); g.strokeStyle='rgba(56,224,138,.65)'; g.lineWidth=1.4; g.stroke(); }
+  }
+  draw();
+  const EX={tube:"<b>Tube (even harmonics):</b> mostly 2nd/4th — an octave above the fundamental. Musically consonant, so it reads as warm and full.",
+    tape:"<b>Tape (odd harmonics):</b> 3rd/5th — a softer, woolier grit. Classic 'analog' thickness.",
+    fuzz:"<b>Fuzz (hard clip):</b> squares the wave off, piling on strong odd harmonics. Aggressive and buzzy — a lot from a little."};
+  function upd(){ document.getElementById('saEx').innerHTML=EX[type]; }
+  document.getElementById('saType').onclick=e=>{const b=e.target.closest('button');if(!b)return;type=b.dataset.t;[...document.querySelectorAll('#saType button')].forEach(x=>x.classList.toggle('active',x===b));setCurve();upd();};
+  document.getElementById('saSrc').onclick=e=>{const b=e.target.closest('button');if(!b)return;srcType=b.dataset.s;[...document.querySelectorAll('#saSrc button')].forEach(x=>x.classList.toggle('active',x===b));if(playing){stop();start();}};
+  document.getElementById('saD').oninput=e=>{drive=+e.target.value/100;document.getElementById('saDv').textContent=e.target.value+'%';setCurve();};
+  document.getElementById('saM').oninput=e=>{const m=+e.target.value/100;wet.gain.value=m;dry.gain.value=1-m;document.getElementById('saMv').textContent=e.target.value+'%';};
+  document.getElementById('saO').oninput=e=>{out.gain.value=Math.pow(10,(+e.target.value)/20);document.getElementById('saOv').textContent=(+e.target.value>0?'+':'')+e.target.value+' dB';};
+  document.getElementById('saByp').onclick=e=>{bypass=!bypass;e.target.classList.toggle('on',bypass);e.target.textContent=bypass?'Bypassed':'Bypass (A/B)';connect();};
+  document.getElementById('saPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  window.addEventListener('resize',()=>g=fitCanvas(cv,240));
+  setCurve(); upd();
+  let chSat=false,chTmp=null; function chStop(){if(chTmp){try{chTmp.stop();}catch(e){}chTmp=null;}}
+  function chPlay(){ chStop(); const s=c.createBufferSource(); s.buffer=musicBuf(); s.loop=true; if(chSat){ const ws=c.createWaveShaper(); ws.oversample='4x'; ws.curve=makeCurve('tube',0.85); const gg=c.createGain(); gg.gain.value=0.7; s.connect(ws);ws.connect(gg);gg.connect(master);} else { const gg=c.createGain(); gg.gain.value=0.85; s.connect(gg); gg.connect(master);} s.start(); s.stop(c.currentTime+2.4); chTmp=s; }
+  earTrain(document.getElementById('saChal'),{ prompt:'One of these has saturation adding harmonics. Clean or saturated?', options:['Clean','Saturated'], setup:()=>{ chSat=Math.random()<0.5; return chSat?1:0; }, play:chPlay, explain:()=>'Saturated audio sounds fuller, thicker, a touch louder and rounder — the harmonics fill it in.' });
+  cleanup=()=>{ if(raf)cancelAnimationFrame(raf); stop(); chStop(); try{analyser.disconnect();}catch(e){} };
+}
+
+// ---- Reverb & Depth ----
+function renderReverb(el){
+  el.innerHTML=`<div class="eyebrow">Depth · 08</div><h1 class="title">Reverb &amp; Depth</h1>
+  <p class="lead">Reverb is how we hear <b>space</b> — a room's reflections. In a mix it creates <b>depth</b>: dry = close to you, wet = far away. The craft is making it lush without washing out clarity, and the tools are <b>pre-delay</b>, <b>decay</b>, and <b>damping</b>.</p>
+  <div class="lab">
+    <canvas id="rvc" height="180"></canvas>
+    <div class="transport">
+      <button class="btn play" id="rvPlay">▶ Play</button>
+      <button class="btn" id="rvByp">Bypass (A/B)</button>
+      <div class="seg" id="rvSrc"><button data-s="pluck" class="active">Plucks</button><button data-s="music">Music loop</button></div>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label>Decay <span class="v" id="rvDv">1.8 s</span></label><input type="range" id="rvD" min="0.2" max="4" value="1.8" step="0.1"></div>
+      <div class="ctl"><label>Pre-delay <span class="v" id="rvPv">30 ms</span></label><input type="range" id="rvP" min="0" max="120" value="30"></div>
+      <div class="ctl"><label>Damping <span class="v" id="rvDMv">9 kHz</span></label><input type="range" id="rvDM" min="1000" max="16000" value="9000"></div>
+      <div class="ctl"><label>Mix (wet) <span class="v" id="rvMv">35%</span></label><input type="range" id="rvM" min="0" max="100" value="35"></div>
+    </div>
+    <div class="explain" id="rvEx"></div>
+    <div class="hint">The graph shows the decay tail and the pre-delay gap before it starts. Longer decay = bigger space; more pre-delay = more separation between the sound and its space.</div>
+  </div>
+  <h3 class="step">Lush, not cheesy</h3>
+  <p><b>Pre-delay</b> is the luxury trick — a 20–50 ms gap keeps the dry sound clear and up front while the tail blooms behind it. <b>Damping</b> (rolling off highs) makes it dark and expensive instead of bright and metallic — real rooms swallow highs. <b>Decay to the tempo</b> so the tail dies before the next phrase. Blend it low: feel it more than hear it.</p>
+  <div class="mistakes"><div class="eyebrow">Common mistakes</div>
+    <div class="mistake">Too wet — the sound drowns and pushes far away. Pull the mix down.</div>
+    <div class="mistake">No pre-delay — the tail smears over the words and blurs clarity.</div>
+    <div class="mistake">Bright, full-range reverb — instantly cheesy. Damp the highs, high-pass the lows.</div></div>
+  <div id="rvChal"></div>`;
+  initReverb();
+}
+function initReverb(){
+  const c=ac(); const cv=document.getElementById('rvc'); let g=fitCanvas(cv,180);
+  const pre=c.createDelay(0.5); pre.delayTime.value=0.03;
+  const conv=c.createConvolver();
+  const damp=c.createBiquadFilter(); damp.type='lowpass'; damp.frequency.value=9000;
+  const dry=c.createGain(), wet=c.createGain(), out=c.createGain(); dry.gain.value=0.65; wet.gain.value=0.35;
+  let decay=1.8; function setIR(){ conv.buffer=makeIR(c,decay); } setIR();
+  dry.connect(out); pre.connect(conv); conv.connect(damp); damp.connect(wet); wet.connect(out); out.connect(master);
+  let srcNode=null,playing=false,bypass=false,srcType='pluck',raf=null;
+  function connect(){ if(!srcNode)return; try{srcNode.disconnect();}catch(e){} if(bypass){ srcNode.connect(out); } else { srcNode.connect(dry); srcNode.connect(pre); } }
+  function start(){ srcNode=c.createBufferSource(); srcNode.buffer=srcType==='pluck'?dynBuf():musicBuf(); srcNode.loop=true; connect(); srcNode.start(); playing=true; const p=document.getElementById('rvPlay');p.textContent='⏸ Stop';p.classList.remove('play'); }
+  function stop(){ if(srcNode){try{srcNode.stop();}catch(e){}srcNode=null;} playing=false; const p=document.getElementById('rvPlay'); if(p){p.textContent='▶ Play';p.classList.add('play');} }
+  function draw(){ raf=requestAnimationFrame(draw); const w=cv.clientWidth,h=180; g.clearRect(0,0,w,h);
+    const base=h-24; g.strokeStyle='#16191E'; g.beginPath(); g.moveTo(0,base);g.lineTo(w,base);g.stroke();
+    const preMs=pre.delayTime.value*1000, totalMs=preMs+decay*1000, pxPerMs=w/Math.max(400,totalMs*1.05);
+    g.strokeStyle='#5AA9FF'; g.lineWidth=2; g.beginPath(); g.moveTo(5,base); g.lineTo(5,22); g.stroke(); g.fillStyle='#5AA9FF'; g.font='9px JetBrains Mono'; g.textAlign='left'; g.fillText('dry',8,19);
+    const px0=5+preMs*pxPerMs;
+    g.strokeStyle='rgba(118,124,136,.5)'; g.setLineDash([2,3]); g.beginPath(); g.moveTo(5,base+10); g.lineTo(px0,base+10); g.stroke(); g.setLineDash([]);
+    g.fillStyle='#767C88'; g.fillText('pre '+Math.round(preMs)+'ms',8,base+20);
+    g.strokeStyle='#38E08A'; g.lineWidth=1.6; g.beginPath();
+    for(let x=px0;x<w-2;x++){ const t=(x-px0)/pxPerMs/1000, env=Math.exp(-t/(decay/3.5)), y=base-env*(base-24); if(x===px0)g.moveTo(x,y); else g.lineTo(x,y); }
+    g.stroke(); g.fillStyle='#38E08A'; g.textAlign='right'; g.fillText('tail '+decay.toFixed(1)+'s',w-4,20);
+  }
+  draw();
+  function ex(){ const wp=Math.round(wet.gain.value*100); document.getElementById('rvEx').innerHTML= wp<20?"<b>Mostly dry:</b> the source is close and present, just a little air around it.":wp<50?"<b>Balanced:</b> a natural sense of space; the source keeps its place up front.":"<b>Very wet:</b> the source pushes back and far away — atmospheric, but watch the clarity."; }
+  document.getElementById('rvD').oninput=e=>{decay=+e.target.value;document.getElementById('rvDv').textContent=decay.toFixed(1)+' s';setIR();};
+  document.getElementById('rvP').oninput=e=>{pre.delayTime.value=+e.target.value/1000;document.getElementById('rvPv').textContent=e.target.value+' ms';};
+  document.getElementById('rvDM').oninput=e=>{damp.frequency.value=+e.target.value;document.getElementById('rvDMv').textContent=(+e.target.value/1000).toFixed(1)+' kHz';};
+  document.getElementById('rvM').oninput=e=>{const m=+e.target.value/100;wet.gain.value=m;dry.gain.value=1-m*0.7;document.getElementById('rvMv').textContent=e.target.value+'%';ex();};
+  document.getElementById('rvByp').onclick=e=>{bypass=!bypass;e.target.classList.toggle('on',bypass);e.target.textContent=bypass?'Bypassed':'Bypass (A/B)';connect();};
+  document.getElementById('rvSrc').onclick=e=>{const b=e.target.closest('button');if(!b)return;srcType=b.dataset.s;[...document.querySelectorAll('#rvSrc button')].forEach(x=>x.classList.toggle('active',x===b));if(playing){stop();start();}};
+  document.getElementById('rvPlay').onclick=()=>{ if(playing)stop(); else start(); };
+  window.addEventListener('resize',()=>g=fitCanvas(cv,180));
+  ex();
+  let chFar=false,chS=null; function chStop(){if(chS){try{chS.stop();}catch(e){}chS=null;}}
+  function chPlay(){ chStop(); const s=c.createBufferSource(); s.buffer=dynBuf(); s.loop=true; const cv2=c.createConvolver(); cv2.buffer=makeIR(c,2.2); const dg=c.createGain(),wg=c.createGain();
+    if(chFar){ dg.gain.value=0.3; wg.gain.value=0.8; } else { dg.gain.value=0.95; wg.gain.value=0.12; }
+    s.connect(dg); dg.connect(master); s.connect(cv2); cv2.connect(wg); wg.connect(master); s.start(); s.stop(c.currentTime+2.6); chS=s; }
+  earTrain(document.getElementById('rvChal'),{ prompt:'Depth check — is this placed close to you, or far back in a big space?', options:['Close (dry)','Far (wet)'], setup:()=>{ chFar=Math.random()<0.5; return chFar?1:0; }, play:chPlay, explain:()=>'More reverb pushes a sound back and away; less keeps it up front. That front-to-back placement is depth.' });
+  cleanup=()=>{ if(raf)cancelAnimationFrame(raf); stop(); chStop(); try{out.disconnect();}catch(e){} };
+}
+
+// ============ router ============
+function nav(){
+  const secs={}; LESSONS.forEach(l=>{(secs[l.sec]=secs[l.sec]||[]).push(l);});
+  let html=''; Object.keys(secs).forEach(s=>{ html+=`<div class="navsec">${s}</div>`;
+    secs[s].forEach((l,i)=>{ const idx=LESSONS.indexOf(l); html+=`<div class="navlink" data-id="${l.id}"><span class="n">${idx===0?'':String(idx).padStart(2,'0')}</span>${l.name}${l.tag?`<span class="tag">${l.tag}</span>`:''}</div>`; }); });
+  document.getElementById('navlinks').innerHTML=html;
+  document.querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>go(el.dataset.id));
+}
+function go(id){
+  if(cleanup){try{cleanup();}catch(e){}cleanup=null;}
+  const l=LESSONS.find(x=>x.id===id); document.querySelectorAll('[data-id]').forEach(e=>e.classList.toggle('active',e.dataset.id===id));
+  const el=document.getElementById('content'); el.innerHTML=''; window.scrollTo(0,0); l.render(el);
+}
+nav(); go('welcome');
+</script>
+</body>
+</html>

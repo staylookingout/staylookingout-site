@@ -187,7 +187,16 @@
     { name:'waves',     url:'https://staylookingout.com/tools/waves.html',     desc:'light/audio relationship' }
   ];
 
-  function currentPages(){ return promptPath === 'read' ? READ_PAGES : PAGES; }
+  // Shown instead of PAGES when the prompt is sitting in user:/learn
+  var LEARN_PAGES = [
+    { name:'mixlab', url:'https://staylookingout.com/tools/mix-lab-course.html', desc:'interactive mixing course' }
+  ];
+
+  function currentPages(){
+    if (promptPath === 'read')  return READ_PAGES;
+    if (promptPath === 'learn') return LEARN_PAGES;
+    return PAGES;
+  }
 
   var root = document.getElementById('root');
   var linesEl = document.getElementById('lines');
@@ -418,7 +427,8 @@
     switch (head){
       case 'help':
         sys('\u2500\u2500 commands \u2500\u2500', P.purple);
-        [['list','show all pages'],['open <name|#>','jump to a page'],['about','what is this place'],
+        [['list','show all pages'],['open <name|#>','jump to a page'],['learn','courses / lessons'],
+         ['about','what is this place'],
          ['contact','reach out'],['whoami','identify yourself'],['stay','...'],['clear','wipe the screen'],
          ['reload','refresh reality'],['music on|off','toggle the chiptune'],['echo <text>','shout into the void'],
          ['exit','try it']].forEach(function(pair){
@@ -439,6 +449,11 @@
         promptPathColor = PAL.purple;
         renderPromptRow();
         return;
+      case 'learn':
+        promptPath = 'learn';
+        promptPathColor = PAL.cyan;
+        renderPromptRow();
+        return showList();
       case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
       case 'sudo': return sys('permission denied. nice try, root.', P.red);
       case 'stay': return arg === 'looking out' ? lookingOut() : sys('stay what?', P.pink);
