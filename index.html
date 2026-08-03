@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>STAY Terminal — staylookingout.com</title>
 <meta name="description" content="staylookingout/tools/ — instruments built in-house.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -699,6 +699,14 @@
   musicBtn.addEventListener('click', toggleMusic);
   window.addEventListener('pointerdown', function once(){ initAudio(); window.removeEventListener('pointerdown', once); }, { once:true });
   window.addEventListener('keydown', function once(){ initAudio(); window.removeEventListener('keydown', once); }, { once:true });
+
+  // Keep the prompt above the on-screen keyboard on mobile: when the
+  // keyboard opens/closes the visual viewport resizes, so re-pin to bottom.
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', function(){
+      if (state.phase === 'ready' && !state.out) scrollDown();
+    });
+  }
 
   // ---------- go ----------
   renderPromptRow();
