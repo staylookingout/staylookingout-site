@@ -141,45 +141,69 @@
   var PAL = { pink:'#ff7edb', cyan:'#36f9f6', orange:'#ff9a4d', red:'#fe5f75', green:'#72f1b8', yellow:'#fede5d', purple:'#b893e6', dim:'#6d6a86', fg:'#e6e2f0' };
   var COLORS = ['#ff7edb','#36f9f6','#ff9a4d','#72f1b8','#fede5d','#b893e6','#fe5f75'];
   var GLYPHS = '!<>-_\\/[]{}=+*^?#@%&';
-  var promptPath = 'tools';
+  var promptPath = '';
   var promptPathColor = PAL.yellow;
-  var TEMPO = 130;
-  var BEAT_GLOW = true;
 
-  // Edit this list to point your real tools at real URLs.
-  var PAGES = [
-    { name:'chop',      url:'https://staylookingout.com/tools/chop.html',      desc:'in/out point' },
-    { name:'bpmkey',    url:'https://staylookingout.com/tools/bpmkey.html',    desc:'BPM / key detection tool' },
-    { name:'varispeed', url:'https://staylookingout.com/tools/varispeed.html', desc:'pitch/time stretch' },
-    { name:'retune',    url:'https://staylookingout.com/tools/retune.html',   desc:'any song' },
-    { name:'record',    url:'https://staylookingout.com/tools/record.html',   desc:'anything playing', color:'#fe5f75' },
-    { name:'playlist',  url:'https://staylookingout.com/tools/playlist.html', desc:'play/filter songs' },
-    { name:'slowmo',    url:'https://staylookingout.com/camera/slowmo.html',  desc:'playback sync for high-fps' },
+  // Directories shown at home
+  var DIRECTORIES = [
+    { name:'audio',  desc:'music tools' },
+    { name:'camera', desc:'video/camera tools' },
+    { name:'art',    desc:'visual creativity' },
+    { name:'learn',  desc:'courses & lessons' },
+    { name:'tools',  desc:'utilities' }
+  ];
+
+  // Audio tools
+  var AUDIO_PAGES = [
+    { name:'chop',      url:'https://staylookingout.com/audio/chop.html',      desc:'in/out point' },
+    { name:'bpmkey',    url:'https://staylookingout.com/audio/bpmkey.html',    desc:'BPM / key detection' },
+    { name:'varispeed', url:'https://staylookingout.com/audio/varispeed.html', desc:'pitch/time stretch' },
+    { name:'retune',    url:'https://staylookingout.com/audio/retune.html',    desc:'any song' },
+    { name:'record',    url:'https://staylookingout.com/audio/record.html',    desc:'anything playing', color:'#fe5f75' },
+    { name:'playlist',  url:'https://staylookingout.com/audio/playlist.html',  desc:'play/filter songs' },
+    { name:'chordpad',  url:'https://staylookingout.com/audio/chordpad.html',  desc:'harmonic explorer' },
+    { name:'groovelab', url:'https://staylookingout.com/audio/groovelab.html', desc:'rhythm patterns' }
+  ];
+
+  // Camera tools
+  var CAMERA_PAGES = [
+    { name:'slowmo',    url:'https://staylookingout.com/camera/slowmo.html',   desc:'playback sync for high-fps' },
     { name:'bmpcc',     url:'https://staylookingout.com/camera/rig/', desc:'BMPCC camera control app' }
   ];
 
-  // Shown instead of PAGES when the prompt is sitting in user:/read
-  var READ_PAGES = [
-    { name:'character', url:'https://staylookingout.com/tools/character.html', desc:'people in religious text' },
-    { name:'parable',   url:'https://staylookingout.com/tools/parable.html',   desc:'lessons from around the world' },
-    { name:'waves',     url:'https://staylookingout.com/tools/waves.html',     desc:'light/audio relationship' }
-  ];
-
-  // Shown instead of PAGES when the prompt is sitting in user:/learn
-  var LEARN_PAGES = [
-    { name:'mixlab', url:'https://staylookingout.com/tools/mix-lab-course.html', desc:'interactive mixing course' }
-  ];
-
-  // Shown instead of PAGES when the prompt is sitting in user:/art
+  // Art tools
   var ART_PAGES = [
     { name:'character', url:'https://staylookingout.com/art/character-art-converter.html', desc:'tone grid & character art' }
   ];
 
+  // Learning
+  var LEARN_PAGES = [
+    { name:'mixlab', url:'https://staylookingout.com/learn/mix-lab-course.html', desc:'interactive mixing course' }
+  ];
+
+  // General tools
+  var TOOLS_PAGES = [
+    { name:'character', url:'https://staylookingout.com/tools/character.html', desc:'people in religious text' },
+    { name:'parable',   url:'https://staylookingout.com/tools/parable.html',   desc:'lessons from around the world' },
+    { name:'waves',     url:'https://staylookingout.com/tools/waves.html',     desc:'light/audio relationship' },
+    { name:'optical',   url:'https://staylookingout.com/tools/optical-link.html', desc:'QR file transfer' }
+  ];
+
+  // All pages flattened for direct access from home
+  var ALL_PAGES = AUDIO_PAGES.concat(CAMERA_PAGES, ART_PAGES, LEARN_PAGES, TOOLS_PAGES);
+
   function currentPages(){
-    if (promptPath === 'read')  return READ_PAGES;
-    if (promptPath === 'learn') return LEARN_PAGES;
-    if (promptPath === 'art')   return ART_PAGES;
-    return PAGES;
+    if (promptPath === '')     return DIRECTORIES;
+    if (promptPath === 'audio')  return AUDIO_PAGES;
+    if (promptPath === 'camera') return CAMERA_PAGES;
+    if (promptPath === 'art')    return ART_PAGES;
+    if (promptPath === 'learn')  return LEARN_PAGES;
+    if (promptPath === 'tools')  return TOOLS_PAGES;
+    return DIRECTORIES;
+  }
+
+  function findPageByName(name){
+    return ALL_PAGES.find(p => p.name === name);
   }
 
   var root = document.getElementById('root');
@@ -220,10 +244,10 @@
     promptRow.classList.toggle('hidden', !state.showPrompt);
     promptLabelEl.innerHTML = '';
     var prefixSpan = document.createElement('span');
-    prefixSpan.textContent = 'user:/';
+    prefixSpan.textContent = 'user:';
     prefixSpan.style.color = PAL.green;
     var pathSpan = document.createElement('span');
-    pathSpan.textContent = promptPath;
+    pathSpan.textContent = promptPath ? '/' + promptPath : '/home';
     pathSpan.style.color = promptPathColor;
     promptLabelEl.appendChild(prefixSpan);
     promptLabelEl.appendChild(pathSpan);
@@ -381,17 +405,32 @@
     var arg = rest.join(' ');
     var P = PAL;
     var num = parseInt(cmd, 10);
+
+    // Try to find in current directory
     var byName = currentPages().findIndex(function(p){
       return p.name === cmd || (p.name === arg && (head === 'open' || head === 'cd' || head === 'go'));
     });
 
+    // If in home and page not found in directories, try all pages
+    var directPage = null;
+    if (promptPath === '' && byName < 0) {
+      directPage = findPageByName(cmd);
+    }
+
     if (cmd === 'home' || cmd === 'cls') {
-      sys('reloading reality...', P.orange);
-      setTimeout(function(){ location.reload(); }, 600);
+      promptPath = '';
+      promptPathColor = PAL.yellow;
+      renderPromptRow();
       return;
     }
-    if (cmd === 'tools') {
-      promptPath = 'tools';
+    if (cmd === 'audio' || cmd === 'camera' || cmd === 'art' || cmd === 'learn' || cmd === 'tools') {
+      promptPath = cmd;
+      promptPathColor = cmd === 'audio' ? PAL.yellow : cmd === 'camera' ? PAL.orange : cmd === 'learn' ? PAL.cyan : cmd === 'art' ? PAL.pink : PAL.yellow;
+      renderPromptRow();
+      return showList();
+    }
+    if (cmd === '..') {
+      promptPath = '';
       promptPathColor = PAL.yellow;
       renderPromptRow();
       return;
@@ -399,12 +438,13 @@
     if (cmd === 'list' || cmd === 'ls' || cmd === 'dir') return showList();
     if (!isNaN(num) && num >= 1 && num <= currentPages().length && String(num) === cmd) return openPage(num - 1);
     if (byName >= 0) return openPage(byName);
+    if (directPage) return openPageDirect(directPage);
 
     switch (head){
       case 'help':
         sys('\u2500\u2500 commands \u2500\u2500', P.purple);
-        [['list','show all pages'],['open <name|#>','jump to a page'],['learn','courses / lessons'],
-         ['art','creative tools'],['about','what is this place'],
+        [['list','show directories or pages'],['open <name|#>','jump to a page'],['audio / camera / art / learn / tools','enter a section'],
+         ['..',  'back to home'],['about','what is this place'],
          ['contact','reach out'],['whoami','identify yourself'],['stay','...'],['clear','wipe the screen'],
          ['reload','refresh reality'],['echo <text>','shout into the void'],
          ['exit','try it']].forEach(function(pair){
@@ -420,21 +460,6 @@
         pushLine([{ t:'signal \u25B8 ', c:P.dim }, { t:'stay@staylookingout.com', c:P.cyan, sh:'0 0 10px rgba(54,249,246,0.4)' }],
           { click:function(){ location.href = 'mailto:stay@staylookingout.com'; }, cursor:'pointer' });
         return;
-      case 'read':
-        promptPath = 'read';
-        promptPathColor = PAL.purple;
-        renderPromptRow();
-        return;
-      case 'learn':
-        promptPath = 'learn';
-        promptPathColor = PAL.cyan;
-        renderPromptRow();
-        return showList();
-      case 'art':
-        promptPath = 'art';
-        promptPathColor = PAL.pink;
-        renderPromptRow();
-        return showList();
       case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
       case 'sudo': return sys('permission denied. nice try, root.', P.red);
       case 'stay': return arg === 'looking out' ? lookingOut() : sys('stay what?', P.pink);
@@ -461,21 +486,41 @@
 
   function showList(){
     var gen = ++listGen;
-    sys('\u2500\u2500 pages \u2500\u2500', PAL.purple);
-    currentPages().forEach(function(p, i){
+    var pages = currentPages();
+    var isHome = promptPath === '';
+    sys('\u2500\u2500 ' + (isHome ? 'directories' : 'pages') + ' \u2500\u2500', PAL.purple);
+    pages.forEach(function(p, i){
       pushLine([
         { t:'  ' + (i+1) + '  ', c:PAL.dim },
         { t:p.name.padEnd(10), c:p.color || COLORS[i % COLORS.length], w:500 },
         { t:p.desc, c:PAL.dim }
-      ], { pageIdx:i, list:gen, click:function(){ openPage(i); }, cursor:'pointer' });
+      ], { pageIdx:i, list:gen, click:function(){ isHome ? cdDir(i) : openPage(i); }, cursor:'pointer' });
     });
-    sys('\u2191\u2193 + enter, click, or type a name / number', PAL.dim);
+    sys('\u2191\u2193 + enter, click, or type a name' + (isHome ? '' : ' / number'), PAL.dim);
     state.activeListGen = gen;
     setSelHighlight(0);
   }
 
+  function cdDir(i){
+    var dir = DIRECTORIES[i];
+    if (!dir) return;
+    promptPath = dir.name;
+    promptPathColor = dir.name === 'audio' ? PAL.yellow : dir.name === 'camera' ? PAL.orange : dir.name === 'learn' ? PAL.cyan : dir.name === 'art' ? PAL.pink : PAL.yellow;
+    renderPromptRow();
+    showList();
+  }
+
   function openPage(i){
     var p = currentPages()[i];
+    if (!p) return;
+    if (p.url === '#') return sys('// "' + p.name + '" is an empty slot \u2014 give me its URL', PAL.orange);
+    sys('> jacking into ' + p.name + ' ...', PAL.cyan);
+    state.out = true;
+    updateRootAnim();
+    setTimeout(function(){ window.location.href = p.url; }, 520);
+  }
+
+  function openPageDirect(p){
     if (!p) return;
     if (p.url === '#') return sys('// "' + p.name + '" is an empty slot \u2014 give me its URL', PAL.orange);
     sys('> jacking into ' + p.name + ' ...', PAL.cyan);
