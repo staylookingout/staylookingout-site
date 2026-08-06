@@ -192,9 +192,15 @@
     { name:'mixlab', url:'https://staylookingout.com/tools/mix-lab-course.html', desc:'interactive mixing course' }
   ];
 
+  // Shown instead of PAGES when the prompt is sitting in user:/art
+  var ART_PAGES = [
+    { name:'character', url:'https://staylookingout.com/art/character-art-converter.html', desc:'tone grid & character art' }
+  ];
+
   function currentPages(){
     if (promptPath === 'read')  return READ_PAGES;
     if (promptPath === 'learn') return LEARN_PAGES;
+    if (promptPath === 'art')   return ART_PAGES;
     return PAGES;
   }
 
@@ -428,7 +434,7 @@
       case 'help':
         sys('\u2500\u2500 commands \u2500\u2500', P.purple);
         [['list','show all pages'],['open <name|#>','jump to a page'],['learn','courses / lessons'],
-         ['about','what is this place'],
+         ['art','creative tools'],['about','what is this place'],
          ['contact','reach out'],['whoami','identify yourself'],['stay','...'],['clear','wipe the screen'],
          ['reload','refresh reality'],['music on|off','toggle the chiptune'],['echo <text>','shout into the void'],
          ['exit','try it']].forEach(function(pair){
@@ -452,6 +458,11 @@
       case 'learn':
         promptPath = 'learn';
         promptPathColor = PAL.cyan;
+        renderPromptRow();
+        return showList();
+      case 'art':
+        promptPath = 'art';
+        promptPathColor = PAL.pink;
         renderPromptRow();
         return showList();
       case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
