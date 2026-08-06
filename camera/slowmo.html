@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLOWMO — playback sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14110E; --panel:#1E1A15; --panel2:#241F19; --line:#332B22;
+    --text:#EDE6D8; --muted:#9A8F7C; --amber:#F0A830; --amber-dim:#8a6a2a;
+    --red:#E5533D; --green:#7FB069;
+    --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.45;
+    background-image:radial-gradient(120% 80% at 50% -10%, #211b13 0%, var(--bg) 60%);
+    min-height:100vh; padding:22px 16px 60px;
+  }
+  .wrap{max-width:760px; margin:0 auto}
+
+  header{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px}
+  .logo{font-family:var(--mono); font-weight:700; letter-spacing:.18em; font-size:20px; color:var(--amber)}
+  .logo .dot{color:var(--red)}
+  .tag{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase}
+  .sub{color:var(--muted); font-size:13.5px; margin:6px 0 22px; max-width:60ch}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px}
+  .eyebrow{font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 12px}
+
+  /* drop zone */
+  #drop{border:1.5px dashed var(--line); border-radius:12px; padding:26px 18px; text-align:center; cursor:pointer; transition:.15s; background:var(--panel2)}
+  #drop:hover,#drop.hot{border-color:var(--amber); background:#2a2318}
+  #drop .big{font-size:15px; font-weight:600}
+  #drop .small{color:var(--muted); font-size:12.5px; margin-top:4px}
+  #drop.loaded{border-style:solid; text-align:left; display:flex; align-items:center; gap:14px; justify-content:space-between}
+  .fname{font-family:var(--mono); font-size:13px; word-break:break-all}
+  .fmeta{color:var(--muted); font-size:11.5px; font-family:var(--mono); margin-top:2px}
+  .swap{font-size:11px; color:var(--amber); font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap}
+
+  /* fps selectors */
+  .row{display:flex; gap:22px; flex-wrap:wrap}
+  .col{flex:1 1 240px; min-width:0}
+  .chips{display:flex; gap:8px; flex-wrap:wrap}
+  .chip{font-family:var(--mono); font-size:14px; padding:9px 14px; border-radius:9px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--text); cursor:pointer; transition:.12s; font-weight:500}
+  .chip:hover{border-color:var(--amber-dim)}
+  .chip.on{background:var(--amber); color:#1a1206; border-color:var(--amber); font-weight:700}
+  .chip .u{font-size:10px; opacity:.6; margin-left:2px}
+  .custom{display:flex; align-items:center; gap:6px}
+  .custom input{width:62px; font-family:var(--mono); font-size:14px; padding:8px 8px; border-radius:9px;
+    border:1px solid var(--line); background:var(--panel2); color:var(--text)}
+  .custom input:focus{outline:none; border-color:var(--amber)}
+
+  /* readout */
+  .readout{background:linear-gradient(180deg,#100d0a,#1a150f); border:1px solid var(--line); border-radius:12px;
+    padding:20px; margin-top:2px; position:relative; overflow:hidden}
+  .readout::after{content:""; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(180deg, rgba(240,168,48,.035) 0 1px, transparent 1px 3px)}
+  .mult{font-family:var(--mono); font-weight:700; color:var(--amber); font-size:clamp(44px,13vw,72px); line-height:1;
+    letter-spacing:.02em; text-shadow:0 0 26px rgba(240,168,48,.28)}
+  .mult .x{font-size:.5em; color:var(--amber-dim); margin-left:2px}
+  .pct{font-family:var(--mono); font-size:16px; color:var(--text); margin-top:6px}
+  .pct b{color:var(--green); font-weight:600}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; margin-top:16px; position:relative; z-index:1}
+  .stat{border-top:1px solid var(--line); padding-top:8px}
+  .stat .k{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .stat .v{font-family:var(--mono); font-size:15px; margin-top:2px}
+  .formula{font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:14px; position:relative; z-index:1}
+  .formula b{color:var(--amber)}
+
+  /* transport */
+  .transport{display:flex; align-items:center; gap:14px}
+  .play{width:52px; height:52px; border-radius:50%; border:1px solid var(--amber); background:var(--panel2);
+    color:var(--amber); cursor:pointer; flex:none; display:grid; place-items:center; transition:.12s}
+  .play:hover{background:var(--amber); color:#1a1206}
+  .play svg{width:20px; height:20px; fill:currentColor}
+  .pbar{flex:1; min-width:0}
+  .scrub{position:relative; height:8px; background:var(--panel2); border-radius:5px; cursor:pointer; border:1px solid var(--line)}
+  .fill{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--amber); border-radius:5px}
+  .times{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px}
+  .pitch{display:flex; gap:8px; margin-top:16px; align-items:center; flex-wrap:wrap}
+  .pitch .lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:2px}
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  .seg button{font-family:var(--mono); font-size:12px; padding:7px 12px; background:var(--panel2); color:var(--muted); border:none; cursor:pointer}
+  .seg button.on{background:var(--amber); color:#1a1206; font-weight:600}
+
+  /* export */
+  .exports{display:flex; gap:10px; flex-wrap:wrap}
+  .btn{font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:.04em; padding:13px 18px; border-radius:10px;
+    border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; transition:.12s; flex:1 1 180px; text-align:center}
+  .btn:hover{border-color:var(--amber)}
+  .btn.primary{background:var(--red); border-color:var(--red); color:#160b08}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.45; cursor:not-allowed; border-color:var(--line)}
+  .exnote{font-size:11.5px; color:var(--muted); margin-top:10px; font-family:var(--mono)}
+  .prog{height:4px; background:var(--panel2); border-radius:3px; margin-top:12px; overflow:hidden; display:none}
+  .prog.show{display:block}
+  .prog span{display:block; height:100%; width:0; background:var(--amber); transition:width .1s}
+
+  .disabled-card{opacity:.4; pointer-events:none; filter:saturate(.4)}
+  details{margin-top:8px; border-top:1px solid var(--line); padding-top:14px}
+  summary{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); cursor:pointer}
+  details p{font-size:13px; color:var(--muted); max-width:64ch}
+  details b{color:var(--text)}
+  .foot{text-align:center; color:var(--muted); font-size:11px; font-family:var(--mono); margin-top:8px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo">SLOWMO<span class="dot">.</span></span>
+    <span class="tag">high-fps playback sync</span>
+  </header>
+  <p class="sub">Speed a track up for on-set playback so it re-syncs when you slow the footage back down. Shoot fast, perform to this, retime to your edit rate — the audio lands back on the beat.</p>
+
+  <!-- 1. UPLOAD -->
+  <div class="card">
+    <p class="eyebrow">01 · Source audio</p>
+    <div id="drop">
+      <div class="big">Drop a track or tap to browse</div>
+      <div class="small">MP3, WAV, M4A, FLAC — stays on your device</div>
+    </div>
+    <input type="file" id="file" accept="audio/*" hidden>
+  </div>
+
+  <!-- 2. FRAME RATES -->
+  <div class="card" id="fpsCard">
+    <p class="eyebrow">02 · Frame rates</p>
+    <div class="row">
+      <div class="col">
+        <div class="stat" style="border:none;padding:0;margin-bottom:9px"><span class="k">Edit / timeline rate</span></div>
+        <div class="chips" id="editChips"></div>
+      </div>
+      <div class="col">
+        <div class="stat" style="border:none;padding:0;margin-bottom:9px"><span class="k">Shooting rate</span></div>
+        <div class="chips" id="shootChips">
+          <div class="custom"><input type="number" id="customShoot" placeholder="fps" min="1" max="1000"><span class="k" style="color:var(--muted)">custom</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout" style="margin-top:20px">
+      <div class="mult"><span id="multVal">5.000</span><span class="x">×</span></div>
+      <div class="pct">play the song at <b id="tempoVal">500%</b> speed &nbsp;·&nbsp; <b id="incVal">+400%</b> faster</div>
+      <div class="grid">
+        <div class="stat"><div class="k">In post, footage runs</div><div class="v" id="slowVal">5× slow-mo (20%)</div></div>
+        <div class="stat"><div class="k">Sped-up track length</div><div class="v" id="durVal">—</div></div>
+      </div>
+      <div class="formula" id="formula">120 ÷ 24 = <b>5.000×</b></div>
+    </div>
+  </div>
+
+  <!-- 3. PLAY -->
+  <div class="card disabled-card" id="playCard">
+    <p class="eyebrow">03 · Preview at speed</p>
+    <div class="transport">
+      <button class="play" id="playBtn" aria-label="Play">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <div class="pbar">
+        <div class="scrub" id="scrub"><div class="fill" id="fill"></div></div>
+        <div class="times"><span id="cur">0:00</span><span id="tot">0:00</span></div>
+      </div>
+    </div>
+    <div class="pitch">
+      <span class="lbl">Pitch</span>
+      <div class="seg" id="pitchSeg">
+        <button data-p="vari" class="on">Varispeed (shifts up)</button>
+        <button data-p="keep">Keep original pitch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. EXPORT -->
+  <div class="card disabled-card" id="exportCard">
+    <p class="eyebrow">04 · Export sped-up track</p>
+    <div class="exports">
+      <button class="btn primary" id="wavBtn">Download WAV</button>
+      <button class="btn" id="mp3Btn" disabled>Download MP3</button>
+    </div>
+    <div class="prog" id="prog"><span id="progBar"></span></div>
+    <div class="exnote" id="exnote">Export is varispeed (pitched up) — the physically correct match: slowed footage would drop the pitch the same amount, so this lands it back at normal.</div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>How this works</summary>
+      <p style="margin-top:12px">Conforming footage shot at a high rate down to your timeline rate stretches it in time by <b>shoot ÷ edit</b>. Shoot at 120 and drop it on a 24 fps timeline and everything plays <b>5× slower</b>. So a performance filmed at that rate needs its music running <b>5× faster</b> on set — after the slowdown it returns to normal tempo, still locked to the lips and the beat.</p>
+      <p>Playing a track faster also raises its pitch (tape/record spun faster). When you slow the footage back down, that pitch drops by the exact same amount — so the exported <b>varispeed</b> file is what actually re-lands on pitch in the final cut. <b>Keep original pitch</b> is offered for previewing here, so you can recognize the song while you check timing; it doesn't change the downloaded file.</p>
+    </details>
+  </div>
+  <div class="foot">runs entirely in your browser · nothing uploaded</div>
+</div>
+
+<audio id="audio"></audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js" onerror="window.__noLame=true"></script>
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const audio = $('#audio');
+
+  const state = {
+    edit: 24, shoot: 120,
+    file:null, url:null, buffer:null, ctx:null,
+    pitch:'vari', dur:0, ready:false
+  };
+
+  const EDIT_OPTS = [23.976, 24, 25, 30];
+  const SHOOT_OPTS = [50, 60, 100, 120];
+
+  // build chips
+  const editWrap = $('#editChips');
+  EDIT_OPTS.forEach(v=>{
+    const b=document.createElement('button'); b.className='chip'+(v===state.edit?' on':'');
+    b.dataset.edit=v; b.innerHTML = v + '<span class="u">fps</span>';
+    b.onclick=()=>{ state.edit=v; markEdit(); recompute(); };
+    editWrap.appendChild(b);
+  });
+  const shootWrap = $('#shootChips'); const customInput=$('#customShoot');
+  SHOOT_OPTS.forEach(v=>{
+    const b=document.createElement('button'); b.className='chip'+(v===state.shoot?' on':'');
+    b.dataset.shoot=v; b.innerHTML = v + '<span class="u">fps</span>';
+    b.onclick=()=>{ state.shoot=v; customInput.value=''; markShoot(); recompute(); };
+    shootWrap.insertBefore(b, customInput.parentElement);
+  });
+  customInput.addEventListener('input', ()=>{
+    const v=parseFloat(customInput.value);
+    if(v>0){ state.shoot=v; markShoot(true); recompute(); }
+  });
+
+  function markEdit(){ editWrap.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', +c.dataset.edit===state.edit)); }
+  function markShoot(custom){
+    shootWrap.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', !custom && +c.dataset.shoot===state.shoot));
+  }
+
+  function fmtTime(s){ if(!isFinite(s)||s<0)s=0; const m=Math.floor(s/60); const sec=Math.floor(s%60); return m+':'+String(sec).padStart(2,'0'); }
+  function fmtNum(n){ return (Math.round(n*1000)/1000).toFixed(3); }
+
+  function recompute(){
+    const M = state.shoot/state.edit;
+    $('#multVal').textContent = fmtNum(M);
+    $('#tempoVal').textContent = (Math.round(M*10000)/100).toFixed(M*100%1?1:0).replace(/\.0$/,'') + '%';
+    $('#incVal').textContent = '+' + (Math.round((M-1)*10000)/100).toFixed((M-1)*100%1?1:0).replace(/\.0$/,'') + '%';
+    const inv = 1/M;
+    $('#slowVal').textContent = fmtNum(M).replace(/0+$/,'').replace(/\.$/,'') + '× slow-mo (' + (Math.round(inv*1000)/10) + '%)';
+    const editLabel = (state.edit===23.976?'23.976':state.edit);
+    $('#formula').innerHTML = state.shoot + ' ÷ ' + editLabel + ' = <b>' + fmtNum(M) + '×</b>';
+    if(state.dur){ $('#durVal').textContent = fmtTime(state.dur/M) + ' (from ' + fmtTime(state.dur) + ')'; }
+    // apply to live playback
+    if(state.ready){ audio.playbackRate = M; audio.preservesPitch = (state.pitch==='keep'); audio.mozPreservesPitch=(state.pitch==='keep'); audio.webkitPreservesPitch=(state.pitch==='keep'); }
+    updateTot();
+  }
+
+  // ---------- file handling ----------
+  const drop=$('#drop'), fileInput=$('#file');
+  drop.onclick=()=>fileInput.click();
+  fileInput.onchange=e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); };
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
+  drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+  async function loadFile(f){
+    if(!f.type.startsWith('audio/') && !/\.(mp3|wav|m4a|flac|aac|ogg|aiff?)$/i.test(f.name)){
+      drop.innerHTML='<div class="big">That doesn\'t look like audio</div><div class="small">Try an MP3, WAV, M4A or FLAC</div>'; return;
+    }
+    state.file=f;
+    if(state.url) URL.revokeObjectURL(state.url);
+    state.url=URL.createObjectURL(f);
+    audio.src=state.url;
+
+    drop.className='loaded';
+    drop.innerHTML='<div><div class="fname">'+f.name+'</div><div class="fmeta" id="fmeta">decoding…</div></div><div class="swap">Change</div>';
+    drop.onclick=()=>fileInput.click();
+
+    try{
+      state.ctx = state.ctx || new (window.AudioContext||window.webkitAudioContext)();
+      const arr = await f.arrayBuffer();
+      state.buffer = await state.ctx.decodeAudioData(arr.slice(0));
+      state.dur = state.buffer.duration;
+      $('#fmeta').textContent = fmtTime(state.dur)+' · '+state.buffer.sampleRate/1000+'kHz · '+(state.buffer.numberOfChannels>1?'stereo':'mono');
+      state.ready=true;
+      $('#playCard').classList.remove('disabled-card');
+      $('#exportCard').classList.remove('disabled-card');
+      if(!window.__noLame && window.lamejs) $('#mp3Btn').disabled=false;
+      recompute();
+    }catch(err){
+      $('#fmeta').textContent='couldn\'t decode this file — try WAV or MP3';
+    }
+  }
+
+  // ---------- transport ----------
+  const playBtn=$('#playBtn'), playIcon=$('#playIcon'), fill=$('#fill'), scrub=$('#scrub');
+  const PLAY='M8 5v14l11-7z', PAUSE='M6 5h4v14H6zM14 5h4v14h-4z';
+  playBtn.onclick=async ()=>{
+    if(!state.ready) return;
+    if(state.ctx && state.ctx.state==='suspended') state.ctx.resume();
+    if(audio.paused){ audio.playbackRate=state.shoot/state.edit; audio.play(); } else audio.pause();
+  };
+  audio.onplay=()=>playIcon.setAttribute('d',PAUSE);
+  audio.onpause=()=>playIcon.setAttribute('d',PLAY);
+  audio.onended=()=>playIcon.setAttribute('d',PLAY);
+  function updateTot(){ const M=state.shoot/state.edit; $('#tot').textContent=fmtTime((state.dur||0)/M); }
+  audio.ontimeupdate=()=>{
+    const M=state.shoot/state.edit;
+    const dur=state.dur||audio.duration||0;
+    const p = dur? (audio.currentTime/dur) : 0;
+    fill.style.width=(p*100)+'%';
+    $('#cur').textContent=fmtTime((audio.currentTime||0)/M);
+  };
+  scrub.onclick=e=>{
+    if(!state.ready)return;
+    const r=scrub.getBoundingClientRect();
+    const p=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
+    audio.currentTime=p*(state.dur||audio.duration||0);
+  };
+
+  // ---------- pitch toggle ----------
+  $('#pitchSeg').querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      state.pitch=b.dataset.p;
+      $('#pitchSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      const keep=state.pitch==='keep';
+      audio.preservesPitch=keep; audio.mozPreservesPitch=keep; audio.webkitPreservesPitch=keep;
+    };
+  });
+
+  // ---------- export ----------
+  const prog=$('#prog'), progBar=$('#progBar');
+  function showProg(p){ prog.classList.add('show'); progBar.style.width=(p*100)+'%'; }
+  function hideProg(){ setTimeout(()=>{prog.classList.remove('show'); progBar.style.width='0';}, 500); }
+
+  async function renderVarispeed(){
+    const M = state.shoot/state.edit;
+    const buf=state.buffer;
+    const outLen=Math.max(1,Math.floor(buf.length/M));
+    const off=new OfflineAudioContext(buf.numberOfChannels, outLen, buf.sampleRate);
+    const src=off.createBufferSource();
+    src.buffer=buf; src.playbackRate.value=M;
+    src.connect(off.destination); src.start(0);
+    return await off.startRendering();
+  }
+
+  function outName(ext){
+    const base=(state.file?state.file.name:'track').replace(/\.[^.]+$/,'');
+    const M=state.shoot/state.edit;
+    return base+'__'+state.shoot+'fps_'+fmtNum(M)+'x.'+ext;
+  }
+  function download(blob,name){
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+
+  function encodeWAV(buf){
+    const nCh=buf.numberOfChannels, len=buf.length, SR=buf.sampleRate;
+    const chans=[]; for(let c=0;c<nCh;c++) chans.push(buf.getChannelData(c));
+    const bytesPerSample=2, blockAlign=nCh*bytesPerSample;
+    const dataLen=len*blockAlign;
+    const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+    const ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+    ws(0,'RIFF'); dv.setUint32(4,36+dataLen,true); ws(8,'WAVE'); ws(12,'fmt ');
+    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,nCh,true);
+    dv.setUint32(24,SR,true); dv.setUint32(28,SR*blockAlign,true);
+    dv.setUint16(32,blockAlign,true); dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40,dataLen,true);
+    let off=44;
+    for(let i=0;i<len;i++) for(let c=0;c<nCh;c++){
+      let s=Math.max(-1,Math.min(1,chans[c][i]));
+      dv.setInt16(off, s<0?s*0x8000:s*0x7FFF, true); off+=2;
+    }
+    return new Blob([ab],{type:'audio/wav'});
+  }
+
+  function encodeMP3(buf){
+    const nCh=Math.min(2,buf.numberOfChannels), SR=buf.sampleRate;
+    const enc=new lamejs.Mp3Encoder(nCh, SR, 192);
+    const L=buf.getChannelData(0);
+    const R=nCh>1?buf.getChannelData(1):null;
+    const to16=(f)=>{const o=new Int16Array(f.length); for(let i=0;i<f.length;i++){let s=Math.max(-1,Math.min(1,f[i])); o[i]=s<0?s*0x8000:s*0x7FFF;} return o;};
+    const l16=to16(L), r16=R?to16(R):null;
+    const block=1152, data=[]; 
+    for(let i=0;i<l16.length;i+=block){
+      const lc=l16.subarray(i,i+block);
+      const mp3 = nCh>1 ? enc.encodeBuffer(lc, r16.subarray(i,i+block)) : enc.encodeBuffer(lc);
+      if(mp3.length) data.push(new Int8Array(mp3));
+    }
+    const end=enc.flush(); if(end.length) data.push(new Int8Array(end));
+    return new Blob(data,{type:'audio/mpeg'});
+  }
+
+  $('#wavBtn').onclick=async ()=>{
+    if(!state.ready)return;
+    $('#wavBtn').disabled=true; showProg(0.15);
+    try{
+      const r=await renderVarispeed(); showProg(0.6);
+      const blob=encodeWAV(r); showProg(1);
+      download(blob, outName('wav'));
+    }catch(e){ $('#exnote').textContent='Export failed: '+e.message; }
+    hideProg(); $('#wavBtn').disabled=false;
+  };
+  $('#mp3Btn').onclick=async ()=>{
+    if(!state.ready||!window.lamejs)return;
+    $('#mp3Btn').disabled=true; showProg(0.15);
+    try{
+      const r=await renderVarispeed(); showProg(0.5);
+      const blob=encodeMP3(r); showProg(1);
+      download(blob, outName('mp3'));
+    }catch(e){ $('#exnote').textContent='MP3 export failed: '+e.message; }
+    hideProg(); $('#mp3Btn').disabled=false;
+  };
+
+  // lame availability note
+  window.addEventListener('load', ()=>{
+    if(window.__noLame || !window.lamejs){
+      $('#mp3Btn').disabled=true;
+      $('#mp3Btn').title='MP3 encoder unavailable — WAV works offline';
+    }
+  });
+
+  recompute();
+})();
+</script>
+</body>
+</html>
