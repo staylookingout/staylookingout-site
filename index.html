@@ -453,9 +453,9 @@
       renderPromptRow();
       return;
     }
-    if (cmd === 'audio' || cmd === 'camera' || cmd === 'art' || cmd === 'learn' || cmd === 'tools') {
+    if (cmd === 'audio' || cmd === 'camera' || cmd === 'art' || cmd === 'read' || cmd === 'learn' || cmd === 'tools') {
       promptPath = cmd;
-      promptPathColor = cmd === 'audio' ? PAL.yellow : cmd === 'camera' ? PAL.orange : cmd === 'learn' ? PAL.cyan : cmd === 'art' ? PAL.pink : PAL.yellow;
+      promptPathColor = cmd === 'audio' ? PAL.yellow : cmd === 'camera' ? PAL.orange : cmd === 'learn' ? PAL.cyan : cmd === 'art' ? PAL.pink : cmd === 'read' ? PAL.purple : PAL.yellow;
       renderPromptRow();
       return showList();
     }
@@ -528,7 +528,7 @@
     var dir = DIRECTORIES[i];
     if (!dir) return;
     promptPath = dir.name;
-    promptPathColor = dir.name === 'audio' ? PAL.yellow : dir.name === 'camera' ? PAL.orange : dir.name === 'learn' ? PAL.cyan : dir.name === 'art' ? PAL.pink : PAL.yellow;
+    promptPathColor = dir.name === 'audio' ? PAL.yellow : dir.name === 'camera' ? PAL.orange : dir.name === 'learn' ? PAL.cyan : dir.name === 'art' ? PAL.pink : dir.name === 'read' ? PAL.purple : PAL.yellow;
     renderPromptRow();
     showList();
   }
