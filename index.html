@@ -337,9 +337,7 @@
   // ---------- boot sequence ----------
   function boot(){
     var seq = [
-      [90,  function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
-      [180, function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
-      [220, function(){
+      [90,  function(){
         var spans = [
           { t:'import ', c:PAL.dim },
           { t:'AUDIO', c:PAL.yellow },
@@ -356,7 +354,9 @@
         ];
         pushLine(spans, null, true);
       }],
-      [160, function(){ sys('> File loaded: src/core/stay.js'); }],
+      [220, function(){ sys('> File loaded: src/core/stay.js'); }],
+      [160, function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
+      [180, function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
       [220, function(){ state.phase = 'ready'; state.showPrompt = true; renderPromptRow(); focusInput(); }]
     ];
     var t = 0;
