@@ -44,10 +44,7 @@
 
   /* ---- layout ---- */
   .board{display:flex;flex-direction:column;gap:20px;}
-  .stage{order:-1;}                 /* viewer sits on top, controls underneath */
   .controls{display:flex;flex-direction:column;gap:16px;}
-  .controls > *{min-width:0;}
-  #panelSource{order:1;} #panelRamp{order:2;} #panelColors{order:3;} #panelExport{order:4;}
 
   .panel{
     background:var(--graphite);
@@ -212,18 +209,42 @@
   </header>
 
   <div class="board" id="editorView">
-    <!-- controls (rendered below the viewer via CSS order) -->
-    <div class="controls">
-      <div class="panel" id="panelSource">
-        <h2>Source</h2>
-        <div class="field">
-          <div class="dropzone" id="drop">
-            <strong>Drop an image</strong>
-            or tap to choose a file
-          </div>
-          <input type="file" id="file" accept="image/*" hidden>
+    <!-- SOURCE: upload image (at top, before viewer) -->
+    <div class="panel" id="panelSource" style="margin-bottom:14px;">
+      <h2>Source</h2>
+      <div class="field">
+        <div class="dropzone" id="drop">
+          <strong>Drop an image</strong>
+          or tap to choose a file
         </div>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+    </div>
 
+    <!-- VIEWER (stays on top via CSS order) -->
+    <div class="panel stage">
+      <div class="stagebar">
+        <div class="stageleft">
+          <span class="dims">grid <b id="dims">—</b></span>
+          <div class="zoom">
+            <button class="zbtn" id="zoomOut" aria-label="Zoom out">−</button>
+            <button class="zbtn" id="zoomFit">fit</button>
+            <button class="zbtn" id="zoomIn" aria-label="Zoom in">+</button>
+            <span class="zval" id="zoomVal">100%</span>
+          </div>
+        </div>
+        <div class="actions">
+        </div>
+      </div>
+      <div class="plate" id="plate">
+        <div class="artlayer" id="artlayer"><pre id="art"></pre><canvas id="artcanvas"></canvas></div>
+      </div>
+    </div>
+
+    <!-- CONTROLS: sliders & settings (below viewer) -->
+    <div class="controls">
+      <div class="panel">
+        <h2>Settings</h2>
         <div class="field">
           <label>Tone levels <span class="val" id="levelsVal">8</span></label>
           <input type="range" id="levels" min="2" max="12" value="8">
@@ -288,29 +309,6 @@
         <h2>Export</h2>
         <p class="exnote">Turn your art into a PNG sequence, GIF, or MP4 — with animation, aspect-ratio, and crop controls.</p>
         <button class="btn" id="exOpen" style="width:100%;padding:11px;">Open export tools ▸</button>
-      </div>
-    </div>
-
-    <!-- RIGHT: output -->
-    <div class="panel stage">
-      <div class="stagebar">
-        <div class="stageleft">
-          <span class="dims">grid <b id="dims">—</b></span>
-          <div class="zoom">
-            <button class="zbtn" id="zoomOut" aria-label="Zoom out">−</button>
-            <button class="zbtn" id="zoomFit">fit</button>
-            <button class="zbtn" id="zoomIn" aria-label="Zoom in">+</button>
-            <span class="zval" id="zoomVal">100%</span>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" id="copyBtn">Copy text</button>
-          <button class="btn ghost" id="txtBtn">Save .txt</button>
-          <button class="btn ghost" id="pngBtn">Save .png</button>
-        </div>
-      </div>
-      <div class="plate" id="plate">
-        <div class="artlayer" id="artlayer"><pre id="art"></pre><canvas id="artcanvas"></canvas></div>
       </div>
     </div>
   </div>
@@ -391,6 +389,9 @@
         <h2>Export</h2>
         <p class="exnote">Save one PNG per tone level (zipped so they stay in one folder), or render them into an animation at your chosen frame rate.</p>
         <div class="exbtns">
+          <button class="btn ghost" id="copyBtn">Copy text</button>
+          <button class="btn ghost" id="txtBtn">Save .txt</button>
+          <button class="btn ghost" id="pngBtn">Save .png</button>
           <button class="btn" id="exPng">Save PNG sequence (.zip)</button>
           <button class="btn ghost" id="exGif">Render GIF</button>
           <button class="btn ghost" id="exVid">Render MP4 / WebM</button>
