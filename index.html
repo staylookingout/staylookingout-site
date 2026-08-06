@@ -121,7 +121,7 @@
   <div id="wrap">
     <div id="header">
       <div id="logo">STAY</div>
-      <div id="subtitle">staylookingout/tools/</div>
+      <div id="subtitle">staylookingout/apps</div>
     </div>
     <div id="lines"></div>
     <div id="promptRow" class="hidden">
@@ -149,6 +149,7 @@
     { name:'audio',  desc:'music tools' },
     { name:'camera', desc:'video/camera tools' },
     { name:'art',    desc:'visual creativity' },
+    { name:'read',   desc:'essays & reflections' },
     { name:'learn',  desc:'courses & lessons' },
     { name:'tools',  desc:'utilities' }
   ];
@@ -176,27 +177,32 @@
     { name:'character', url:'https://staylookingout.com/art/character-art-converter.html', desc:'tone grid & character art' }
   ];
 
-  // Learning
+  // Reading / lessons
+  var READ_PAGES = [
+    { name:'character', url:'https://staylookingout.com/read/character.html', desc:'people in religious text' },
+    { name:'parable',   url:'https://staylookingout.com/read/parable.html',   desc:'lessons from around the world' }
+  ];
+
+  // Learning / courses
   var LEARN_PAGES = [
-    { name:'mixlab', url:'https://staylookingout.com/learn/mix-lab-course.html', desc:'interactive mixing course' }
+    { name:'mixlab', url:'https://staylookingout.com/learn/mix-lab-course.html', desc:'interactive mixing course' },
+    { name:'waves',  url:'https://staylookingout.com/learn/waves.html',         desc:'light/audio relationship' }
   ];
 
   // General tools
   var TOOLS_PAGES = [
-    { name:'character', url:'https://staylookingout.com/tools/character.html', desc:'people in religious text' },
-    { name:'parable',   url:'https://staylookingout.com/tools/parable.html',   desc:'lessons from around the world' },
-    { name:'waves',     url:'https://staylookingout.com/tools/waves.html',     desc:'light/audio relationship' },
     { name:'optical',   url:'https://staylookingout.com/tools/optical-link.html', desc:'QR file transfer' }
   ];
 
   // All pages flattened for direct access from home
-  var ALL_PAGES = AUDIO_PAGES.concat(CAMERA_PAGES, ART_PAGES, LEARN_PAGES, TOOLS_PAGES);
+  var ALL_PAGES = AUDIO_PAGES.concat(CAMERA_PAGES, ART_PAGES, READ_PAGES, LEARN_PAGES, TOOLS_PAGES);
 
   function currentPages(){
     if (promptPath === '')     return DIRECTORIES;
     if (promptPath === 'audio')  return AUDIO_PAGES;
     if (promptPath === 'camera') return CAMERA_PAGES;
     if (promptPath === 'art')    return ART_PAGES;
+    if (promptPath === 'read')   return READ_PAGES;
     if (promptPath === 'learn')  return LEARN_PAGES;
     if (promptPath === 'tools')  return TOOLS_PAGES;
     return DIRECTORIES;
@@ -331,15 +337,26 @@
   // ---------- boot sequence ----------
   function boot(){
     var seq = [
-      [90,  function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
-      [230, function(){
-        var spans = colorize('import Read from "./core/stay";');
-        spans.forEach(function(sp){ if (sp.t === 'Read') sp.c = PAL.purple; });
+      [90,  function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
+      [180, function(){ pushLine([{ t:'> ACCESS GRANTED', c:PAL.green, w:700, sh:'0 0 12px rgba(114,241,184,0.8)' }], null, true); }],
+      [220, function(){
+        var spans = [
+          { t:'import ', c:PAL.dim },
+          { t:'AUDIO', c:PAL.yellow },
+          { t:' / ', c:PAL.dim },
+          { t:'CAMERA', c:PAL.orange },
+          { t:' / ', c:PAL.dim },
+          { t:'ART', c:PAL.pink },
+          { t:' / ', c:PAL.dim },
+          { t:'READ', c:PAL.purple },
+          { t:' / ', c:PAL.dim },
+          { t:'LEARN', c:PAL.cyan },
+          { t:' / ', c:PAL.dim },
+          { t:'TOOLS', c:PAL.yellow }
+        ];
         pushLine(spans, null, true);
       }],
-      [120, function(){ pushLine(colorize('import Tools from "./tools/index";'), null, true); }],
-      [120, function(){ pushLine(colorize('decrypt /vault/keys ............ OK'), null, true); }],
-      [160, function(){ sys('> File loaded: src/core/main.js'); }],
+      [160, function(){ sys('> File loaded: src/core/stay.js'); }],
       [220, function(){ state.phase = 'ready'; state.showPrompt = true; renderPromptRow(); focusInput(); }]
     ];
     var t = 0;
@@ -371,7 +388,15 @@
     } else if (e.key === 'Enter'){
       e.preventDefault();
       var cmd = state.typed.trim();
-      if (cmd){ state.typed=''; state.ranOnce=true; renderPromptRow(); run(cmd); }
+      if (cmd){
+        if (!state.ranOnce) {
+          state.ranOnce = true;
+          // Clear boot lines on first command
+          var bootLines = state.lines.slice(0, 4);
+          bootLines.forEach(function(line){ if (line.el) line.el.style.display = 'none'; });
+        }
+        state.typed=''; renderPromptRow(); run(cmd);
+      }
       else if (state.sel >= 0) openPage(state.sel);
     } else if (e.key === 'Backspace'){
       e.preventDefault();
@@ -386,6 +411,11 @@
   window.addEventListener('keydown', onKey);
 
   root.addEventListener('click', focusInput);
+
+  // Force refresh when back button is used
+  window.addEventListener('popstate', function(){
+    location.reload();
+  });
 
   // ---------- commands ----------
   function echoCmd(cmd){
@@ -443,28 +473,21 @@
     switch (head){
       case 'help':
         sys('\u2500\u2500 commands \u2500\u2500', P.purple);
-        [['list','show directories or pages'],['open <name|#>','jump to a page'],['audio / camera / art / learn / tools','enter a section'],
+        [['list','show directories or pages'],['open <name|#>','jump to a page'],
          ['..',  'back to home'],['about','what is this place'],
-         ['contact','reach out'],['whoami','identify yourself'],['stay','...'],['clear','wipe the screen'],
-         ['reload','refresh reality'],['echo <text>','shout into the void'],
-         ['exit','try it']].forEach(function(pair){
+         ['contact','reach out'],['clear','wipe the screen'],
+         ['reload','refresh reality'],['exit','try it']].forEach(function(pair){
           pushLine([{ t:'  ' + pair[0].padEnd(16), c:P.cyan }, { t:pair[1], c:P.dim }]);
         });
         return;
       case 'clear': return clearLines();
       case 'about':
-        sys('STAYLOOKINGOUT \u00B7 MIAMI', P.pink);
-        sys('instruments built in-house. tools, experiments, transmissions.', P.dim);
+        sys('no credits. no copyrights. power to the people.', P.pink);
         return;
       case 'contact':
-        pushLine([{ t:'signal \u25B8 ', c:P.dim }, { t:'stay@staylookingout.com', c:P.cyan, sh:'0 0 10px rgba(54,249,246,0.4)' }],
-          { click:function(){ location.href = 'mailto:stay@staylookingout.com'; }, cursor:'pointer' });
+        sys('text 305-491-4562', P.cyan);
         return;
-      case 'whoami': return sys('guest \u2014 but you were never really here.', P.yellow);
       case 'sudo': return sys('permission denied. nice try, root.', P.red);
-      case 'stay': return arg === 'looking out' ? lookingOut() : sys('stay what?', P.pink);
-      case 'print': return arg === 'looking out' ? lookingOut() : sys('print what? (hint: what should you stay doing?)', P.dim);
-      case 'looking': if (arg === 'out') return lookingOut(); break;
       case 'reload':
         sys('reloading reality...', P.orange);
         setTimeout(function(){ location.reload(); }, 600);
