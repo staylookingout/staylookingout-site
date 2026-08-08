@@ -151,6 +151,7 @@
     { name:'art',    desc:'visual creativity' },
     { name:'read',   desc:'essays & reflections' },
     { name:'learn',  desc:'courses & lessons' },
+    { name:'health', desc:'body & fitness' },
     { name:'tools',  desc:'utilities' }
   ];
 
@@ -194,8 +195,13 @@
     { name:'optical',   url:'https://staylookingout.com/tools/optical-link.html', desc:'QR file transfer' }
   ];
 
+  // Health / fitness
+  var HEALTH_PAGES = [
+    { name:'active', url:'https://staylookingout.com/health/stay-active.html', desc:'rep counter & workout log' }
+  ];
+
   // All pages flattened for direct access from home
-  var ALL_PAGES = AUDIO_PAGES.concat(CAMERA_PAGES, ART_PAGES, READ_PAGES, LEARN_PAGES, TOOLS_PAGES);
+  var ALL_PAGES = AUDIO_PAGES.concat(CAMERA_PAGES, ART_PAGES, READ_PAGES, LEARN_PAGES, HEALTH_PAGES, TOOLS_PAGES);
 
   function currentPages(){
     if (promptPath === '')     return DIRECTORIES;
@@ -204,6 +210,7 @@
     if (promptPath === 'art')    return ART_PAGES;
     if (promptPath === 'read')   return READ_PAGES;
     if (promptPath === 'learn')  return LEARN_PAGES;
+    if (promptPath === 'health') return HEALTH_PAGES;
     if (promptPath === 'tools')  return TOOLS_PAGES;
     return DIRECTORIES;
   }
@@ -350,6 +357,8 @@
           { t:' / ', c:PAL.dim },
           { t:'LEARN', c:PAL.cyan },
           { t:' / ', c:PAL.dim },
+          { t:'HEALTH', c:PAL.green },
+          { t:' / ', c:PAL.dim },
           { t:'TOOLS', c:PAL.yellow }
         ];
         pushLine(spans, null, true);
@@ -453,9 +462,9 @@
       renderPromptRow();
       return;
     }
-    if (cmd === 'audio' || cmd === 'camera' || cmd === 'art' || cmd === 'read' || cmd === 'learn' || cmd === 'tools') {
+    if (cmd === 'audio' || cmd === 'camera' || cmd === 'art' || cmd === 'read' || cmd === 'learn' || cmd === 'health' || cmd === 'tools') {
       promptPath = cmd;
-      promptPathColor = cmd === 'audio' ? PAL.yellow : cmd === 'camera' ? PAL.orange : cmd === 'learn' ? PAL.cyan : cmd === 'art' ? PAL.pink : cmd === 'read' ? PAL.purple : PAL.yellow;
+      promptPathColor = cmd === 'audio' ? PAL.yellow : cmd === 'camera' ? PAL.orange : cmd === 'learn' ? PAL.cyan : cmd === 'art' ? PAL.pink : cmd === 'read' ? PAL.purple : cmd === 'health' ? PAL.green : PAL.yellow;
       renderPromptRow();
       return showList();
     }
@@ -528,7 +537,7 @@
     var dir = DIRECTORIES[i];
     if (!dir) return;
     promptPath = dir.name;
-    promptPathColor = dir.name === 'audio' ? PAL.yellow : dir.name === 'camera' ? PAL.orange : dir.name === 'learn' ? PAL.cyan : dir.name === 'art' ? PAL.pink : dir.name === 'read' ? PAL.purple : PAL.yellow;
+    promptPathColor = dir.name === 'audio' ? PAL.yellow : dir.name === 'camera' ? PAL.orange : dir.name === 'learn' ? PAL.cyan : dir.name === 'art' ? PAL.pink : dir.name === 'read' ? PAL.purple : dir.name === 'health' ? PAL.green : PAL.yellow;
     renderPromptRow();
     showList();
   }

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>STAY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#000;--panel:#0e0e0e;--line:#2a2a2a;--line2:#3d3d3d;
+    --white:#f4f4f2;--mute:#8c8c8c;--dim:#5a5a5a;--yellow:#E4FF1A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+  html{scroll-behavior:smooth;touch-action:pan-y}
+  body{background:var(--black);color:var(--white);font-family:'Oswald',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  ::selection{background:var(--white);color:#000}
+  body::before{content:"";position:fixed;inset:0;z-index:70;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  .anton{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase}
+  #raindropCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;display:block}
+  .wrap{max-width:660px;margin:0 auto;padding:0 16px;margin-left:20px;margin-right:20px;position:relative;z-index:2}
+  .label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.34em;font-weight:700;font-size:12px;color:var(--mute)}
+
+  /* nav */
+  .navwrap{position:sticky;top:0;z-index:40}
+  .band{background:rgba(0,0,0,.88);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+  .mk{font-family:'Anton';font-size:32px;letter-spacing:.005em;color:var(--white);line-height:1;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+  .mk:focus-visible{outline:none}
+  .mk:active{outline:none}
+  .mk .hl{color:var(--yellow);margin-left:.14em}
+  .logbtn{font-family:'Anton';font-size:20px;letter-spacing:.03em;background:var(--white);color:#000;
+    border:2px solid var(--white);padding:8px 22px;cursor:pointer;line-height:1;
+    transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent}
+  .logbtn:hover,.logbtn.on{background:transparent;color:var(--white)}
+  .logbtn:active{background:var(--yellow);color:#000;transform:translateY(1px)}
+  .logbtn:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
+
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+  .ring{position:absolute;transform:translate(-50%,-50%);border:4px solid var(--white);border-radius:50%;box-sizing:border-box;will-change:width,height,opacity}
+  .pow{position:absolute;font-family:'Anton';color:var(--white);transform:translate(-50%,-50%);
+    text-shadow:0 2px 10px rgba(0,0,0,.8);will-change:transform,opacity;white-space:nowrap;
+    -webkit-text-stroke:1px rgba(0,0,0,.35)}
+
+  .stack{padding:24px 0 64px}
+  .pw{margin:0 auto 24px;width:100%}
+  .panel{position:relative;background:var(--panel);border:2px solid var(--line);
+    box-shadow:0 22px 40px -26px #000, inset 0 1px 0 rgba(255,255,255,.05);padding:30px 24px;
+    opacity:0;translate:0 24px;transition:opacity .5s ease, translate .5s cubic-bezier(.2,.9,.2,1);}
+  .panel.in{opacity:1;translate:0 0}
+  .panel.invert{background:var(--white);color:#000;border-color:var(--white)}
+  .panel.invert .label{color:#444}
+
+  /* quote (home hero) */
+  .quote{overflow:hidden;height:60px;padding:0 0;display:flex;align-items:center;
+    background:var(--white);border-bottom:2px solid var(--black);
+    width:100%}
+  .ticker{width:100%;overflow:hidden;white-space:nowrap;
+    -webkit-mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+            mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  .ticker-track{display:inline-flex;align-items:center;will-change:transform;animation:tick linear infinite}
+  .ticker:hover .ticker-track,.ticker:active .ticker-track{animation-play-state:paused}
+  .qi{font-family:'Anton';text-transform:uppercase;font-size:26px;line-height:1;letter-spacing:.01em;padding:0 4px;flex:none;color:#000}
+  .qsep{font-family:'Anton';color:var(--yellow);-webkit-text-stroke:2.6px #000;paint-order:stroke fill;padding:0 16px;font-size:19px;flex:none;transform:translateY(-1px)}
+  @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes glow{
+    0%{box-shadow:0 0 12px rgba(228,255,26,.1), 0 0 24px rgba(228,255,26,0)}
+    25%{box-shadow:0 0 18px rgba(228,255,26,.18), 0 0 36px rgba(228,255,26,.08)}
+    50%{box-shadow:0 0 24px rgba(228,255,26,.25), 0 0 48px rgba(228,255,26,.15)}
+    75%{box-shadow:0 0 18px rgba(228,255,26,.18), 0 0 36px rgba(228,255,26,.08)}
+    100%{box-shadow:0 0 12px rgba(228,255,26,.1), 0 0 24px rgba(228,255,26,0)}
+  }
+
+  /* selector */
+  .addrow{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .tin{flex:1;min-width:180px;font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    font-size:21px;color:var(--white);background:transparent;border:0;border-bottom:2px solid var(--line2);
+    padding:12px 2px;outline:none}
+  .tin::placeholder{color:var(--dim)}
+  .tin:focus{border-bottom-color:var(--white)}
+  .btn{font-family:'Anton';letter-spacing:.02em;cursor:pointer;border:2px solid var(--white);
+    background:var(--white);color:#000;padding:14px 26px;font-size:26px;line-height:1;
+    transition:background .12s ease,color .12s ease,transform .05s ease;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+  .btn:hover{background:transparent;color:var(--white)}
+  .btn:active{background:var(--yellow);color:#000;transform:translateY(2px)}
+  .btn:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--white)}
+  .btn.ghost:hover{background:var(--white);color:#000}
+  .btn.ghost:active{background:var(--yellow);color:#000}
+  .btn.sm{font-size:19px;padding:11px 18px}
+  .btn[data-go]{background:#000;border-color:#E4FF1A;color:#E4FF1A;transition:background 0.1s,color 0.1s;-webkit-tap-highlight-color:transparent}
+  .btn[data-go]:hover{background:transparent;color:#E4FF1A;border-color:#E4FF1A}
+  .btn[data-go]:active{background:#E4FF1A;color:#000}
+  .btn[data-go]:focus{outline:none}
+  .btn.newset{position:relative;background:#000;color:#E4FF1A;border:2px solid #E4FF1A;
+    padding:8px 22px;z-index:0;cursor:pointer;font-family:'Anton';font-size:19px;
+    transition:all 0.15s ease;-webkit-tap-highlight-color:transparent;outline:none}
+  .btn.newset:hover{box-shadow:0 0 15px rgba(228,255,26,0.4)}
+  .btn.newset:active{background:#E4FF1A;color:#000;border-color:#E4FF1A;
+    box-shadow:0 0 30px rgba(228,255,26,0.8), inset 0 0 10px rgba(0,0,0,0.5)}
+  .btn.share{position:relative;background:#000!important;color:#E4FF1A!important;border:2px solid #E4FF1A!important;
+    padding:8px 22px!important;z-index:0!important;cursor:pointer;font-family:'Anton';font-size:19px;
+    transition:all 0.15s ease!important;-webkit-tap-highlight-color:transparent!important;outline:none!important}
+  .btn.share:hover{box-shadow:0 0 15px rgba(228,255,26,0.4)!important}
+  .btn.share:active{background:#E4FF1A!important;color:#000!important;border-color:#E4FF1A!important;
+    box-shadow:0 0 30px rgba(228,255,26,0.8), inset 0 0 10px rgba(0,0,0,0.5)!important}
+  .quick{margin-top:22px}
+  .quick .ql{margin-bottom:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:14px;
+    background:transparent;color:var(--white);border:2px solid var(--line2);padding:10px 15px;cursor:pointer;
+    transition:background .12s,color .12s,border-color .12s;-webkit-tap-highlight-color:transparent}
+  .chip:hover{background:var(--white);color:#000;border-color:var(--white)}
+  .chip:active{background:var(--yellow);color:#000;border-color:var(--yellow);transform:translateY(1px)}
+  .chip:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+  .chip.featured{background:#000;color:#fff;border-color:#000;border:2px solid;
+    animation:spin 3s linear infinite;background:conic-gradient(from var(--a),#E4FF1A,#ffff99,#E4FF1A);
+    background-clip:padding-box;border-image:conic-gradient(from var(--a),#E4FF1A,#ffff99,#E4FF1A) 1}
+
+  /* workout */
+  .ex-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ex-name{font-family:'Anton';font-size:clamp(44px,11vw,72px);line-height:.86;-webkit-text-stroke:1px currentColor}
+  .ex-log{font-family:'Anton';color:var(--yellow);background:none;border:0;cursor:pointer;padding:0 2px;
+    font-size:clamp(44px,11vw,72px);line-height:.78;flex:none;
+    transition:color .12s,transform .06s;-webkit-tap-highlight-color:transparent}
+  .ex-log:hover{color:#fff}
+  .ex-log:active{transform:scale(.9)}
+  .ex-log:focus-visible{outline:2px solid var(--yellow);outline-offset:4px}
+
+  .ex-total{display:flex;align-items:baseline;gap:14px;margin:16px 0 20px;
+    border-top:2px solid var(--line);border-bottom:2px solid var(--line);padding:16px 0}
+  .ex-total .n{font-family:'Anton';font-size:clamp(60px,17vw,100px);line-height:.78;color:var(--yellow);-webkit-text-stroke:1.2px currentColor}
+  .ex-total .cap{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.24em;font-size:12px;color:var(--mute)}
+
+  .sets{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px}
+  .set{border:2px solid var(--line2);padding:8px 13px;display:flex;gap:9px;align-items:baseline;min-width:86px;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .set-hint{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--dim);margin:-10px 0 20px}
+  .set .sn{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--mute)}
+  .set .sv{font-family:'Anton';font-size:26px;line-height:1}
+  .set.active{background:var(--white);border-color:var(--white)}
+  .set.active .sn{color:#333}.set.active .sv{color:#000}
+
+  .ex-actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .rep-btn{width:132px;height:132px;border-radius:50%;flex:none;font-family:'Anton';font-size:40px;
+    color:var(--white);background:var(--black);border:3px solid var(--white);cursor:pointer;
+    display:grid;place-items:center;text-align:center;line-height:1;letter-spacing:.03em;
+    transition:background .06s ease,color .06s ease,transform .06s ease;
+    user-select:none;-webkit-user-select:none;touch-action:none;
+    animation:glow 8s ease-in-out infinite;animation-delay:0s;
+    -webkit-tap-highlight-color:transparent}
+  .rep-btn:active{background:var(--white);color:#000;transform:scale(.95)}
+  .rep-btn:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--white)}
+  .rep-btn.rolling{animation:flick .1s steps(1) infinite}
+  @keyframes flick{0%{background:var(--black);color:var(--white)}50%{background:var(--white);color:#000}}
+
+  /* log view */
+  .log-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;gap:16px}
+  .log-h .t{font-family:'Anton';font-size:clamp(40px,10vw,60px);line-height:.9}
+  .log-sum{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--mute);margin-bottom:22px}
+  .log-sum b{font-family:'Anton';color:var(--white);font-size:20px;letter-spacing:.02em}
+  .entry{border-top:1px solid var(--line);padding:16px 0}
+  .entry:last-child{border-bottom:1px solid var(--line)}
+  .entry .et{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .entry .en{font-family:'Anton';font-size:28px;line-height:.95}
+  .entry .ev{font-family:'Anton';font-size:28px;line-height:.95}
+  .entry .es{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--mute);margin-top:6px}
+  .entry .etm{color:var(--dim)}
+  .log-empty{font-family:'Oswald';font-weight:600;color:var(--mute);text-align:center;padding:30px 0;letter-spacing:.06em}
+  .log-tot{text-align:right;line-height:.9}
+  .log-tot .n{font-family:'Anton';color:var(--yellow);font-size:clamp(52px,14vw,84px);line-height:.86;display:block}
+  .log-tot .lbl{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:11px;color:var(--mute);margin-top:14px;display:block}
+  .log-actions{display:flex;justify-content:flex-end;margin:22px 0 2px}
+  .log-hint-space{height:36px}
+  .entry{cursor:pointer;user-select:none;-webkit-user-select:none}
+  .entry.removing{opacity:0;transition:opacity .16s ease}
+  .entry:active .en{color:var(--yellow)}
+  .hle{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer;user-select:none;-webkit-user-select:none}
+  .hle:active .hn{color:var(--yellow)}
+  .hn{font-family:'Anton';font-size:24px;line-height:.95}
+  .hv{font-family:'Anton';font-size:24px;color:var(--yellow);line-height:.95}
+
+  footer{text-align:center;padding:30px 16px 52px;color:var(--dim);font-family:'Anton';letter-spacing:.3em;font-size:19px}
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .panel{transition:none;opacity:1;translate:0 0}
+    .rep-btn.rolling{animation:none}
+    .btn,.chip,.rep-btn,.logbtn,.ex-log{transition:none}
+    .rep-btn{animation:none}
+  }
+
+</style>
+</head>
+<body>
+
+<canvas id="raindropCanvas"></canvas>
+
+<div class="navwrap">
+  <div class="band">
+    <div class="mk" id="navhome">STAY<span class="hl">ACTIVE</span></div>
+    <button class="logbtn" id="navlog" type="button">LOG</button>
+  </div>
+  <div class="quote"><div class="ticker"><div class="ticker-track" id="tickertrack"></div></div></div>
+</div>
+
+<div id="fx"></div>
+
+<div class="wrap stack">
+
+  <!-- HOME -->
+  <div id="home">
+    <div class="pw"><div class="panel in">
+      <div class="addrow">
+        <input class="tin" id="exname" type="text" placeholder="Name a movement…" autocomplete="off" maxlength="24">
+        <button class="btn" id="addbtn" type="button" data-go>GO</button>
+      </div>
+      <div class="quick">
+        <div class="ql label">Or pick one</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div></div>
+    <div id="homelog"></div>
+  </div>
+
+  <!-- ACTIVE WORKOUT mounts here -->
+  <div id="active"></div>
+
+  <!-- LOG VIEW -->
+  <div id="logview" style="display:none">
+    <div class="pw"><div class="panel in">
+      <div class="log-h"><span class="t anton">The Log</span>
+        <div class="log-tot"><span class="n" id="logtot">0</span><span class="lbl">Total Reps</span></div></div>
+      <div class="log-hint-space"></div>
+      <div id="logentries"></div>
+      <div class="log-actions"><button class="btn share sm" id="sharebtn" type="button">SHARE</button></div>
+    </div></div>
+  </div>
+
+</div>
+
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fx=document.getElementById('fx');
+  var homeEl=document.getElementById('home');
+  var activeEl=document.getElementById('active');
+  var logEl=document.getElementById('logview');
+  var navlog=document.getElementById('navlog');
+  var track=document.getElementById('tickertrack');
+  var input=document.getElementById('exname');
+
+  var QUICK=['Push-ups','Squats','Pull-ups','Sit-ups','Lunges','Curls'];
+  var WORDS=['+1','REP','HIT','+1','WORK','GO','+1','YES','MORE','+1'];
+  var QUOTES=[
+    {id:1,text:"Start before your excuses get comfortable.",category:"Action & Starting",tone:"Direct"},
+    {id:2,text:"The only bad workout is the one that didn't happen.",category:"Action & Starting",tone:"Encouraging"},
+    {id:3,text:"Sweat first. Doubt later.",category:"Action & Starting",tone:"Punchy"},
+    {id:4,text:"Action beats intention every time.",category:"Action & Starting",tone:"Practical"},
+    {id:5,text:"Less delay. More reps.",category:"Action & Starting",tone:"Sharp"},
+    {id:6,text:"Strong today, stronger tomorrow.",category:"Mindset & Grit",tone:"Empowering"},
+    {id:7,text:"Your only limit is you.",category:"Mindset & Grit",tone:"Classic"},
+    {id:8,text:"Excuses burn zero calories.",category:"Mindset & Grit",tone:"Candid"},
+    {id:9,text:"Pain is temporary, pride is forever.",category:"Mindset & Grit",tone:"Intense"},
+    {id:10,text:"The body achieves what the mind believes.",category:"Mindset & Grit",tone:"Visionary"},
+    {id:11,text:"You don't have to be extreme, just consistent.",category:"Consistency & Habit",tone:"Balanced"},
+    {id:12,text:"Small progress is still progress.",category:"Consistency & Habit",tone:"Kind"},
+    {id:13,text:"Motivation gets you started. Habit keeps you going.",category:"Consistency & Habit",tone:"Discipline"},
+    {id:14,text:"Show up for yourself.",category:"Consistency & Habit",tone:"Personal"},
+    {id:15,text:"Train. Sweat. Repeat.",category:"Consistency & Habit",tone:"Minimalist"},
+    {id:16,text:"Hustle for that muscle.",category:"Power & Strength",tone:"Rhyming"},
+    {id:17,text:"Lift heavy, live light.",category:"Power & Strength",tone:"Minimalist"},
+    {id:18,text:"Stronger than your strongest excuse.",category:"Power & Strength",tone:"Fierce"},
+    {id:19,text:"Make yourself proud.",category:"Power & Strength",tone:"Personal"},
+    {id:20,text:"Be a warrior, not a worrier.",category:"Power & Strength",tone:"Rhyming"},
+    {id:21,text:"Power through the pain.",category:"Power & Strength",tone:"Tough"},
+    {id:22,text:"Suffer the pain of discipline or the pain of regret.",category:"Power & Strength",tone:"Serious"},
+    {id:23,text:"Heavy reps, heavy rewards.",category:"Power & Strength",tone:"Direct"},
+    {id:24,text:"Wake up. Work out. Look hot.",category:"Power & Strength",tone:"Playful"},
+    {id:25,text:"Build your body, build your mind.",category:"Power & Strength",tone:"Balanced"},
+    {id:26,text:"Unleash your inner beast.",category:"Power & Strength",tone:"Aggressive"},
+    {id:27,text:"Be stronger than your excuses.",category:"Power & Strength",tone:"Standard"},
+    {id:28,text:"Iron sharpens iron.",category:"Power & Strength",tone:"Traditional"},
+    {id:29,text:"Own your strength.",category:"Power & Strength",tone:"Empowering"},
+    {id:30,text:"Fierce, focused, and flawless.",category:"Power & Strength",tone:"Confident"},
+    {id:31,text:"Do it for the after-photo.",category:"Power & Strength",tone:"Modern"},
+    {id:32,text:"Crush your goals, not your spirit.",category:"Power & Strength",tone:"Uplifting"},
+    {id:33,text:"No limits, no plateaus.",category:"Power & Strength",tone:"Focused"},
+    {id:34,text:"Strong is the new beautiful.",category:"Power & Strength",tone:"Modern"},
+    {id:35,text:"Power is born in discomfort.",category:"Power & Strength",tone:"Deep"},
+    {id:36,text:"Stop talking. Start doing.",category:"Action & Execution",tone:"Direct"},
+    {id:37,text:"Less wishing. More working.",category:"Action & Execution",tone:"Blunt"},
+    {id:38,text:"Go hard or go home.",category:"Action & Execution",tone:"Aggressive"},
+    {id:39,text:"Make it happen.",category:"Action & Execution",tone:"Short"},
+    {id:40,text:"Don't wish for it. Work for it.",category:"Action & Execution",tone:"Classic"},
+    {id:41,text:"Just show up.",category:"Action & Execution",tone:"Simple"},
+    {id:42,text:"Outwork your yesterday.",category:"Action & Execution",tone:"Competitive"},
+    {id:43,text:"Earn your sweat.",category:"Action & Execution",tone:"Punchy"},
+    {id:44,text:"Ditch the excuses.",category:"Action & Execution",tone:"Sharp"},
+    {id:45,text:"Burn the ships.",category:"Action & Execution",tone:"Extreme"},
+    {id:46,text:"Run the day, don't let it run you.",category:"Action & Execution",tone:"Authoritative"},
+    {id:47,text:"Action creates motivation.",category:"Action & Execution",tone:"Scientific"},
+    {id:48,text:"Sweat is just fat crying.",category:"Action & Execution",tone:"Humorous"},
+    {id:49,text:"Nothing works unless you do.",category:"Action & Execution",tone:"Real"},
+    {id:50,text:"Prove them wrong.",category:"Action & Execution",tone:"Defiant"},
+    {id:51,text:"Push harder than yesterday.",category:"Action & Execution",tone:"Linear"},
+    {id:52,text:"Be the hardest worker in the room.",category:"Action & Execution",tone:"Elite"},
+    {id:53,text:"Work hard in silence, let success make the noise.",category:"Action & Execution",tone:"Calm"},
+    {id:54,text:"Comfort is the enemy of progress.",category:"Action & Execution",tone:"Philosophical"},
+    {id:55,text:"Do something today your future self will thank you for.",category:"Action & Execution",tone:"Inspiring"},
+    {id:56,text:"Mind over matter.",category:"Mindset & Resilience",tone:"Classic"},
+    {id:57,text:"You are capable of amazing things.",category:"Mindset & Resilience",tone:"Kind"},
+    {id:58,text:"Believe you can and you're halfway there.",category:"Mindset & Resilience",tone:"Historic"},
+    {id:59,text:"Fall seven times, stand up eight.",category:"Mindset & Resilience",tone:"Proverb"},
+    {id:60,text:"Your mind will quit a thousand times before your body does.",category:"Mindset & Resilience",tone:"Realistic"},
+    {id:61,text:"Tough times don't last, tough people do.",category:"Mindset & Resilience",tone:"Gritty"},
+    {id:62,text:"Change your mind, change your body.",category:"Mindset & Resilience",tone:"Holistic"},
+    {id:63,text:"Be your own competition.",category:"Mindset & Resilience",tone:"Solo"},
+    {id:64,text:"Failure is feedback.",category:"Mindset & Resilience",tone:"Growth"},
+    {id:65,text:"Doubt kills more dreams than failure ever will.",category:"Mindset & Resilience",tone:"Warning"},
+    {id:66,text:"Master your mind, master your workout.",category:"Mindset & Resilience",tone:"Strategic"},
+    {id:67,text:"Focus on the feeling after.",category:"Mindset & Resilience",tone:"Reward-based"},
+    {id:68,text:"You didn't come this far to only come this far.",category:"Mindset & Resilience",tone:"Persisting"},
+    {id:69,text:"The pain you feel today will be the strength you feel tomorrow.",category:"Mindset & Resilience",tone:"Classic"},
+    {id:70,text:"Overcome yourself.",category:"Mindset & Resilience",tone:"Internal"},
+    {id:71,text:"Mental grit beats physical gift.",category:"Mindset & Resilience",tone:"Analytical"},
+    {id:72,text:"Be obsessed or be average.",category:"Mindset & Resilience",tone:"Bold"},
+    {id:73,text:"Limits exist only in the mind.",category:"Mindset & Resilience",tone:"Expansive"},
+    {id:74,text:"Your attitude determines your altitude.",category:"Mindset & Resilience",tone:"Traditional"},
+    {id:75,text:"Championships are won when nobody is watching.",category:"Mindset & Resilience",tone:"Professional"},
+    {id:76,text:"Discipline over motivation.",category:"Consistency & Discipline",tone:"Fundamental"},
+    {id:77,text:"Consistency is key.",category:"Consistency & Discipline",tone:"Universal"},
+    {id:78,text:"Small steps every day.",category:"Consistency & Discipline",tone:"Micro"},
+    {id:79,text:"Don't stop until you're proud.",category:"Consistency & Discipline",tone:"Emotional"},
+    {id:80,text:"Every workout counts.",category:"Consistency & Discipline",tone:"Reassuring"},
+    {id:81,text:"Progress, not perfection.",category:"Consistency & Discipline",tone:"Standard"},
+    {id:82,text:"Success is the sum of small efforts.",category:"Consistency & Discipline",tone:"Business-like"},
+    {id:83,text:"Keep showing up.",category:"Consistency & Discipline",tone:"Reliable"},
+    {id:84,text:"Never skip a Monday.",category:"Consistency & Discipline",tone:"Gym Culture"},
+    {id:85,text:"Day one or day one hundred.",category:"Consistency & Discipline",tone:"Choice-based"},
+    {id:86,text:"Slow progress is better than no progress.",category:"Consistency & Discipline",tone:"Patient"},
+    {id:87,text:"Stay dedicated, not distracted.",category:"Consistency & Discipline",tone:"Focused"},
+    {id:88,text:"Habits build health.",category:"Consistency & Discipline",tone:"Structural"},
+    {id:89,text:"Commitment means staying true to what you said.",category:"Consistency & Discipline",tone:"Integrity"},
+    {id:90,text:"The secret of your future is hidden in your daily routine.",category:"Consistency & Discipline",tone:"Wisdom"},
+    {id:91,text:"Great things take time.",category:"Consistency & Discipline",tone:"Patient"},
+    {id:92,text:"Brick by brick.",category:"Consistency & Discipline",tone:"Metaphor"},
+    {id:93,text:"Stick to the plan.",category:"Consistency & Discipline",tone:"Tactical"},
+    {id:94,text:"Routines set you free.",category:"Consistency & Discipline",tone:"Paradoxical"},
+    {id:95,text:"Loyal to the grind.",category:"Consistency & Discipline",tone:"Dedicated"},
+    {id:96,text:"Fast paced, high energy.",category:"Speed & Energy",tone:"Athletic"},
+    {id:97,text:"Leave it all in the gym.",category:"Speed & Energy",tone:"Cathartic"},
+    {id:98,text:"Run like your goals are in front of you.",category:"Speed & Energy",tone:"Visual"},
+    {id:99,text:"Chase the endorphins.",category:"Speed & Energy",tone:"Chemical"},
+    {id:100,text:"Fuel your fire.",category:"Speed & Energy",tone:"Passionate"},
+    {id:101,text:"Heart rate up, head down.",category:"Speed & Energy",tone:"Intense"},
+    {id:102,text:"Turn up the intensity.",category:"Speed & Energy",tone:"Command"},
+    {id:103,text:"Explosive power, absolute focus.",category:"Speed & Energy",tone:"Elite"},
+    {id:104,text:"Find your speed.",category:"Speed & Energy",tone:"Paced"},
+    {id:105,text:"Unstoppable momentum.",category:"Speed & Energy",tone:"Physics-based"},
+    {id:106,text:"Attack the day.",category:"Speed & Energy",tone:"Aggressive"},
+    {id:107,text:"Charged up and ready.",category:"Speed & Energy",tone:"Electric"},
+    {id:108,text:"No holding back.",category:"Speed & Energy",tone:"Limitless"},
+    {id:109,text:"Zero hesitation.",category:"Speed & Energy",tone:"Instant"},
+    {id:110,text:"Sprint through the finish line.",category:"Speed & Energy",tone:"Racing"},
+    {id:111,text:"Elevate your effort.",category:"Speed & Energy",tone:"Upward"},
+    {id:112,text:"High vibes, high reps.",category:"Speed & Energy",tone:"Modern"},
+    {id:113,text:"Ignite your passion.",category:"Speed & Energy",tone:"Fiery"},
+    {id:114,text:"Break the speed limit.",category:"Speed & Energy",tone:"Playful"},
+    {id:115,text:"Full throttle fitness.",category:"Speed & Energy",tone:"Mechanical"}
+  ];
+
+  var history=[];       // {name, sets, total, time}
+  var activeEx=null;
+  var state='home', prevState='home';
+  var uid=0, hid=0, lastQuote=-1;
+
+  function rand(a,b){return a+Math.random()*(b-a);}
+  function pad2(n){return (n<10?'0':'')+n;}
+  function total(ex){var t=0;for(var i=0;i<ex.sets.length;i++)t+=ex.sets[i];return t;}
+  function haptic(s){ if(navigator.vibrate){try{navigator.vibrate(s?[16,38,24]:12);}catch(e){}} }
+  function nowTime(){var d=new Date();var h=d.getHours(),m=d.getMinutes();var ap=h<12?'AM':'PM';h=h%12;if(h===0)h=12;return h+':'+pad2(m)+' '+ap;}
+
+  function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function escq(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function setTickerSpeed(){
+    var SPEED=115; // px per second — readable but lively
+    var w=track.scrollWidth/2;
+    if(w>0) track.style.animationDuration=Math.max(w/SPEED,8).toFixed(1)+'s';
+  }
+  function buildTicker(){
+    var seq=shuffle(QUOTES).map(function(q){
+      return '<span class="qi">'+escq(q.text)+'</span><span class="qsep">\u2726</span>';
+    }).join('');
+    track.innerHTML=seq+seq;   // two identical copies -> seamless -50% loop
+    setTickerSpeed();
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(setTickerSpeed); }
+    setTimeout(setTickerSpeed,400);
+  }
+
+  /* ---- FX ---- */
+  function ring(cx,cy,size,big){
+    var el=document.createElement('span'); el.className='ring';
+    el.style.left=cx+'px';el.style.top=cy+'px';el.style.width='12px';el.style.height='12px';
+    fx.appendChild(el);
+    if(reduce){setTimeout(function(){el.remove();},150);return;}
+    el.animate([{width:'12px',height:'12px',opacity:.95,borderWidth:'4px'},
+      {width:size+'px',height:size+'px',opacity:0,borderWidth:'1px'}],
+      {duration:big?560:430,easing:'cubic-bezier(.15,.8,.3,1)'}).onfinish=function(){el.remove();};
+  }
+  function word(cx,cy,txt,big){
+    var el=document.createElement('span'); el.className='pow anton'; el.textContent=txt;
+    el.style.left=cx+'px';el.style.top=cy+'px';
+    el.style.fontSize=(big?rand(66,88):rand(38,54))+'px';
+    el.style.color=Math.random()<.25?'#bdbdbd':'#f4f4f2';
+    el.style.transform='translate(-50%,-50%) rotate('+rand(-8,8)+'deg) scale(.4)';
+    fx.appendChild(el);
+    if(reduce){el.style.transform='translate(-50%,-50%)';setTimeout(function(){el.remove();},260);return;}
+    var dx=rand(-26,26),dy=rand(-72,-120);
+    el.animate([{transform:'translate(-50%,-50%) rotate('+rand(-8,8)+'deg) scale(.4)',opacity:0},
+      {transform:'translate(calc(-50% + '+(dx*.4)+'px),calc(-50% + '+(dy*.4)+'px)) scale(1.12)',opacity:1,offset:.3},
+      {transform:'translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px)) scale(1)',opacity:0}],
+      {duration:big?760:620,easing:'cubic-bezier(.15,.85,.25,1)'}).onfinish=function(){el.remove();};
+  }
+  function fxAt(btn,big,txt){
+    var r=btn.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    ring(cx,cy,big?300:190,big);
+    word(cx+rand(-12,12),cy+rand(-8,8),txt||WORDS[Math.floor(rand(0,WORDS.length))],big);
+  }
+
+  /* ---- workout ---- */
+  function refresh(ex){
+    if(ex.cur==null||ex.cur<0||ex.cur>=ex.sets.length) ex.cur=ex.sets.length-1;
+    var wrap=ex.el.querySelector('.sets'); wrap.innerHTML='';
+    ex.sets.forEach(function(v,i){
+      var s=document.createElement('div');
+      s.className='set'+(i===ex.cur?' active':'');
+      s.innerHTML='<span class="sn">Set '+(i+1)+'</span><span class="sv">'+v+'</span>';
+      bindSet(s,ex,i);
+      wrap.appendChild(s);
+    });
+    ex.el.querySelector('.ex-total .n').textContent=total(ex);
+  }
+  function addRep(ex,btn){
+    if(ex.cur==null||ex.cur>=ex.sets.length) ex.cur=ex.sets.length-1;
+    ex.sets[ex.cur]++;
+    var reps=ex.sets[ex.cur], big=(reps%10===0);
+    fxAt(btn,big,big?('×'+reps):null); haptic(big); refresh(ex);
+  }
+  function removeSet(ex,index){
+    ex.sets.splice(index,1);
+    if(!ex.sets.length){ ex.sets=[0]; ex.cur=0; }
+    else { if(ex.cur>index) ex.cur--; if(ex.cur>=ex.sets.length) ex.cur=ex.sets.length-1; }
+    haptic(true); refresh(ex);
+  }
+  function bindSet(el,ex,index){
+    var t=null,longFired=false,sx=0,sy=0;
+    function clr(){ if(t){clearTimeout(t);t=null;} }
+    el.addEventListener('pointerdown',function(e){
+      longFired=false; sx=e.clientX; sy=e.clientY;
+      if(e.pointerId!=null&&el.setPointerCapture){try{el.setPointerCapture(e.pointerId);}catch(err){}}
+      t=setTimeout(function(){ longFired=true; removeSet(ex,index); },500);
+    });
+    el.addEventListener('pointermove',function(e){ if(t&&(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10))clr(); });
+    el.addEventListener('pointerup',function(){ clr(); if(!longFired){ ex.cur=index; refresh(ex); } });
+    el.addEventListener('pointercancel',clr);
+  }
+  function bindRoll(btn,ex){
+    var rt=null,ri=null,rolling=false;
+    function start(){ if(rolling)return; rolling=true; btn.classList.add('rolling'); ri=setInterval(function(){addRep(ex,btn);},100); }
+    function stop(){ if(rt){clearTimeout(rt);rt=null;} if(ri){clearInterval(ri);ri=null;}
+      if(rolling){rolling=false;btn.classList.remove('rolling'); if(navigator.vibrate){try{navigator.vibrate(0);}catch(e){}}} }
+    btn.addEventListener('pointerdown',function(e){ if(e.cancelable)e.preventDefault();
+      if(e.pointerId!=null&&btn.setPointerCapture){try{btn.setPointerCapture(e.pointerId);}catch(err){}}
+      addRep(ex,btn); rt=setTimeout(start,280); });
+    btn.addEventListener('pointerup',stop); btn.addEventListener('pointercancel',stop);
+    btn.addEventListener('pointerleave',stop); window.addEventListener('blur',stop);
+    btn.addEventListener('keydown',function(e){ if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();addRep(ex,btn);start();} });
+    btn.addEventListener('keyup',function(e){ if(e.key===' '||e.key==='Enter')stop(); });
+  }
+
+  function startWorkout(name, presetSets, editId){
+    activeEl.innerHTML='';
+    var ex={id:++uid,name:name.toUpperCase(),sets:(presetSets&&presetSets.length?presetSets.slice():[0]),el:null,editId:editId||null};
+    var pw=document.createElement('div'); pw.className='pw';
+    var panel=document.createElement('div'); panel.className='panel';
+    panel.innerHTML=
+      '<div class="ex-top"><div class="ex-name anton"></div>'+
+      '<button class="ex-log" type="button" aria-label="'+(editId?'Save changes':'Add to log')+'">'+(editId?'\u2713':'+')+'</button></div>'+
+      '<div class="ex-total"><span class="n">0</span><span class="cap">Total reps</span></div>'+
+      '<div class="sets"></div>'+
+      '<div class="ex-actions">'+
+        '<button class="rep-btn anton" type="button" aria-label="Add a rep">HIT</button>'+
+        '<button class="btn ghost sm newset" type="button">NEW SET</button>'+
+      '</div>';
+    panel.querySelector('.ex-name').textContent=ex.name;
+    pw.appendChild(panel); ex.el=panel; activeEl.appendChild(pw); activeEx=ex;
+
+    bindRoll(panel.querySelector('.rep-btn'),ex);
+    panel.querySelector('.newset').addEventListener('click',function(){
+      if(ex.sets[ex.sets.length-1]===0)return;
+      haptic();
+      ex.sets.push(0); ex.cur=ex.sets.length-1; refresh(ex);
+    });
+    panel.querySelector('.ex-log').addEventListener('click',function(){
+      haptic();
+      finishWorkout();
+    });
+    refresh(ex);
+
+    homeEl.style.display='none'; logEl.style.display='none'; activeEl.style.display='';
+    navlog.classList.remove('on'); state='active';
+    requestAnimationFrame(function(){ panel.classList.add('in'); window.scrollTo({top:0,behavior:reduce?'auto':'smooth'}); });
+  }
+
+  function finishWorkout(){
+    if(activeEx){
+      var t=total(activeEx);
+      if(activeEx.editId){
+        for(var i=0;i<history.length;i++){ if(history[i].id===activeEx.editId){
+          if(t>0){ history[i].sets=activeEx.sets.slice(); history[i].total=t; history[i].time=nowTime(); history[i].edited=true; }
+          else { history.splice(i,1); }
+          break;
+        } }
+      } else if(t>0){
+        history.unshift({id:++hid, name:activeEx.name, sets:activeEx.sets.slice(), total:t, time:nowTime()});
+      }
+    }
+    activeEx=null; activeEl.innerHTML=''; activeEl.style.display='none';
+    goHome();
+  }
+
+  function goHome(){
+    state='home'; activeEx=null; activeEl.innerHTML=''; activeEl.style.display='none';
+    renderHomeLog();
+    logEl.style.display='none'; homeEl.style.display=''; navlog.classList.remove('on');
+    window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  }
+  
+  function randomizeFeaturedChip(){
+    if(chips.length){
+      chips.forEach(function(c){c.classList.remove('featured');});
+      var randomIdx=Math.floor(Math.random()*chips.length);
+      chips[randomIdx].classList.add('featured');
+      localStorage.setItem('featuredChip',QUICK[randomIdx]);
+    }
+  }
+
+  /* ---- log view ---- */
+  function renderHomeLog(){
+    var box=document.getElementById('homelog');
+    if(!history.length){ box.innerHTML=''; return; }
+    var rows=history.map(function(h){
+      return '<div class="hle" data-id="'+h.id+'"><span class="hn">'+h.name+'</span><span class="hv">'+h.total+'</span></div>';
+    }).join('');
+    box.innerHTML='<div class="pw"><div class="panel in"><div class="ql label" style="margin-bottom:12px">Done today · tap to edit</div>'+rows+'</div></div>';
+    box.querySelectorAll('.hle').forEach(function(el){
+      el.addEventListener('click',function(){ editEntry(parseInt(el.getAttribute('data-id'),10)); });
+    });
+  }
+
+  function editEntry(id){
+    for(var i=0;i<history.length;i++){ if(history[i].id===id){ startWorkout(history[i].name, history[i].sets, id); return; } }
+  }
+  function bindEntry(el,id){
+    el.addEventListener('click',function(){ editEntry(id); });
+  }
+
+  function renderLog(){
+    var entries=document.getElementById('logentries');
+    var g=0; for(var i=0;i<history.length;i++)g+=history[i].total;
+    document.getElementById('logtot').textContent=g;
+    document.getElementById('sharebtn').style.display=history.length?'':'none';
+    entries.innerHTML='';
+    if(!history.length){ entries.innerHTML='<div class="log-empty">Nothing logged yet. Go put in work.</div>'; return; }
+    history.forEach(function(h){
+      var setStr=h.sets.map(function(v,i){return (i+1)+'×'+v;}).join('   ');
+      var e=document.createElement('div'); e.className='entry';
+      e.innerHTML='<div class="et"><span class="en">'+h.name+'</span><span class="ev">'+h.total+'</span></div>'+
+        '<div class="es">'+setStr+' <span class="etm">· '+h.time+(h.edited?' · edited':'')+'</span></div>';
+      bindEntry(e,h.id);
+      entries.appendChild(e);
+    });
+  }
+
+  function shareWorkout(){
+    if(!history.length) return;
+    var g=0; history.forEach(function(h){g+=h.total;});
+    var lines=history.map(function(h){ return h.name+' — '+h.total+' ('+h.sets.join(', ')+')'; });
+    var text='staylookingout.com\n'+lines.join('\n')+'\nTotal: '+g+' reps\nSTAY ACTIVE.';
+    try{
+      if(navigator.share){ navigator.share({title:'STAY',text:text}).catch(function(){}); return; }
+    }catch(e){}
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){flashShare('Copied');},function(){flashShare('Copy failed');});
+    }else{ flashShare('Not supported'); }
+  }
+  function flashShare(msg){
+    var b=document.getElementById('sharebtn'); if(!b)return; var o=b.getAttribute('data-o')||b.textContent;
+    b.setAttribute('data-o',o); b.textContent=msg; setTimeout(function(){b.textContent=o;},1400);
+  }
+  function toggleLog(){
+    if(state!=='log'){
+      prevState=state; homeEl.style.display='none'; activeEl.style.display='none';
+      renderLog(); logEl.style.display=''; state='log'; navlog.classList.add('on');
+      window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+    }else{
+      logEl.style.display='none'; navlog.classList.remove('on');
+      if(prevState==='active' && activeEx){ activeEl.style.display=''; state='active'; }
+      else { homeEl.style.display=''; state='home'; }
+    }
+  }
+  navlog.addEventListener('click',function(){
+    haptic();
+    toggleLog();
+  });
+  var navhomeBtn=document.getElementById('navhome');
+  var longPressTimer=null;
+  var isLongPressing=false;
+  var longPressInterval=null;
+  
+  navhomeBtn.addEventListener('mousedown',function(){
+    isLongPressing=false;
+    longPressTimer=setTimeout(function(){
+      if(!longPressTimer) return;
+      isLongPressing=true;
+      longPressInterval=setInterval(function(){
+        if(state==='home'){
+          randomizeFeaturedChip();
+          haptic();
+        }
+      },150);
+    },300);
+  });
+  
+  navhomeBtn.addEventListener('touchstart',function(){
+    isLongPressing=false;
+    longPressTimer=setTimeout(function(){
+      if(!longPressTimer) return;
+      isLongPressing=true;
+      longPressInterval=setInterval(function(){
+        if(state==='home'){
+          randomizeFeaturedChip();
+          haptic();
+        }
+      },150);
+    },300);
+  });
+  
+  function endLongPress(){
+    if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; }
+    if(longPressInterval){ clearInterval(longPressInterval); longPressInterval=null; }
+    if(!isLongPressing){
+      haptic();
+      goHome();
+      randomizeFeaturedChip();
+    }
+    isLongPressing=false;
+  }
+  
+  navhomeBtn.addEventListener('mouseup',endLongPress);
+  navhomeBtn.addEventListener('mouseleave',endLongPress);
+  navhomeBtn.addEventListener('touchend',endLongPress);
+  navhomeBtn.addEventListener('touchcancel',endLongPress);
+
+  /* ---- home selector ---- */
+  function tryAdd(){ var v=input.value.trim(); if(!v)return; haptic(); input.value=''; startWorkout(v); }
+  document.getElementById('addbtn').addEventListener('click',tryAdd);
+  input.addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();tryAdd();} });
+  var chipWrap=document.getElementById('chips');
+  var chips=[];
+  QUICK.forEach(function(name){
+    var c=document.createElement('button'); c.type='button'; c.className='chip'; c.textContent=name;
+    c.addEventListener('click',function(){ 
+      startWorkout(name);
+      // save this as the featured chip
+      chips.forEach(function(x){x.classList.remove('featured');});
+      c.classList.add('featured');
+      localStorage.setItem('featuredChip',name);
+    });
+    chipWrap.appendChild(c);
+    chips.push(c);
+  });
+  
+  // restore featured chip from last selection
+  var savedFeatured=localStorage.getItem('featuredChip');
+  if(savedFeatured && chips.length && savedFeatured!=='Push-ups'){
+    var chipIdx=QUICK.indexOf(savedFeatured);
+    if(chipIdx>=0 && chipIdx<chips.length){
+      chips[chipIdx].classList.add('featured');
+    }else{
+      // if saved featured doesn't exist, default to Push-ups
+      chips[0].classList.add('featured');
+      localStorage.setItem('featuredChip','Push-ups');
+    }
+  }else if(chips.length){
+    // first load or no saved data: default to Push-ups
+    chips[0].classList.add('featured');
+    localStorage.setItem('featuredChip','Push-ups');
+  }
+
+  document.getElementById('sharebtn').addEventListener('click',shareWorkout);
+  
+  // Blur buttons after click/touch to remove focus state on mobile
+  document.querySelectorAll('.btn').forEach(function(btn){
+    btn.addEventListener('click',function(){setTimeout(function(){btn.blur()},100)});
+    btn.addEventListener('touchend',function(){setTimeout(function(){btn.blur()},100)});
+  });
+
+  /* ---- raindrop river background ---- */
+  var canvas=document.getElementById('raindropCanvas');
+  var ctx=canvas.getContext('2d');
+  var raindrops=[];
+  var time=0;
+  
+  function resizeCanvas(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  
+  // initialize raindrops
+  for(var i=0;i<80;i++){
+    raindrops.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      vx:(Math.random()-0.5)*0.3,
+      vy:(Math.random()-0.5)*0.2,
+      radius:Math.random()*1.5+0.5,
+      opacity:Math.random()*0.4+0.1
+    });
+  }
+  
+  function drawRaindrops(){
+    time+=0.005;
+    ctx.fillStyle='rgba(0,0,0,0.02)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    
+    raindrops.forEach(function(drop){
+      // perlin-like flow using sine/cosine waves
+      var flowX=Math.sin(drop.y*0.003+time*0.3)*0.15;
+      var flowY=Math.cos(drop.x*0.002+time*0.25)*0.1;
+      
+      // add slight random drift
+      drop.vx+=flowX;
+      drop.vy+=flowY+0.05; // slight downward bias
+      
+      // damping
+      drop.vx*=0.98;
+      drop.vy*=0.98;
+      
+      // update position
+      drop.x+=drop.vx;
+      drop.y+=drop.vy;
+      
+      // wrap around screen
+      if(drop.x<-10)drop.x=canvas.width+10;
+      if(drop.x>canvas.width+10)drop.x=-10;
+      if(drop.y<-10)drop.y=canvas.height+10;
+      if(drop.y>canvas.height+10)drop.y=-10;
+      
+      // oscillate opacity for living effect
+      var opacityWave=Math.sin(time*0.8+drop.x*0.01)*0.2+drop.opacity;
+      
+      // draw drop with glow
+      ctx.fillStyle='rgba(244,244,242,'+opacityWave+')';
+      ctx.beginPath();
+      ctx.arc(drop.x,drop.y,drop.radius,0,Math.PI*2);
+      ctx.fill();
+      
+      // subtle glow
+      ctx.strokeStyle='rgba(228,255,26,'+(opacityWave*0.3)+')';
+      ctx.lineWidth=0.5;
+      ctx.stroke();
+    });
+    
+    requestAnimationFrame(drawRaindrops);
+  }
+  
+  drawRaindrops();
+
+  buildTicker(); renderHomeLog();
+})();
+</script>
+</body>
+</html>
