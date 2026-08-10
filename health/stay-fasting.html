@@ -32,12 +32,13 @@
   .navwrap{position:sticky;top:0;z-index:40}
   .band{background:rgba(0,0,0,.88);backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:10px}
-  .mk{font-family:'Anton';font-size:28px;letter-spacing:.005em;color:var(--white);line-height:1;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;flex:none}
+  .band{flex-wrap:wrap;row-gap:8px}
+  .mk{font-family:'Anton';font-size:24px;letter-spacing:.005em;color:var(--white);line-height:1;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;flex:none}
   .mk:focus-visible{outline:none}
   .mk .hl{color:var(--yellow);margin-left:.14em}
-  .navbtns{display:flex;gap:8px;flex:none}
-  .logbtn{font-family:'Anton';font-size:17px;letter-spacing:.03em;background:var(--white);color:#000;
-    border:2px solid var(--white);padding:8px 16px;cursor:pointer;line-height:1;
+  .navbtns{display:flex;gap:7px;flex:none;flex-wrap:wrap}
+  .logbtn{font-family:'Anton';font-size:14px;letter-spacing:.03em;background:var(--white);color:#000;
+    border:2px solid var(--white);padding:7px 13px;cursor:pointer;line-height:1;
     transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent}
   .logbtn:hover,.logbtn.on{background:transparent;color:var(--white)}
   .logbtn:active{background:var(--yellow);color:#000;transform:translateY(1px)}
@@ -46,6 +47,12 @@
   .logbtn.crewbtn:hover{background:transparent;color:var(--purple)}
   .logbtn.crewbtn.on{background:var(--purple);color:#000;border-color:var(--purple)}
   .logbtn.crewbtn:active{background:var(--purple2);color:#000;border-color:var(--purple2)}
+  .logbtn.learnbtn{background:#000;color:var(--yellow);border-color:var(--yellow)}
+  .logbtn.learnbtn:hover{background:transparent;color:var(--yellow)}
+  .logbtn.learnbtn.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+  .logbtn.learnbtn:active{background:#fff17a;color:#000;border-color:#fff17a}
+  .logbtn.mebtn{background:#000;color:var(--white);border-color:var(--white)}
+  .logbtn.mebtn.on{background:var(--white);color:#000}
 
   #fx{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
   .pow{position:absolute;font-family:'Anton';color:var(--white);transform:translate(-50%,-50%);
@@ -109,6 +116,7 @@
   .custom-row input{flex:1;min-width:80px;font-family:'Oswald';font-weight:700;font-size:19px;color:var(--white);
     background:transparent;border:0;border-bottom:2px solid var(--line2);padding:10px 2px;outline:none}
   .custom-row input:focus{border-bottom-color:var(--white)}
+  .type-desc{font-family:'Oswald';font-weight:500;font-size:12px;color:var(--mute);line-height:1.5;margin-top:12px}
   .unit-toggle{display:flex;border:2px solid var(--line2)}
   .unit-toggle button{font-family:'Oswald';font-weight:700;font-size:13px;letter-spacing:.06em;background:transparent;color:var(--mute);border:0;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .unit-toggle button.active{background:var(--white);color:#000}
@@ -131,10 +139,10 @@
   .btn.purple:active{background:var(--purple2);color:#000;border-color:var(--purple2)}
 
   /* toast (milestone flash) */
-  .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-140%);z-index:80;
+  .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-140%);opacity:0;pointer-events:none;z-index:80;
     background:var(--yellow);color:#000;font-family:'Anton';font-size:15px;letter-spacing:.05em;
-    padding:12px 22px;box-shadow:0 14px 30px -12px #000;transition:transform .35s cubic-bezier(.2,.9,.2,1);white-space:nowrap}
-  .toast.show{transform:translate(-50%,0)}
+    padding:12px 22px;box-shadow:0 14px 30px -12px #000;transition:transform .35s cubic-bezier(.2,.9,.2,1),opacity .3s ease;white-space:nowrap}
+  .toast.show{transform:translate(-50%,0);opacity:1}
 
   /* crew preview strip on home */
   .crew-preview{margin-top:22px;border-top:2px solid var(--line);padding-top:18px}
@@ -203,6 +211,71 @@
   .btn.share:active{background:#E4FF1A!important;color:#000!important;border-color:#E4FF1A!important;
     box-shadow:0 0 30px rgba(228,255,26,0.8), inset 0 0 10px rgba(0,0,0,0.5)!important}
 
+  /* hydration */
+  .hydro-wrap{margin-top:22px;border-top:2px solid var(--line);padding-top:16px}
+  .hydro-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:11px}
+  .hydro-cup{width:26px;height:34px;border:2px solid var(--line2);border-radius:0 0 7px 7px;cursor:pointer;
+    background:transparent;transition:background .15s,border-color .15s;-webkit-tap-highlight-color:transparent;padding:0;flex:none}
+  .hydro-cup.filled{background:var(--yellow);border-color:var(--yellow)}
+  .hydro-sub{text-align:center;font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--mute);margin-top:10px}
+
+  /* insight box */
+  .insight-box{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .insight-tag{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.22em;font-size:10px;color:var(--yellow)}
+  .insight-text{font-family:'Oswald';font-weight:500;font-size:13px;color:var(--white);margin-top:8px;line-height:1.55}
+  .insight-more{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--mute);margin-top:8px;text-decoration:underline;text-underline-offset:3px}
+
+  /* learn view */
+  .learn-cat{margin:24px 0 10px}
+  .learn-cat:first-of-type{margin-top:20px}
+  .learn-card{border:2px solid var(--line2);padding:16px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .12s}
+  .learn-card:active{border-color:var(--white)}
+  .learn-card .lc-title{font-family:'Anton';font-size:17px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .learn-card .lc-plus{color:var(--yellow);font-size:20px;flex:none;transition:transform .2s ease}
+  .learn-card.open .lc-plus{transform:rotate(45deg)}
+  .learn-card .lc-body{font-family:'Oswald';font-weight:500;font-size:13px;color:var(--mute);margin-top:0;line-height:1.6;max-height:0;overflow:hidden;transition:max-height .25s ease,margin-top .25s ease}
+  .learn-card.open .lc-body{margin-top:10px;max-height:220px}
+  .learn-safety{background:var(--white);color:#000;padding:22px 20px;margin-top:28px;border:2px solid var(--white)}
+  .learn-safety .label{color:#444}
+  .learn-safety .ls-title{font-family:'Anton';font-size:20px;margin:8px 0 10px}
+  .learn-safety p{font-family:'Oswald';font-weight:500;font-size:13px;line-height:1.6;margin-top:8px}
+
+  /* profile */
+  .profile-photo-wrap{width:96px;height:96px;border-radius:50%;border:2px dashed var(--line2);
+    margin:4px auto 18px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    overflow:hidden;background:var(--black);-webkit-tap-highlight-color:transparent;position:relative}
+  .profile-photo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
+  .profile-photo-wrap .pp-label{font-family:'Oswald';font-weight:700;letter-spacing:.1em;font-size:10px;color:var(--mute);text-align:center}
+  .profile-field{margin-top:20px}
+  .profile-field .label{margin-bottom:9px}
+  .pf-textarea{width:100%;min-height:74px;font-family:'Oswald';font-weight:500;font-size:14px;color:var(--white);
+    background:transparent;border:2px solid var(--line2);padding:12px;outline:none;resize:vertical;line-height:1.5}
+  .pf-textarea:focus{border-color:var(--white)}
+  .pf-textarea::placeholder{color:var(--dim)}
+  .pf-ideas{margin-top:9px;background:none;border:0;padding:0;cursor:pointer;font-family:'Oswald';font-weight:700;
+    text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--yellow);text-decoration:underline;
+    text-underline-offset:3px;-webkit-tap-highlight-color:transparent}
+  .pf-examples{margin-top:12px}
+  .pf-examples .chip{font-size:12px;padding:8px 12px;text-align:left}
+  #pfcm{margin-top:0}
+
+  .profile-summary{text-align:center}
+  .ps-photo{width:96px;height:96px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;border:2px solid var(--line2)}
+  .ps-photo.empty{display:flex;align-items:center;justify-content:center;background:var(--panel);color:var(--dim);font-family:'Anton';font-size:28px}
+  .ps-name{font-family:'Anton';font-size:26px}
+  .ps-meta{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--mute);margin-top:6px}
+  .ps-goal{text-align:left;margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+  .ps-goal .label{margin-bottom:8px}
+  .ps-goal p{font-family:'Oswald';font-weight:500;font-size:13px;color:var(--white);line-height:1.6}
+
+  /* crew profile read modal */
+  .profile-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:90;
+    display:flex;align-items:flex-end;justify-content:center;padding:0}
+  .profile-modal{background:var(--panel);border:2px solid var(--line2);width:100%;max-width:660px;
+    max-height:82vh;overflow-y:auto;padding:28px 24px;position:relative}
+  .profile-modal-close{position:absolute;top:16px;right:16px;background:none;border:0;color:var(--white);
+    font-size:20px;cursor:pointer;padding:6px;-webkit-tap-highlight-color:transparent}
+
   footer{text-align:center;padding:30px 16px 52px;color:var(--dim);font-family:'Anton';letter-spacing:.3em;font-size:19px}
 
   @media (prefers-reduced-motion:reduce){
@@ -223,6 +296,8 @@
     <div class="mk" id="navhome">STAY<span class="hl">FASTING</span></div>
     <div class="navbtns">
       <button class="logbtn crewbtn" id="navcrew" type="button">CREW</button>
+      <button class="logbtn learnbtn" id="navlearn" type="button">LEARN</button>
+      <button class="logbtn mebtn" id="navme" type="button">ME</button>
       <button class="logbtn" id="navlog" type="button">LOG</button>
     </div>
   </div>
@@ -270,10 +345,25 @@
             <button type="button" data-unit="d">DAYS</button>
           </div>
         </div>
+        <div class="dc-label label" style="margin-top:20px">Type of fast</div>
+        <div class="chips" id="typechips"></div>
+        <div class="type-desc" id="typedesc"></div>
       </div>
 
       <button class="btn" id="startbtn" type="button" data-go>START FAST</button>
       <button class="btn ghost" id="endbtn" type="button" style="display:none">END FAST</button>
+
+      <div class="hydro-wrap">
+        <div class="label">Hydration</div>
+        <div class="hydro-row" id="hydrorow"></div>
+        <div class="hydro-sub" id="hydrosub">0 / 8 CUPS TODAY</div>
+      </div>
+
+      <div class="insight-box" id="insightbox">
+        <div class="insight-tag" id="insighttag">WHY FASTING WORKS</div>
+        <div class="insight-text" id="insighttext"></div>
+        <div class="insight-more">READ MORE IN LEARN</div>
+      </div>
 
       <div class="crew-preview" id="crewpreview" style="display:none">
         <div class="cp-row">
@@ -290,9 +380,14 @@
   <div id="crewview" style="display:none">
     <div class="pw"><div class="panel in">
 
-      <div id="crewsetup" class="crew-setup">
+      <div id="crewsignin" class="crew-setup">
         <div class="log-h"><span class="t anton">Fast Together</span></div>
-        <input class="tin" id="crewname" type="text" placeholder="Your name" maxlength="18" autocomplete="off">
+        <div class="type-desc">Crew is private to the people who join it, so it needs a real sign-in — that's the only part of STAY FASTING that does.</div>
+        <button class="btn purple" id="crewGoogleSigninBtn" type="button">SIGN IN WITH GOOGLE</button>
+      </div>
+
+      <div id="crewsetup" class="crew-setup" style="display:none">
+        <div class="log-h"><span class="t anton">Fast Together</span></div>
         <button class="btn purple" id="crewcreatebtn" type="button">CREATE A CREW</button>
         <div class="crew-or">OR</div>
         <div class="crew-joinrow">
@@ -315,6 +410,123 @@
     </div></div>
   </div>
 
+  <!-- LEARN VIEW -->
+  <div id="learnview" style="display:none">
+    <div class="pw"><div class="panel in">
+      <div class="log-h"><span class="t anton">Learn</span></div>
+      <div class="label" style="margin-top:6px">Real timelines on healing from alcohol, losing the gut, and staying sharp</div>
+      <div id="learnbody"></div>
+    </div></div>
+  </div>
+
+  <!-- PROFILE VIEW -->
+  <div id="profileview" style="display:none">
+    <div class="pw"><div class="panel in">
+      <div class="log-h"><span class="t anton">My Profile</span></div>
+
+      <div id="profilesummary" style="display:none" class="profile-summary">
+        <img class="ps-photo" id="pssummaryphoto" style="display:none">
+        <div class="ps-photo empty" id="pssummaryphotoempty">?</div>
+        <div class="ps-name" id="psname"></div>
+        <div class="ps-meta" id="psmeta"></div>
+        <div class="ps-goal"><div class="label">Physically, I'm fasting for</div><p id="psphysical"></p></div>
+        <div class="ps-goal"><div class="label">Spiritually, I'm fasting for</div><p id="psspiritual"></p></div>
+        <button class="btn ghost sm" id="profileeditbtn" type="button" style="width:100%;margin-top:22px">EDIT PROFILE</button>
+      </div>
+
+      <div id="profileform">
+        <div class="profile-photo-wrap" id="photowrap">
+          <img id="photoimg">
+          <span class="pp-label" id="photoplaceholder">+ ADD<br>PHOTO</span>
+        </div>
+        <input type="file" id="photofile" accept="image/*" style="display:none">
+
+        <div class="profile-field" style="margin-top:0">
+          <button class="btn ghost sm" id="googleSigninBtn" type="button" style="width:100%">SIGN IN WITH GOOGLE</button>
+          <div id="signedinrow" style="display:none;align-items:center;justify-content:space-between;gap:10px">
+            <span class="label" id="signedinlabel" style="margin:0"></span>
+            <button class="btn ghost sm" id="signoutbtn" type="button" style="width:auto;margin-top:0">SIGN OUT</button>
+          </div>
+          <div class="type-desc" id="authhint">Signing in syncs your profile and fast history across devices, and unlocks Crew. Fully optional — everything works without it, saved on this device only.</div>
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Name</div>
+          <input class="tin" id="pfname" type="text" placeholder="Your name" maxlength="18" autocomplete="off">
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Age</div>
+          <input class="tin" id="pfage" type="number" min="1" max="120" placeholder="e.g. 42">
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Weight</div>
+          <div class="custom-row open">
+            <input id="pfweight" type="number" placeholder="e.g. 195">
+            <div class="unit-toggle" id="weightunit">
+              <button type="button" class="active" data-u="lb">LB</button>
+              <button type="button" data-u="kg">KG</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Height</div>
+          <div class="custom-row open" id="heightimperial">
+            <input id="pfft" type="number" placeholder="FT" style="max-width:70px">
+            <input id="pfin" type="number" placeholder="IN" style="max-width:70px">
+            <div class="unit-toggle" id="heightunit">
+              <button type="button" class="active" data-u="ft">FT/IN</button>
+              <button type="button" data-u="cm">CM</button>
+            </div>
+          </div>
+          <input class="tin" id="pfcm" type="number" placeholder="e.g. 178" style="display:none;margin-top:12px">
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Physically, why are you fasting?</div>
+          <textarea class="pf-textarea" id="pfphysical" placeholder="e.g. Lose the gut, give my liver a break, sleep better..."></textarea>
+          <button class="pf-ideas" type="button" id="physicalideasbtn">NEED IDEAS?</button>
+          <div class="chips pf-examples" id="physicalexamples" style="display:none"></div>
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Spiritually, why are you fasting?</div>
+          <textarea class="pf-textarea" id="pfspiritual" placeholder="e.g. Build discipline, feel closer to my faith..."></textarea>
+          <button class="pf-ideas" type="button" id="spiritualideasbtn">NEED IDEAS?</button>
+          <div class="chips pf-examples" id="spiritualexamples" style="display:none"></div>
+        </div>
+
+        <div class="profile-field">
+          <div class="label">Notifications</div>
+          <div class="unit-toggle" id="notiftoggle">
+            <button type="button" data-u="on">ON</button>
+            <button type="button" class="active" data-u="off">OFF</button>
+          </div>
+          <div id="notifoptions" style="display:none;margin-top:16px">
+            <div class="label" style="margin-bottom:9px">When should we notify you?</div>
+            <div class="chips" id="notifstyle">
+              <button type="button" class="chip active" data-s="milestones">AT MILESTONES</button>
+              <button type="button" class="chip" data-s="even">EVENLY SPACED</button>
+            </div>
+            <div id="notifcountrow" style="display:none;margin-top:16px">
+              <div class="label" style="margin-bottom:9px">How many per fast?</div>
+              <div class="chips" id="notifcount">
+                <button type="button" class="chip" data-c="3">3</button>
+                <button type="button" class="chip active" data-c="5">5</button>
+                <button type="button" class="chip" data-c="8">8</button>
+              </div>
+            </div>
+            <div class="type-desc" id="notifhint" style="margin-top:14px">We'll ask your browser for permission when you turn this on. Notifications only fire while this tab or app is open — on iPhone, add STAY FASTING to your home screen for it to behave like a real app.</div>
+          </div>
+        </div>
+
+        <button class="btn" id="profilesavebtn" type="button" data-go>SAVE PROFILE</button>
+      </div>
+    </div></div>
+  </div>
+
   <!-- LOG VIEW -->
   <div id="logview" style="display:none">
     <div class="pw"><div class="panel in">
@@ -334,6 +546,13 @@
 
 </div>
 
+<div class="profile-modal-backdrop" id="profilemodalbackdrop" style="display:none">
+  <div class="profile-modal">
+    <button class="profile-modal-close" id="profilemodalclose" type="button">&#10005;</button>
+    <div id="profilemodalbody" class="profile-summary"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -341,8 +560,21 @@
   var homeEl=document.getElementById('home');
   var logEl=document.getElementById('logview');
   var crewEl=document.getElementById('crewview');
+  var learnEl=document.getElementById('learnview');
   var navlog=document.getElementById('navlog');
   var navcrew=document.getElementById('navcrew');
+  var navlearn=document.getElementById('navlearn');
+  var navme=document.getElementById('navme');
+  var profileEl=document.getElementById('profileview');
+  var profilemodalbackdrop=document.getElementById('profilemodalbackdrop');
+  var profilemodalbody=document.getElementById('profilemodalbody');
+  var profilemodalclose=document.getElementById('profilemodalclose');
+  var hydrorow=document.getElementById('hydrorow');
+  var hydrosub=document.getElementById('hydrosub');
+  var insightbox=document.getElementById('insightbox');
+  var insighttag=document.getElementById('insighttag');
+  var insighttext=document.getElementById('insighttext');
+  var learnbody=document.getElementById('learnbody');
   var track=document.getElementById('tickertrack');
   var toastEl=document.getElementById('toast');
 
@@ -369,27 +601,144 @@
   var cpcode=document.getElementById('cpcode');
   var cplist=document.getElementById('cplist');
 
-  /* ============ CONFIG — fill in before deploying crew features ============ */
+  /* ============ CONFIG ============ */
   var SUPABASE_URL='https://gmxpnlrkkuhkezqtxccs.supabase.co';
-  var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdteHBubHJra3Voa2V6cXR4Y2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMDc5MzEsImV4cCI6MjEwMTc4MzkzMX0.cMFPrT9-JBqG4puIeUs9zdHIp8Aj7H8SKTY6KLvUanM';
+  var SUPABASE_ANON_KEY='sb_publishable_z8GG4Bapa8M9Ta0Zgd7xRg_vF15uG5s';
   var supa=null;
   try{
     if(window.supabase && SUPABASE_URL.indexOf('YOUR_')!==0){
       supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     }
   }catch(e){}
-  /* Schema (run once in Supabase SQL editor):
-     create table fasting_crew (
-       code text not null, name text not null,
-       start_time timestamptz, target_ms bigint,
-       updated_at timestamptz default now(),
-       primary key (code, name)
+  /* Auth: real "Sign in with Google" via Supabase Auth (Authentication -> Providers -> Google
+     in the Supabase dashboard — client ID + secret live there, not in this file). Signing in
+     is optional: everything below still works fully offline/local when signed out, exactly as
+     before. Signing in swaps the storage layer from localStorage to these Supabase tables, tied
+     to auth.uid() instead of a guessable code+name pair, and unlocks Crew (which is members-only
+     by design — you can't have private crew data without a real identity to check against).
+
+     Schema (run once in Supabase SQL editor):
+
+     create table public.profiles (
+       id uuid primary key references auth.users(id) on delete cascade,
+       name text, age int, weight numeric, weight_unit text, height_cm numeric,
+       goal_physical text, goal_spiritual text, photo text,
+       updated_at timestamptz default now()
      );
-     alter table fasting_crew enable row level security;
-     create policy "public read" on fasting_crew for select using (true);
-     create policy "public write" on fasting_crew for insert with check (true);
-     create policy "public update" on fasting_crew for update using (true);
-     alter publication supabase_realtime add table fasting_crew;
+     alter table public.profiles enable row level security;
+     grant select, insert, update, delete on public.profiles to authenticated;
+     -- you can always read/write your own profile
+     create policy "own read" on public.profiles for select to authenticated
+       using ( id = auth.uid() );
+     create policy "own insert" on public.profiles for insert to authenticated
+       with check ( id = auth.uid() );
+     create policy "own update" on public.profiles for update to authenticated
+       using ( id = auth.uid() ) with check ( id = auth.uid() );
+     create policy "own delete" on public.profiles for delete to authenticated
+       using ( id = auth.uid() );
+     -- crewmates can also read your profile (name/photo/goals) — never anyone else
+     create policy "crewmates read" on public.profiles for select to authenticated
+       using ( exists (
+         select 1 from public.crew_members me
+         join public.crew_members them on them.crew_id = me.crew_id
+         where me.user_id = auth.uid() and them.user_id = profiles.id
+       ) );
+
+     create table public.crews (
+       id uuid primary key default gen_random_uuid(),
+       code text unique not null,
+       name text,
+       owner_id uuid references auth.users(id) on delete set null,
+       created_at timestamptz default now()
+     );
+     alter table public.crews enable row level security;
+     grant select on public.crews to authenticated;
+     -- members can see their own crew's row; code lookups for join happen via the
+     -- join_crew() function below, which bypasses this (safely — see function body)
+     create policy "members read" on public.crews for select to authenticated
+       using ( exists (
+         select 1 from public.crew_members where crew_id = crews.id and user_id = auth.uid()
+       ) );
+
+     create table public.crew_members (
+       crew_id uuid references public.crews(id) on delete cascade,
+       user_id uuid references auth.users(id) on delete cascade,
+       joined_at timestamptz default now(),
+       primary key (crew_id, user_id)
+     );
+     alter table public.crew_members enable row level security;
+     grant select, delete on public.crew_members to authenticated;
+     -- inserts only ever happen via create_crew()/join_crew() below, never directly
+     create policy "members read" on public.crew_members for select to authenticated
+       using ( exists (
+         select 1 from public.crew_members me where me.crew_id = crew_members.crew_id and me.user_id = auth.uid()
+       ) );
+     create policy "own leave" on public.crew_members for delete to authenticated
+       using ( user_id = auth.uid() );
+
+     create table public.fasts (
+       id uuid primary key default gen_random_uuid(),
+       user_id uuid not null references auth.users(id) on delete cascade,
+       start_time timestamptz not null,
+       end_time timestamptz,
+       target_ms bigint,
+       fast_type text,
+       actual_ms bigint,
+       created_at timestamptz default now()
+     );
+     alter table public.fasts enable row level security;
+     grant select, insert, update, delete on public.fasts to authenticated;
+     create policy "own read" on public.fasts for select to authenticated
+       using ( user_id = auth.uid() );
+     create policy "own insert" on public.fasts for insert to authenticated
+       with check ( user_id = auth.uid() );
+     create policy "own update" on public.fasts for update to authenticated
+       using ( user_id = auth.uid() ) with check ( user_id = auth.uid() );
+     create policy "own delete" on public.fasts for delete to authenticated
+       using ( user_id = auth.uid() );
+     -- crewmates can see your ACTIVE fast (for the crew progress ring) — nothing else
+     create policy "crewmates read active" on public.fasts for select to authenticated
+       using ( end_time is null and exists (
+         select 1 from public.crew_members me
+         join public.crew_members them on them.crew_id = me.crew_id
+         where me.user_id = auth.uid() and them.user_id = fasts.user_id
+       ) );
+
+     -- Both functions run as the definer to look up crews.code without a public read
+     -- policy on crews, but every write inside them is scoped to auth.uid() — the
+     -- caller can only ever add THEMSELVES to a crew, never anyone else.
+     create or replace function public.create_crew(p_name text default null)
+     returns table(id uuid, code text)
+     language plpgsql security definer set search_path = public as $$
+     declare v_code text; v_id uuid;
+     begin
+       loop
+         v_code := upper(substr(md5(random()::text),1,6));
+         exit when not exists (select 1 from crews where crews.code = v_code);
+       end loop;
+       insert into crews (code, name, owner_id) values (v_code, p_name, auth.uid()) returning crews.id into v_id;
+       insert into crew_members (crew_id, user_id) values (v_id, auth.uid());
+       return query select v_id, v_code;
+     end; $$;
+     revoke all on function public.create_crew(text) from public;
+     grant execute on function public.create_crew(text) to authenticated;
+
+     create or replace function public.join_crew(p_code text)
+     returns uuid
+     language plpgsql security definer set search_path = public as $$
+     declare v_crew_id uuid;
+     begin
+       select id into v_crew_id from crews where crews.code = upper(p_code);
+       if v_crew_id is null then raise exception 'Invalid crew code'; end if;
+       insert into crew_members (crew_id, user_id) values (v_crew_id, auth.uid())
+         on conflict (crew_id, user_id) do nothing;
+       return v_crew_id;
+     end; $$;
+     revoke all on function public.join_crew(text) from public;
+     grant execute on function public.join_crew(text) to authenticated;
+
+     alter publication supabase_realtime add table public.crew_members;
+     alter publication supabase_realtime add table public.fasts;
   */
 
   var PRESETS=[
@@ -397,10 +746,99 @@
     {label:'OMAD',hours:23},{label:'24H',hours:24},{label:'36H',hours:36},
     {label:'48H',hours:48},{label:'72H',hours:72}
   ];
+  var FAST_TYPES=[
+    {id:'water',label:'WATER',desc:'Water only. The strictest and most common fast — the one most research on autophagy and fat-burning is based on.'},
+    {id:'blackcoffee',label:'BLACK COFFEE/TEA',desc:'Water plus black coffee or plain tea — no cream, sugar, or milk. A common "modified" fast that keeps most of the metabolic benefit.'},
+    {id:'broth',label:'BONE BROTH',desc:'Water plus bone broth for electrolytes. Popular on longer multi-day fasts.'},
+    {id:'juice',label:'JUICE',desc:'Fresh juice plus water. Gentler and more sustainable than water fasting, with less of the metabolic reset.'},
+    {id:'smoothie',label:'SMOOTHIE',desc:'Blended fruit or veg smoothies plus water. Easiest to sustain, lightest reset.'},
+    {id:'fruit',label:'FRUIT',desc:'Whole fruit only, plus water.'},
+    {id:'daniel',label:'DANIEL FAST',desc:'Fruits, vegetables, whole grains, and water — no meat, dairy, sugar, or processed food. A well-known spiritual fast.'},
+    {id:'dry',label:'DRY',desc:'No food or water at all. The most intense form — many people limit dry fasts to well under 24 hours.'}
+  ];
   var MILESTONES=[
-    {h:12,msg:'FAT BURN ZONE'},{h:16,msg:'AUTOPHAGY BEGINS'},{h:18,msg:'DEEP KETOSIS'},
-    {h:24,msg:'FULL DAY — STRONG'},{h:36,msg:'AUTOPHAGY PEAK'},{h:48,msg:'GROWTH HORMONE SURGE'},
-    {h:72,msg:'IMMUNE RESET'}
+    {h:12,msg:'FAT BURN ZONE',insight:'Glycogen (your stored carb fuel) is running low, so your body is shifting toward burning fat for energy. This is where insulin levels start to drop meaningfully.'},
+    {h:16,msg:'AUTOPHAGY BEGINS',insight:'Cells start ramping up autophagy — clearing out damaged proteins and components. Think of it as routine maintenance your body rarely gets time to run.'},
+    {h:18,msg:'DEEP KETOSIS',insight:'Fat-burning (ketosis) is well underway. Many people report sharper focus here as ketones become a steady fuel source for the brain.'},
+    {h:24,msg:'FULL DAY — STRONG',insight:'A full day fasted. Inflammation markers tend to trend down and cellular repair processes are running at a noticeably higher rate than normal.'},
+    {h:36,msg:'AUTOPHAGY PEAK',insight:'Autophagy is thought to peak around here. This is the range associated with the deepest cellular cleanup — but it is also where fatigue and irritability can peak too, so listen to your body.'},
+    {h:48,msg:'GROWTH HORMONE SURGE',insight:'Growth hormone can rise sharply during extended fasts, which helps preserve lean muscle while you are running on fat stores.'},
+    {h:72,msg:'IMMUNE RESET',insight:'Some research links fasts in this range to immune cell regeneration. This is an advanced fast — hydration and electrolytes matter more than ever here.'}
+  ];
+  var BASE_INSIGHT='Fasting gives your digestive system a break and shifts your metabolism from burning glucose to burning stored fat. The benefits build the longer — and more consistently — you do it.';
+
+  var LEARN_CONTENT=[
+    {cat:'LIVER RECOVERY',cards:[
+      {t:'The first 24–72 hours',b:'Liver inflammation markers start dropping within a day of your last drink. Fatty liver — the earliest and most common stage of alcohol-related liver damage — is highly reversible from here.'},
+      {t:'2 to 6 weeks',b:'GGT, a liver enzyme used to track damage, often normalizes within 2–3 weeks of no drinking. Fat deposits in the liver measurably shrink within roughly 2–6 weeks of continuous abstinence.'},
+      {t:'3 to 6 months',b:'For more advanced inflammation (alcoholic hepatitis), meaningful healing generally takes 3–6 months of sustained abstinence, supported by good nutrition and hydration.'},
+      {t:'What doesn\u2019t fully reverse',b:'Advanced scarring (cirrhosis) doesn\u2019t disappear once it\u2019s there. But stopping alcohol halts further damage and measurably improves survival and quality of life, even at that stage.'}
+    ]},
+    {cat:'KIDNEY RECOVERY',cards:[
+      {t:'Days to two weeks',b:'Dehydration and the electrolyte swings that come with drinking start correcting within days once you\u2019re alcohol-free and properly hydrated.'},
+      {t:'About four weeks',b:'Most research on acute kidney injury from binge drinking shows meaningful to full recovery within roughly four weeks of abstinence, hydration, and no further heavy drinking.'},
+      {t:'Chronic damage is different',b:'Long-term heavy drinking can cause permanent loss of kidney filtering units (chronic kidney disease) that won\u2019t regenerate. Stopping prevents it from getting worse — it doesn\u2019t undo what\u2019s already gone.'}
+    ]},
+    {cat:'CANCER RISK & LIFESPAN',cards:[
+      {t:'The 2025 update',b:'In January 2025 the U.S. Surgeon General issued an advisory stating there is no fully safe level of alcohol when it comes to cancer risk — linking drinking to at least seven cancer types, including liver, esophageal, colorectal, mouth, and throat cancers.'},
+      {t:'The scale of it',b:'Alcohol is now considered the third leading preventable cause of cancer in the U.S., behind tobacco and obesity — tied to roughly 100,000 cancer cases and 20,000 cancer deaths a year.'},
+      {t:'Heavy drinking and years of life',b:'Large population studies estimate drinking 10–15 drinks a week can cost 1–2 years of life expectancy, and 18+ drinks a week can cost 4–5 years. Meanwhile, the supposed longevity benefits of moderate drinking have been increasingly challenged by higher-quality research.'}
+    ]},
+    {cat:'LOSE THE GUT',cards:[
+      {t:'Why it collects around your middle',b:'Alcohol has about 7 calories per gram — close to pure fat — and your liver processes it before anything else. While alcohol is in your system, fat burning is essentially paused.'},
+      {t:'It\u2019s visceral, not just soft fat',b:'A "beer belly" is largely visceral fat — the metabolically active fat packed around your organs, linked to insulin resistance, heart disease, and inflammation. It\u2019s a different, riskier thing than fat just under the skin.'},
+      {t:'The good news',b:'Visceral fat tends to be the first fat your body burns once you\u2019re in a calorie deficit. Cutting alcohol — and the extra calories, cortisol, and late-night food decisions that come with it — often shows up in your waistline before anywhere else.'}
+    ]},
+    {cat:'HYDRATION TARGETS',cards:[
+      {t:'The baseline for men',b:'The National Academy of Medicine\u2019s guideline for men is about 3.7 liters of total daily fluids — roughly 13–15 cups — with about 20% of that typically coming from food.'},
+      {t:'Why it matters more if you drink',b:'Alcohol is a diuretic, so regular drinking runs a hydration deficit even outside of hangovers. Cutting back and fasting are both good windows to rebuild the daily habit of actually hitting your water target.'}
+    ]},
+    {cat:'MENTAL CLARITY',cards:[
+      {t:'The first one to two weeks',b:'The heaviest brain fog after cutting back typically shows up early, as your brain rebalances the neurotransmitter systems alcohol had been suppressing and overstimulating.'},
+      {t:'One to three months',b:'Most people report a real, noticeable jump in focus and mental clarity somewhere around the 4–12 week mark, as sleep quality and brain inflammation both improve.'},
+      {t:'It keeps compounding',b:'Research tracking heavy drinkers has found brain structure and function continuing to improve for months to years with sustained abstinence. This isn\u2019t a short sprint — the biggest gains come from staying consistent.'}
+    ]},
+    {cat:'THE HISTORY OF FASTING',cards:[
+      {t:'Where it began',b:'Fasting is older than written history. The Greek historian Herodotus described Egyptians deliberately purging every month, convinced that most illness entered the body through food. Long before anyone understood metabolism, ancient cultures had already connected eating less to healing more.'},
+      {t:'The Greek philosophers swore by it',b:'Pythagoras reportedly wouldn\u2019t take on a student until they\u2019d completed a 40-day fast, believing it sharpened the mind as much as it disciplined the body. Hippocrates, the father of Western medicine, is credited with telling patients to skip a meal instead of reaching for medicine — treating fasting as a legitimate first-line treatment, not a last resort.'},
+      {t:'Woven into nearly every major religion',b:'Judaism observes a full fast on Yom Kippur, the Day of Atonement. Christianity built Lent around 40 days of fasting before Easter, echoing the 40 days Jesus reportedly spent fasting in the desert. Islam fasts from dawn to sunset for the entire month of Ramadan. Hindu, Jain, and Buddhist traditions have all used fasting for spiritual focus and self-discipline for millennia. Almost no major faith skipped it.'},
+      {t:'A weapon of peaceful protest',b:'Mahatma Gandhi first used a hunger strike in 1918 during an Ahmedabad mill workers\u2019 dispute, and went on to use fasting as a political tool for the rest of his life — including a 1932 fast that forced the British government to reverse a caste-based voting policy in six days. His last fast, in January 1948, pushed Hindus and Muslims in Delhi toward peace; he was assassinated two weeks later. The tactic spread far beyond India, from suffragettes to modern hunger strikes.'},
+      {t:'The dangerous chapter nobody talks about',b:'In the early 1900s, self-styled "fasting specialist" Linda Hazzard ran a Washington state sanitarium locals grimly nicknamed "Starvation Heights," prescribing weeks-long fasts as a cure for nearly everything. She\u2019s believed to have starved more than a dozen patients to death before being convicted of manslaughter in 1911. It\u2019s a stark reminder that fasting enthusiasm has gone off the rails before — extended fasting without real knowledge of the risks isn\u2019t a new mistake.'},
+      {t:'Science finally explained the "why"',b:'In 2016, Japanese biologist Yoshinori Ohsumi won the Nobel Prize in Medicine for mapping out exactly how autophagy — the cellular cleanup process fasting triggers — actually works, using experiments on baker\u2019s yeast in the early 1990s. For the first time, a mechanism practiced on faith for thousands of years had a biological explanation.'},
+      {t:'How we got to today',b:'Modern intermittent fasting took off in 2012, when British journalist Michael Mosley turned research from scientists like Michelle Harvie and Mark Mattson into the 5:2 diet and a BBC documentary that reached millions. Writers like Dr. Jason Fung pushed it further into the mainstream. What started as ritual and philosophy is now something you can track on your phone — same practice, thousands of years later.'}
+    ]},
+    {cat:'SPIRITUAL FIGURES WHO FASTED',cards:[
+      {t:'Why this section exists',b:'Every person on this list faced their fast with no phone, no tracker, and no proof it would work. If they could get through theirs, you can get through hour 20. Motivation is fuel — pull up one of these when the craving hits.'},
+      {t:'Moses — forty days, twice, on a mountain',b:'Twice in the book of Exodus, Moses fasted 40 days and nights on Mount Sinai while receiving the Ten Commandments and the Law, eating no bread and drinking no water by the text\u2019s account. The number 40 shows up again and again around fasting in scripture — long enough to be a real threshold, not a stunt.'},
+      {t:'Elijah — forty days on one meal\u2019s strength',b:'Burned out and fleeing a death threat, Elijah was fed once by an angel, then walked 40 days on that single meal\u2019s strength to Mount Horeb. When he finally arrived, God didn\u2019t show up in the wind, the earthquake, or the fire — but in what\u2019s often translated as "a still small voice." Clarity doesn\u2019t always arrive loud.'},
+      {t:'Jesus — forty days before the fight that mattered',b:'Right after his baptism, Jesus was led into the wilderness and fasted 40 days before being tempted three times by the devil. He turned down each one, then began the public ministry Christianity is built on. It\u2019s the direct origin of the 40 days of Lent still observed today.'},
+      {t:'Daniel — ten days, then he looked better than the men who feasted',b:'Refusing the king\u2019s rich food and wine, Daniel proposed a 10-day test: vegetables and water only, then compare him to the men eating the royal diet. At the end of it, he and his friends looked healthier and better nourished than anyone else in the court — a rare case where the fast\u2019s physical result is the whole point of the story.'},
+      {t:'Daniel — three weeks of silence before the answer came',b:'Later, Daniel fasted and mourned for three straight weeks seeking understanding. When an angel finally appeared, the message was that his prayer had been heard from the very first day — the answer was just delayed by a conflict happening somewhere he couldn\u2019t see. One of the oldest recorded versions of a very modern feeling: doing everything right and still having to wait it out.'},
+      {t:'Esther — three days of fasting before the bravest thing she ever did',b:'Facing a decree to have her entire people killed, Queen Esther asked every Jew in the city to fast completely — no food or water — for three days alongside her, before she broke the law by approaching the king uninvited. Her only words going in: "If I perish, I perish." It worked, and the moment is still marked today as the Fast of Esther.'},
+      {t:'Muhammad — the retreat that changed history',b:'Long before he was known as a prophet, Muhammad had a habit of withdrawing alone to a cave on Jabal al-Nour outside Mecca for stretches of solitude and worship, carrying only simple provisions. During one of those retreats, in the month of Ramadan, he received what Muslims believe was the first revelation of the Quran — which is why Ramadan became the month of fasting it is today.'},
+      {t:'The Buddha — the fast that taught him fasting wasn\u2019t the answer',b:'Before enlightenment, Siddhartha Gautama spent years on extreme ascetic fasting, reportedly surviving on as little as one seed a day, until he was too weak to meditate at all. He accepted a bowl of rice from a village girl, regained his strength, and only then reached enlightenment under the Bodhi tree. Afterward he explicitly rejected the extremes he\u2019d just lived through and taught the "Middle Way" — moderation, not deprivation, as the actual path.'}
+    ]}
+  ];
+
+  var PHYSICAL_EXAMPLES=[
+    'Lose the belly fat and get lean',
+    'Give my liver and kidneys a real break from years of drinking',
+    'Lower my blood pressure and cholesterol',
+    'Build discipline over food and cravings',
+    'Improve my energy and sleep quality',
+    'Get my blood sugar and metabolism back under control',
+    'Stay healthy enough to be active with my kids and grandkids',
+    'Prove to myself I can control my body instead of it controlling me'
+  ];
+  var SPIRITUAL_EXAMPLES=[
+    'Build discipline and willpower that carries into the rest of my life',
+    'Feel closer to God and my faith through sacrifice',
+    'Create quiet space to think and pray without distraction',
+    'Break my dependency on comfort and instant gratification',
+    'Practice gratitude for what I actually have',
+    'Reset my relationship with control and restraint',
+    'Clear my head enough to hear myself think again',
+    'Do something hard on purpose, with people I trust, for once'
   ];
   var QUOTES=[
     "Discipline is choosing between what you want now and what you want most.",
@@ -438,7 +876,13 @@
     "One more glass of water. One more hour.",
     "Every crew member fasting with you is a reason to finish.",
     "Not eating is easy. Deciding not to eat is the work.",
-    "Stack the hours. Stack the wins."
+    "Stack the hours. Stack the wins.",
+    "Daniel fasted ten days and came out stronger than the men who feasted.",
+    "Jesus fasted forty days before the moment that mattered most.",
+    "Esther fasted three days before the bravest thing she ever did.",
+    "Elijah walked forty days on the strength of one meal.",
+    "The Buddha found enlightenment only after he stopped starving himself.",
+    "Every fast in history ended. So will yours."
   ];
 
   function haptic(s){ if(navigator.vibrate){try{navigator.vibrate(s?[16,38,24]:12);}catch(e){}} }
@@ -476,25 +920,45 @@
   }
 
   /* ============ STATE ============ */
-  var current=null;      // {startTime, targetMs}
-  var history=[];        // {id,startTime,endTime,targetMs,actualMs}
-  var identity=null;     // {name, code}
-  var crewMembers=[];    // rows from supabase
+  var current=null;      // {id?,startTime, targetMs, type}
+  var history=[];        // {id,startTime,endTime,targetMs,actualMs,type}
+  var authUser=null;     // Supabase auth user, or null when signed out (guest mode)
+  var myCrew=null;       // {id, code} — only meaningful when authUser is set
+  var crewMembers=[];    // [{name,userId,start_time,target_ms,fast_type}]
+  var crewProfiles={};   // userId -> profile row, for the crew profile-read modal
   var presetIdx=0, customHours=null, customUnit='h';
+  var fastType='water';
   var displayMode='ELAPSED'; // ELAPSED | REMAINING | ENDS
   var crossed={};
-  var tickTimer=null, crewPollTimer=null, crewChannel=null;
+  var tickTimer=null, crewChannel=null;
+  var notifTimers=[];
   var state='home';
 
   function load(){
     try{ var c=localStorage.getItem('sf_current'); current=c?JSON.parse(c):null; }catch(e){current=null;}
     try{ var h=localStorage.getItem('sf_history'); history=h?JSON.parse(h):[]; }catch(e){history=[];}
-    try{ var id=localStorage.getItem('sf_identity'); identity=id?JSON.parse(id):null; }catch(e){identity=null;}
     try{ var p=localStorage.getItem('sf_lastpreset'); if(p!==null)presetIdx=parseInt(p,10)||0; }catch(e){}
+    try{ var t=localStorage.getItem('sf_lasttype'); if(t)fastType=t; }catch(e){}
   }
   function saveCurrent(){ try{ current?localStorage.setItem('sf_current',JSON.stringify(current)):localStorage.removeItem('sf_current'); }catch(e){} }
   function saveHistory(){ try{ localStorage.setItem('sf_history',JSON.stringify(history)); }catch(e){} }
-  function saveIdentity(){ try{ identity?localStorage.setItem('sf_identity',JSON.stringify(identity)):localStorage.removeItem('sf_identity'); }catch(e){} }
+
+  // Guest mode: localStorage current/history (load() above). Signed in: fasts table is
+  // the source of truth — the open row (end_time is null) becomes `current`.
+  function loadCurrentAndHistory(cb){
+    if(!authUser){ load(); if(cb) cb(); return; }
+    supa.from('fasts').select('*').eq('user_id',authUser.id).order('start_time',{ascending:false}).then(function(res){
+      var rows=(res && res.data)||[];
+      var openRow=rows.filter(function(r){ return !r.end_time; })[0];
+      current=openRow?{id:openRow.id,startTime:new Date(openRow.start_time).getTime(),targetMs:openRow.target_ms,type:openRow.fast_type}:null;
+      history=rows.filter(function(r){ return r.end_time; }).map(function(r){
+        return {id:r.id,startTime:new Date(r.start_time).getTime(),endTime:new Date(r.end_time).getTime(),
+          targetMs:r.target_ms,actualMs:r.actual_ms,type:r.fast_type};
+      });
+      crossed={};
+      if(cb) cb();
+    })['catch'](function(){ current=null; history=[]; if(cb) cb(); });
+  }
 
   function selectedTargetMs(){
     if(customHours!=null) return customHours*3600000;
@@ -540,6 +1004,7 @@
     durationcontrols.style.display='';
     startbtn.style.display='';
     endbtn.style.display='none';
+    renderInsight();
   }
   function fmtTargetBig(ms){
     var h=ms/3600000;
@@ -555,6 +1020,7 @@
     var start=new Date(current.startTime);
     frstartedit.style.display='';
     frstartedit.textContent='STARTED '+clockTime(start)+' · EDIT';
+    renderInsight();
     tickRunning();
   }
 
@@ -577,7 +1043,7 @@
       frmode.textContent='ENDS AT';
       frvalue.textContent=clockTime(new Date(current.startTime+target));
     }
-    frsub.textContent=Math.round(frac*100)+'% OF '+ (target/3600000)+'H TARGET · TAP TO CYCLE VIEW';
+    frsub.textContent=Math.round(frac*100)+'% OF '+ (target/3600000)+'H TARGET · '+fastTypeLabel(current.type)+' · TAP TO CYCLE VIEW';
     frendsat.style.display='';
     frendsat.innerHTML='Ends <b>'+clockTime(new Date(current.startTime+target))+'</b> on '+dayLabel(new Date(current.startTime+target)).split(' ')[0];
 
@@ -588,7 +1054,7 @@
       if(passed && !crossed[h]){
         crossed[h]=true;
         var m=MILESTONES.filter(function(x){return x.h===h;})[0];
-        if(m){ showToast(m.msg); haptic(true); }
+        if(m){ showToast(m.msg); haptic(true); renderInsight(); }
       }
     });
   }
@@ -639,6 +1105,28 @@
     });
     presetchips.appendChild(cc);
   }
+  var typechips=document.getElementById('typechips');
+  var typedesc=document.getElementById('typedesc');
+  function renderTypeChips(){
+    typechips.innerHTML='';
+    FAST_TYPES.forEach(function(t){
+      var c=document.createElement('button');
+      c.type='button'; c.className='chip'+(t.id===fastType?' active':'');
+      c.textContent=t.label;
+      c.addEventListener('click',function(){
+        haptic(); fastType=t.id;
+        try{localStorage.setItem('sf_lasttype',fastType);}catch(e){}
+        renderTypeChips();
+      });
+      typechips.appendChild(c);
+    });
+    var sel=FAST_TYPES.filter(function(t){return t.id===fastType;})[0];
+    typedesc.textContent=sel?sel.desc:'';
+  }
+  function fastTypeLabel(id){
+    var t=FAST_TYPES.filter(function(x){return x.id===id;})[0];
+    return t?t.label:'WATER';
+  }
   custominput.addEventListener('input',function(){
     var v=parseFloat(custominput.value);
     if(v>0){ customHours=customUnit==='d'?v*24:v; renderPresetChips(); renderIdle(); }
@@ -662,29 +1150,481 @@
     var v=parseFloat(freditinput.value);
     if(!current || isNaN(v) || v<0) return;
     current.startTime=Date.now()-v*3600000;
-    crossed={}; saveCurrent(); pushCrewUpdate();
+    crossed={};
+    if(authUser && current.id){
+      supa.from('fasts').update({start_time:new Date(current.startTime).toISOString()}).eq('id',current.id).then(function(){})['catch'](function(){});
+    }else{ saveCurrent(); }
     freditrow.classList.remove('open');
     frstartedit.textContent='STARTED '+clockTime(new Date(current.startTime))+' · EDIT';
     tickRunning(); haptic();
   });
 
-  /* ---- start / end fast ---- */
+  /* ---- start / end fast ----
+     Signed in: the fasts row IS the crew signal — inserting/ending it is what crewmates see,
+     no separate broadcast needed. Signed out: local-only, exactly as before. */
   startbtn.addEventListener('click',function(){
     haptic(true);
-    current={startTime:Date.now(),targetMs:selectedTargetMs()};
+    current={startTime:Date.now(),targetMs:selectedTargetMs(),type:fastType};
     crossed={}; displayMode='ELAPSED';
-    saveCurrent(); renderRunning(); pushCrewUpdate();
+    renderRunning();
+    scheduleNotifications();
+    if(authUser){
+      supa.from('fasts').insert({user_id:authUser.id,start_time:new Date(current.startTime).toISOString(),
+        target_ms:current.targetMs,fast_type:current.type}).select().single()
+        .then(function(res){ if(res && res.data){ current.id=res.data.id; } })['catch'](function(){});
+    }else{ saveCurrent(); }
   });
   endbtn.addEventListener('click',function(){
     if(!current) return;
     haptic(true);
-    var actualMs=Date.now()-current.startTime;
-    history.unshift({id:uid(),startTime:current.startTime,endTime:Date.now(),targetMs:current.targetMs,actualMs:actualMs});
-    saveHistory();
-    current=null; saveCurrent();
-    renderIdle(); renderPresetChips();
-    pushCrewUpdate(true);
+    var endedAt=Date.now();
+    var actualMs=endedAt-current.startTime;
+    var finishedType=current.type||'water';
+    if(authUser && current.id){
+      supa.from('fasts').update({end_time:new Date(endedAt).toISOString(),actual_ms:actualMs}).eq('id',current.id).then(function(){})['catch'](function(){});
+      history.unshift({id:current.id,startTime:current.startTime,endTime:endedAt,targetMs:current.targetMs,actualMs:actualMs,type:finishedType});
+    }else{
+      history.unshift({id:uid(),startTime:current.startTime,endTime:endedAt,targetMs:current.targetMs,actualMs:actualMs,type:finishedType});
+      saveHistory();
+    }
+    current=null;
+    if(!authUser) saveCurrent();
+    renderIdle(); renderPresetChips(); renderTypeChips();
+    clearNotifTimers();
   });
+
+  /* ============ HYDRATION ============ */
+  var HYDRO_TARGET=8;
+  function todayKey(){ var d=new Date(); return 'sf_hydro_'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function getHydro(){ try{ var v=localStorage.getItem(todayKey()); return v?parseInt(v,10):0; }catch(e){ return 0; } }
+  function setHydro(n){ try{ localStorage.setItem(todayKey(),String(n)); }catch(e){} }
+  function renderHydro(){
+    var n=getHydro();
+    hydrorow.innerHTML='';
+    for(var i=0;i<HYDRO_TARGET;i++){
+      (function(i){
+        var c=document.createElement('button');
+        c.type='button'; c.className='hydro-cup'+(i<n?' filled':'');
+        c.setAttribute('aria-label','Log cup '+(i+1));
+        c.addEventListener('click',function(){
+          haptic();
+          var cur=getHydro();
+          var next=(cur===i+1)?i:i+1; // tap the last-filled cup again to undo it
+          setHydro(Math.max(0,Math.min(HYDRO_TARGET,next)));
+          renderHydro();
+        });
+        hydrorow.appendChild(c);
+      })(i);
+    }
+    hydrosub.textContent=n+' / '+HYDRO_TARGET+' CUPS TODAY'+(n>=HYDRO_TARGET?' · GOAL HIT':'');
+  }
+
+  /* ============ INSIGHT + LEARN ============ */
+  function currentInsight(){
+    if(!current) return {tag:'WHY FASTING WORKS',text:BASE_INSIGHT};
+    var elapsed=Date.now()-current.startTime;
+    var h=elapsed/3600000;
+    var applicable=MILESTONES.filter(function(m){return h>=m.h;});
+    if(!applicable.length) return {tag:'RIGHT NOW',text:BASE_INSIGHT};
+    var last=applicable[applicable.length-1];
+    return {tag:last.msg,text:last.insight};
+  }
+  function renderInsight(){
+    var ins=currentInsight();
+    insighttag.textContent=ins.tag;
+    insighttext.textContent=ins.text;
+  }
+  insightbox.addEventListener('click',function(){ haptic(); toggleLearn(); });
+
+  function renderLearn(){
+    learnbody.innerHTML='';
+    LEARN_CONTENT.forEach(function(section){
+      var h=document.createElement('div'); h.className='learn-cat label'; h.textContent=section.cat;
+      learnbody.appendChild(h);
+      section.cards.forEach(function(card){
+        var el=document.createElement('div'); el.className='learn-card';
+        el.innerHTML='<div class="lc-title">'+escq(card.t)+'<span class="lc-plus">+</span></div><div class="lc-body">'+escq(card.b)+'</div>';
+        el.addEventListener('click',function(){ haptic(); el.classList.toggle('open'); });
+        learnbody.appendChild(el);
+      });
+    });
+    var safety=document.createElement('div'); safety.className='learn-safety';
+    safety.innerHTML='<div class="label">Before you cut back</div>'+
+      '<div class="ls-title anton">If you drink heavily, don\u2019t stop cold turkey alone</div>'+
+      '<p>Alcohol is one of the few substances where withdrawal itself can be dangerous. If you drink daily or heavily, talk to a doctor before you stop or cut back sharply — symptoms like tremors, seizures, or a severe condition called delirium tremens can show up 48–72 hours after your last drink and require medical care.</p>'+
+      '<p>If you have known liver or kidney disease, take medication that interacts with alcohol, or have had withdrawal symptoms before, get medical guidance before changing your drinking pattern or starting extended fasts.</p>'+
+      '<p>If you feel confused, your heart is racing, or you\u2019re shaking badly at any point — that\u2019s not something to push through. Get medical help.</p>';
+    learnbody.appendChild(safety);
+  }
+
+  /* ============ PROFILE ============ */
+  var photowrap=document.getElementById('photowrap');
+  var photoimg=document.getElementById('photoimg');
+  var photoplaceholder=document.getElementById('photoplaceholder');
+  var photofile=document.getElementById('photofile');
+  var googleSigninBtn=document.getElementById('googleSigninBtn');
+  var signedinrow=document.getElementById('signedinrow');
+  var signedinlabel=document.getElementById('signedinlabel');
+  var signoutbtn=document.getElementById('signoutbtn');
+  var pfname=document.getElementById('pfname');
+  var pfage=document.getElementById('pfage');
+  var pfweight=document.getElementById('pfweight');
+  var weightunit=document.getElementById('weightunit');
+  var pfft=document.getElementById('pfft');
+  var pfin=document.getElementById('pfin');
+  var pfcm=document.getElementById('pfcm');
+  var heightimperial=document.getElementById('heightimperial');
+  var heightunit=document.getElementById('heightunit');
+  var pfphysical=document.getElementById('pfphysical');
+  var pfspiritual=document.getElementById('pfspiritual');
+  var physicalideasbtn=document.getElementById('physicalideasbtn');
+  var spiritualideasbtn=document.getElementById('spiritualideasbtn');
+  var physicalexamples=document.getElementById('physicalexamples');
+  var spiritualexamples=document.getElementById('spiritualexamples');
+  var profilesavebtn=document.getElementById('profilesavebtn');
+  var profileform=document.getElementById('profileform');
+  var profilesummary=document.getElementById('profilesummary');
+  var profileeditbtn=document.getElementById('profileeditbtn');
+  var notiftoggle=document.getElementById('notiftoggle');
+  var notifoptions=document.getElementById('notifoptions');
+  var notifstyle=document.getElementById('notifstyle');
+  var notifcountrow=document.getElementById('notifcountrow');
+  var notifcount=document.getElementById('notifcount');
+  var notifhint=document.getElementById('notifhint');
+
+  var profile=null; // {name,age,weight,weightUnit,heightCm,physical,spiritual,photo,notifPrefs:{enabled,style,count}}
+  var notifUiEnabled=false, notifUiStyle='milestones', notifUiCount=5;
+  var weightUnitSel='lb', heightUnitSel='ft';
+
+  // Guest mode: localStorage. Signed in: profiles table, source of truth, keyed by auth.uid().
+  function loadProfile(cb){
+    if(authUser){
+      supa.from('profiles').select('*').eq('id',authUser.id).maybeSingle().then(function(res){
+        var row=res && res.data;
+        profile=row?{name:row.name,age:row.age,weight:row.weight,weightUnit:row.weight_unit,heightCm:row.height_cm,
+          physical:row.goal_physical,spiritual:row.goal_spiritual,photo:row.photo,
+          notifPrefs:{enabled:false,style:'milestones',count:5}}:null;
+        if(cb) cb();
+      })['catch'](function(){ profile=null; if(cb) cb(); });
+    }else{
+      try{ var p=localStorage.getItem('sf_profile'); profile=p?JSON.parse(p):null; }catch(e){ profile=null; }
+      if(cb) cb();
+    }
+  }
+  function saveProfileLocal(){ try{ localStorage.setItem('sf_profile',JSON.stringify(profile)); }catch(e){} }
+  function saveProfileRemote(){
+    if(!supa || !authUser || !profile) return;
+    var row={id:authUser.id,name:profile.name,age:profile.age,weight:profile.weight,weight_unit:profile.weightUnit,
+      height_cm:profile.heightCm,goal_physical:profile.physical,goal_spiritual:profile.spiritual,
+      photo:profile.photo,updated_at:new Date().toISOString()};
+    supa.from('profiles').upsert(row,{onConflict:'id'}).then(function(){})['catch'](function(){});
+  }
+
+  function fmtHeight(cm){
+    if(!cm) return '';
+    var totalIn=cm/2.54; var ft=Math.floor(totalIn/12); var inch=Math.round(totalIn%12);
+    return ft+'\u2032'+inch+'\u2033 ('+Math.round(cm)+' cm)';
+  }
+  function fmtWeight(w,u){ if(!w) return ''; return w+' '+(u||'lb').toUpperCase(); }
+
+  /* photo upload */
+  photowrap.addEventListener('click',function(){ photofile.click(); });
+  photofile.addEventListener('change',function(){
+    var file=photofile.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var img=new Image();
+      img.onload=function(){
+        var size=200;
+        var c=document.createElement('canvas'); c.width=size; c.height=size;
+        var ctx=c.getContext('2d');
+        var side=Math.min(img.width,img.height);
+        var sx=(img.width-side)/2, sy=(img.height-side)/2;
+        ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+        var dataUrl=c.toDataURL('image/jpeg',0.75);
+        photoimg.src=dataUrl; photoimg.style.display='block'; photoplaceholder.style.display='none';
+        photoimg.setAttribute('data-photo',dataUrl);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ============ AUTH (real Sign in with Google, via Supabase Auth) ============
+     Optional throughout: guest mode (localStorage) works fully without this. */
+  function signInWithGoogle(){
+    if(!supa) return;
+    supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
+  }
+  function signOut(){ if(supa) supa.auth.signOut(); }
+  googleSigninBtn.addEventListener('click',signInWithGoogle);
+  document.getElementById('crewGoogleSigninBtn').addEventListener('click',signInWithGoogle);
+  signoutbtn.addEventListener('click',function(){ haptic(); signOut(); });
+
+  function updateAuthUI(){
+    var meta=(authUser && authUser.user_metadata)||{};
+    var label=meta.full_name||meta.name||authUser&&authUser.email||'';
+    googleSigninBtn.style.display=authUser?'none':'';
+    signedinrow.style.display=authUser?'flex':'none';
+    signedinlabel.textContent=authUser?('SIGNED IN AS '+label.toUpperCase()):'';
+    var signinBtns=document.querySelectorAll('#crewGoogleSigninBtn');
+    signinBtns.forEach(function(b){ b.style.display=authUser?'none':''; });
+  }
+
+  function onSignedIn(){
+    var meta=authUser.user_metadata||{};
+    loadProfile(function(){
+      if(!profile){
+        // first sign-in with no saved profile yet — prefill from the Google account
+        profile={name:meta.full_name||meta.name||'',age:null,weight:null,weightUnit:'lb',heightCm:null,
+          physical:'',spiritual:'',photo:meta.avatar_url||meta.picture||null,
+          notifPrefs:{enabled:false,style:'milestones',count:5}};
+      }
+      if(state==='profile'){ if(profile.name){ renderProfileSummary(); } else { fillProfileForm(); } }
+    });
+    loadCurrentAndHistory(function(){
+      if(current){ renderRunning(); } else { renderIdle(); }
+      renderTypeChips(); renderPresetChips();
+      if(current) scheduleNotifications();
+      if(state==='log') renderLog();
+    });
+    loadMyCrew(function(){
+      renderCrewPreview();
+      if(state==='crew') renderCrewView();
+    });
+    updateAuthUI();
+  }
+  function onSignedOut(){
+    if(crewChannel && supa){ try{ supa.removeChannel(crewChannel); }catch(e){} crewChannel=null; }
+    myCrew=null; crewMembers=[]; crewProfiles={};
+    load(); loadProfile();
+    if(current){ renderRunning(); } else { renderIdle(); }
+    renderTypeChips(); renderPresetChips();
+    renderCrewPreview();
+    if(state==='log') renderLog();
+    if(state==='crew') renderCrewView();
+    if(state==='profile'){ if(profile){ renderProfileSummary(); } else { fillProfileForm(); } }
+    updateAuthUI();
+  }
+  function initAuth(){
+    if(!supa){ updateAuthUI(); return; }
+    supa.auth.getSession().then(function(res){
+      authUser=res && res.data && res.data.session ? res.data.session.user : null;
+      if(authUser) onSignedIn(); else updateAuthUI();
+    });
+    supa.auth.onAuthStateChange(function(event,session){
+      var was=authUser;
+      authUser=session?session.user:null;
+      if(!was && authUser){ onSignedIn(); }
+      else if(was && !authUser){ onSignedOut(); }
+      else{ updateAuthUI(); }
+    });
+  }
+
+  /* unit toggles */
+  weightunit.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      weightunit.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); weightUnitSel=b.getAttribute('data-u'); haptic();
+    });
+  });
+  heightunit.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      heightunit.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); heightUnitSel=b.getAttribute('data-u');
+      heightimperial.style.display=heightUnitSel==='ft'?'flex':'none';
+      pfcm.style.display=heightUnitSel==='cm'?'':'none';
+      haptic();
+    });
+  });
+
+  /* goal examples */
+  function renderExamples(container,list,textarea){
+    container.innerHTML='';
+    list.forEach(function(ex){
+      var c=document.createElement('button'); c.type='button'; c.className='chip'; c.textContent=ex;
+      c.addEventListener('click',function(){
+        haptic();
+        textarea.value=textarea.value.trim()?textarea.value.trim()+'\n'+ex:ex;
+      });
+      container.appendChild(c);
+    });
+  }
+  renderExamples(physicalexamples,PHYSICAL_EXAMPLES,pfphysical);
+  renderExamples(spiritualexamples,SPIRITUAL_EXAMPLES,pfspiritual);
+  physicalideasbtn.addEventListener('click',function(){ haptic(); physicalexamples.style.display=physicalexamples.style.display==='none'?'flex':'none'; });
+  spiritualideasbtn.addEventListener('click',function(){ haptic(); spiritualexamples.style.display=spiritualexamples.style.display==='none'?'flex':'none'; });
+
+  /* notification prefs UI */
+  function requestNotifPermission(cb){
+    if(!('Notification' in window)){ cb(false); return; }
+    if(Notification.permission==='granted'){ cb(true); return; }
+    if(Notification.permission==='denied'){ cb(false); return; }
+    try{
+      var p=Notification.requestPermission(function(perm){ cb(perm==='granted'); });
+      if(p && p.then){ p.then(function(perm){ cb(perm==='granted'); }); }
+    }catch(e){ cb(false); }
+  }
+  notiftoggle.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var want=b.getAttribute('data-u')==='on';
+      if(want){
+        requestNotifPermission(function(granted){
+          if(granted){
+            notifUiEnabled=true;
+            notiftoggle.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+            b.classList.add('active'); notifoptions.style.display=''; haptic();
+          }else{
+            notifhint.textContent='Notifications are blocked for this page. Enable them in your browser/site settings, then try again.';
+          }
+        });
+      }else{
+        notifUiEnabled=false;
+        notiftoggle.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+        b.classList.add('active'); notifoptions.style.display='none'; haptic();
+      }
+    });
+  });
+  notifstyle.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      notifstyle.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); notifUiStyle=b.getAttribute('data-s');
+      notifcountrow.style.display=notifUiStyle==='even'?'':'none';
+      haptic();
+    });
+  });
+  notifcount.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      notifcount.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); notifUiCount=parseInt(b.getAttribute('data-c'),10);
+      haptic();
+    });
+  });
+
+  /* scheduling */
+  function clearNotifTimers(){ notifTimers.forEach(function(id){clearTimeout(id);}); notifTimers=[]; }
+  function fireNotification(title,body){
+    try{
+      if('Notification' in window && Notification.permission==='granted'){
+        new Notification('STAY FASTING \u2014 '+title,{body:body});
+      }
+    }catch(e){}
+  }
+  function scheduleNotifications(){
+    clearNotifTimers();
+    if(!current || !profile || !profile.notifPrefs || !profile.notifPrefs.enabled) return;
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    var start=current.startTime, target=current.targetMs;
+    var items=[];
+    if(profile.notifPrefs.style==='even'){
+      var n=Math.max(1,profile.notifPrefs.count||5);
+      for(var i=1;i<=n;i++){
+        var frac=i/n;
+        items.push({at:start+target*frac,
+          title:frac>=1?'Fast complete':Math.round(frac*100)+'% done',
+          body:frac>=1?'You hit your target on this '+fastTypeLabel(current.type)+' fast — nice work.':'You\u2019re '+Math.round(frac*100)+'% through your '+fastTypeLabel(current.type)+' fast.'});
+      }
+    }else{
+      MILESTONES.forEach(function(m){
+        if(m.h*3600000<target){ items.push({at:start+m.h*3600000,title:m.msg,body:m.insight}); }
+      });
+      items.push({at:start+target,title:'Fast complete',body:'You hit your target on this '+fastTypeLabel(current.type)+' fast — nice work.'});
+    }
+    var now=Date.now();
+    items.forEach(function(t){
+      var delay=t.at-now;
+      if(delay>0 && delay<2000000000){
+        var id=setTimeout(function(){ fireNotification(t.title,t.body); },delay);
+        notifTimers.push(id);
+      }
+    });
+  }
+
+  /* fill / save / summary */
+  function fillProfileForm(){
+    if(!profile){ pfname.value=''; return; }
+    pfname.value=profile.name||'';
+    pfage.value=profile.age||'';
+    pfweight.value=profile.weight||'';
+    weightUnitSel=profile.weightUnit||'lb';
+    weightunit.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-u')===weightUnitSel); });
+    if(profile.heightCm){
+      var totalIn=profile.heightCm/2.54;
+      pfft.value=Math.floor(totalIn/12); pfin.value=Math.round(totalIn%12);
+      pfcm.value=Math.round(profile.heightCm);
+    }
+    pfphysical.value=profile.physical||'';
+    pfspiritual.value=profile.spiritual||'';
+    if(profile.photo){ photoimg.src=profile.photo; photoimg.style.display='block'; photoplaceholder.style.display='none'; photoimg.setAttribute('data-photo',profile.photo); }
+    var np=profile.notifPrefs||{enabled:false,style:'milestones',count:5};
+    notifUiEnabled=!!(np.enabled && 'Notification' in window && Notification.permission==='granted');
+    notifUiStyle=np.style||'milestones'; notifUiCount=np.count||5;
+    notiftoggle.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active',(b.getAttribute('data-u')==='on')===notifUiEnabled); });
+    notifoptions.style.display=notifUiEnabled?'':'none';
+    notifstyle.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-s')===notifUiStyle); });
+    notifcountrow.style.display=notifUiStyle==='even'?'':'none';
+    notifcount.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active',parseInt(b.getAttribute('data-c'),10)===notifUiCount); });
+  }
+  function renderProfileSummary(){
+    if(!profile){ profilesummary.style.display='none'; profileform.style.display=''; return; }
+    profilesummary.style.display=''; profileform.style.display='none';
+    var img=document.getElementById('pssummaryphoto'), empty=document.getElementById('pssummaryphotoempty');
+    if(profile.photo){ img.src=profile.photo; img.style.display='block'; empty.style.display='none'; }
+    else{ img.style.display='none'; empty.style.display='flex'; empty.textContent=(profile.name||'?').charAt(0).toUpperCase(); }
+    document.getElementById('psname').textContent=profile.name||'Unnamed';
+    var metaParts=[];
+    if(profile.age) metaParts.push(profile.age+' YRS');
+    if(profile.heightCm) metaParts.push(fmtHeight(profile.heightCm));
+    if(profile.weight) metaParts.push(fmtWeight(profile.weight,profile.weightUnit));
+    document.getElementById('psmeta').textContent=metaParts.join(' \u00b7 ');
+    document.getElementById('psphysical').textContent=profile.physical||'Not set yet.';
+    document.getElementById('psspiritual').textContent=profile.spiritual||'Not set yet.';
+  }
+  profileeditbtn.addEventListener('click',function(){ haptic(); fillProfileForm(); profilesummary.style.display='none'; profileform.style.display=''; });
+
+  profilesavebtn.addEventListener('click',function(){
+    var heightCm=null;
+    if(heightUnitSel==='cm'){ heightCm=parseFloat(pfcm.value)||null; }
+    else{ var ft=parseFloat(pfft.value)||0, inch=parseFloat(pfin.value)||0; heightCm=(ft*12+inch)*2.54||null; }
+    profile={
+      name:pfname.value.trim()||'You',
+      age:parseInt(pfage.value,10)||null,
+      weight:parseFloat(pfweight.value)||null,
+      weightUnit:weightUnitSel,
+      heightCm:heightCm,
+      physical:pfphysical.value.trim(),
+      spiritual:pfspiritual.value.trim(),
+      photo:photoimg.getAttribute('data-photo')||null,
+      notifPrefs:{enabled:notifUiEnabled,style:notifUiStyle,count:notifUiCount}
+    };
+    haptic(true);
+    renderProfileSummary();
+    if(authUser){ saveProfileRemote(); } else { saveProfileLocal(); }
+    scheduleNotifications();
+  });
+
+  // name -> keyed by crewmate userId, populated in fetchCrewMembers()
+  function openProfileModal(userId){
+    var p=crewProfiles[userId];
+    var body=profilemodalbody;
+    if(!p){
+      body.innerHTML='<div class="ps-name">Member</div><div class="ps-meta">Hasn\u2019t set up a profile yet.</div>';
+    }else{
+      var metaParts=[];
+      if(p.age) metaParts.push(p.age+' YRS');
+      if(p.heightCm) metaParts.push(fmtHeight(p.heightCm));
+      if(p.weight) metaParts.push(fmtWeight(p.weight,p.weightUnit));
+      body.innerHTML=
+        (p.photo?'<img class="ps-photo" src="'+p.photo+'">':'<div class="ps-photo empty">'+escq(p.name||'?').charAt(0).toUpperCase()+'</div>')+
+        '<div class="ps-name">'+escq(p.name||'Member')+'</div>'+
+        '<div class="ps-meta">'+escq(metaParts.join(' \u00b7 '))+'</div>'+
+        '<div class="ps-goal"><div class="label">Physically, fasting for</div><p>'+escq(p.physical||'Not set yet.')+'</p></div>'+
+        '<div class="ps-goal"><div class="label">Spiritually, fasting for</div><p>'+escq(p.spiritual||'Not set yet.')+'</p></div>';
+    }
+    profilemodalbackdrop.style.display='flex';
+  }
+  profilemodalclose.addEventListener('click',function(){ haptic(); profilemodalbackdrop.style.display='none'; });
+  profilemodalbackdrop.addEventListener('click',function(e){ if(e.target===profilemodalbackdrop){ profilemodalbackdrop.style.display='none'; } });
 
   /* ============ LOG ============ */
   function computeStreak(){
@@ -732,7 +1672,7 @@
       var e=document.createElement('div'); e.className='entry';
       e.innerHTML='<div class="et"><span class="en">'+dayLabel(new Date(h.startTime)).split(' ')[0]+' '+new Date(h.startTime).toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</span>'+
         '<span class="ev'+(hit?' hit':'')+'">'+hoursMins(h.actualMs)+'</span></div>'+
-        '<div class="es">Target '+(h.targetMs/3600000)+'H · '+(hit?'GOAL HIT':'ENDED EARLY')+' · '+clockTime(new Date(h.startTime))+' \u2192 '+clockTime(new Date(h.endTime))+'</div>';
+        '<div class="es">Target '+(h.targetMs/3600000)+'H · '+(hit?'GOAL HIT':'ENDED EARLY')+' · '+fastTypeLabel(h.type)+' · '+clockTime(new Date(h.startTime))+' \u2192 '+clockTime(new Date(h.endTime))+'</div>';
       e.addEventListener('pointerdown',bindLongPress(e,h.id));
       entries.appendChild(e);
     });
@@ -745,7 +1685,9 @@
         fired=true;
         if(confirm('Delete this fast from your log?')){
           history=history.filter(function(h){return h.id!==id;});
-          saveHistory(); renderLog(); haptic(true);
+          if(authUser){ supa.from('fasts').delete().eq('id',id).then(function(){})['catch'](function(){}); }
+          else{ saveHistory(); }
+          renderLog(); haptic(true);
         }
       },550);
       function move(e){ if(t && (Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10)){ clearTimeout(t); t=null; } }
@@ -770,18 +1712,16 @@
   document.getElementById('sharebtn').addEventListener('click',shareLog);
 
   /* ============ CREW ============ */
-  var crewname=document.getElementById('crewname');
   var crewcreatebtn=document.getElementById('crewcreatebtn');
   var crewjoinbtn=document.getElementById('crewjoinbtn');
   var crewcodeinput=document.getElementById('crewcodeinput');
+  var crewsignin=document.getElementById('crewsignin');
   var crewsetup=document.getElementById('crewsetup');
   var crewactive=document.getElementById('crewactive');
   var crewcodedisplay=document.getElementById('crewcodedisplay');
   var crewgrid=document.getElementById('crewgrid');
   var crewleavebtn=document.getElementById('crewleavebtn');
   var crewcopybtn=document.getElementById('crewcopybtn');
-
-  function crewReady(){ return !!supa; }
 
   function crewPct(row){
     if(!row.start_time || !row.target_ms) return 0;
@@ -791,103 +1731,132 @@
   function crewElapsedLabel(row){
     if(!row.start_time) return 'NOT FASTING';
     var el=Date.now()-new Date(row.start_time).getTime();
-    return hoursMins(el)+' IN';
+    return hoursMins(el)+' IN \u00b7 '+fastTypeLabel(row.fast_type);
   }
 
   function renderCrewPreview(){
-    if(!identity){ crewpreview.style.display='none'; return; }
+    if(!authUser || !myCrew){ crewpreview.style.display='none'; return; }
     crewpreview.style.display='';
-    cpcode.textContent=identity.code;
+    cpcode.textContent=myCrew.code;
     cplist.innerHTML='';
     if(!crewMembers.length){ cplist.innerHTML='<div class="cp-empty">No one else here yet — invite friends from CREW.</div>'; return; }
     crewMembers.forEach(function(m){
       var it=document.createElement('div'); it.className='cp-item';
       it.innerHTML='<div class="cp-ring" style="--p:'+crewPct(m)+'"><span>'+(m.start_time?Math.round(crewPct(m))+'%':'\u2014')+'</span></div><div class="cp-name">'+escq(m.name)+'</div>';
+      it.addEventListener('click',function(){ haptic(); openProfileModal(m.userId); });
       cplist.appendChild(it);
     });
   }
 
   function renderCrewView(){
-    if(!identity){
+    if(!authUser){
+      crewsignin.style.display=''; crewsetup.style.display='none'; crewactive.style.display='none';
+      return;
+    }
+    crewsignin.style.display='none';
+    if(!myCrew){
       crewsetup.style.display=''; crewactive.style.display='none';
       return;
     }
     crewsetup.style.display='none'; crewactive.style.display='';
-    crewcodedisplay.textContent=identity.code;
+    crewcodedisplay.textContent=myCrew.code;
     crewgrid.innerHTML='';
     if(!crewMembers.length){
-      crewgrid.innerHTML='<div class="crew-empty">Waiting for friends to join with code '+identity.code+'.</div>';
+      crewgrid.innerHTML='<div class="crew-empty">Waiting for friends to join with code '+myCrew.code+'.</div>';
       return;
     }
     crewMembers.forEach(function(m){
       var t=document.createElement('div'); t.className='crew-tile';
       t.innerHTML='<div class="ring" style="--p:'+crewPct(m)+'"><span>'+(m.start_time?Math.round(crewPct(m))+'%':'\u2014')+'</span></div>'+
         '<div class="nm">'+escq(m.name)+'</div><div class="st">'+escq(crewElapsedLabel(m))+'</div>';
+      t.addEventListener('click',function(){ haptic(); openProfileModal(m.userId); });
       crewgrid.appendChild(t);
     });
   }
 
+  // Finds (if any) the crew the signed-in user already belongs to.
+  function loadMyCrew(cb){
+    if(!authUser){ myCrew=null; if(cb) cb(); return; }
+    supa.from('crew_members').select('crew_id, crews(code)').eq('user_id',authUser.id).limit(1)
+      .then(function(res){
+        var row=res && res.data && res.data[0];
+        myCrew=row?{id:row.crew_id,code:row.crews&&row.crews.code}:null;
+        if(myCrew) subscribeCrew();
+        if(cb) cb();
+      })['catch'](function(){ myCrew=null; if(cb) cb(); });
+  }
+
   function subscribeCrew(){
     if(crewChannel && supa){ try{supa.removeChannel(crewChannel);}catch(e){} crewChannel=null; }
-    if(crewPollTimer){ clearInterval(crewPollTimer); crewPollTimer=null; }
-    if(!identity) return;
+    if(!authUser || !myCrew) return;
     fetchCrewMembers();
-    if(crewReady()){
-      crewChannel=supa.channel('crew-'+identity.code)
-        .on('postgres_changes',{event:'*',schema:'public',table:'fasting_crew',filter:'code=eq.'+identity.code},function(){
-          fetchCrewMembers();
-        }).subscribe();
-    }else{
-      crewPollTimer=setInterval(fetchCrewMembers,15000);
-    }
+    crewChannel=supa.channel('crew-'+myCrew.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:'crew_members',filter:'crew_id=eq.'+myCrew.id},function(){
+        fetchCrewMembers();
+      })
+      .on('postgres_changes',{event:'*',schema:'public',table:'fasts'},function(){
+        fetchCrewMembers();
+      }).subscribe();
   }
+  // One combined fetch: who's in the crew (+ profile), then who's actively fasting.
   function fetchCrewMembers(){
-    if(!supa || !identity) return;
-    supa.from('fasting_crew').select('*').eq('code',identity.code).neq('name',identity.name)
+    if(!supa || !authUser || !myCrew){ crewMembers=[]; renderCrewPreview(); renderCrewView(); return; }
+    supa.from('crew_members').select('user_id, profiles(name,photo,age,weight,weight_unit,height_cm,goal_physical,goal_spiritual)')
+      .eq('crew_id',myCrew.id).neq('user_id',authUser.id)
       .then(function(res){
-        if(res && res.data){ crewMembers=res.data; renderCrewPreview(); renderCrewView(); }
+        var rows=(res && res.data)||[];
+        crewProfiles={};
+        rows.forEach(function(r){
+          var p=r.profiles||{};
+          crewProfiles[r.user_id]={name:p.name||'Member',photo:p.photo,age:p.age,weight:p.weight,
+            weightUnit:p.weight_unit,heightCm:p.height_cm,physical:p.goal_physical,spiritual:p.goal_spiritual};
+        });
+        var ids=rows.map(function(r){ return r.user_id; });
+        if(!ids.length){ crewMembers=[]; renderCrewPreview(); renderCrewView(); return; }
+        supa.from('fasts').select('*').in('user_id',ids).is('end_time',null).then(function(res2){
+          var activeByUser={};
+          ((res2 && res2.data)||[]).forEach(function(f){ activeByUser[f.user_id]=f; });
+          crewMembers=ids.map(function(id){
+            var f=activeByUser[id];
+            return {userId:id,name:crewProfiles[id].name,
+              start_time:f?f.start_time:null,target_ms:f?f.target_ms:null,fast_type:f?f.fast_type:null};
+          });
+          renderCrewPreview(); renderCrewView();
+        })['catch'](function(){});
       })['catch'](function(){});
-  }
-  function pushCrewUpdate(cleared){
-    if(!supa || !identity) return;
-    var row={code:identity.code,name:identity.name,
-      start_time:(cleared||!current)?null:new Date(current.startTime).toISOString(),
-      target_ms:(cleared||!current)?null:current.targetMs,
-      updated_at:new Date().toISOString()};
-    supa.from('fasting_crew').upsert(row,{onConflict:'code,name'}).then(function(){})['catch'](function(){});
   }
 
   crewcreatebtn.addEventListener('click',function(){
-    var name=crewname.value.trim();
-    if(!name){ crewname.focus(); return; }
-    identity={name:name,code:uid()};
-    saveIdentity(); haptic(true);
-    pushCrewUpdate(!current);
-    subscribeCrew(); renderCrewView(); renderCrewPreview();
+    if(!authUser || !supa) return;
+    haptic(true);
+    supa.rpc('create_crew',{p_name:null}).then(function(res){
+      var row=res && res.data && res.data[0];
+      if(!row) return;
+      myCrew={id:row.id,code:row.code};
+      subscribeCrew(); renderCrewView(); renderCrewPreview();
+    })['catch'](function(){});
   });
   crewjoinbtn.addEventListener('click',function(){
-    var name=crewname.value.trim();
+    if(!authUser || !supa) return;
     var code=crewcodeinput.value.trim().toUpperCase();
-    if(!name){ crewname.focus(); return; }
     if(!code){ crewcodeinput.focus(); return; }
-    identity={name:name,code:code};
-    saveIdentity(); haptic(true);
-    pushCrewUpdate(!current);
-    subscribeCrew(); renderCrewView(); renderCrewPreview();
+    haptic(true);
+    supa.rpc('join_crew',{p_code:code}).then(function(res){
+      if(res && res.error){ alert('Invalid crew code'); return; }
+      myCrew={id:res.data,code:code};
+      subscribeCrew(); renderCrewView(); renderCrewPreview();
+    })['catch'](function(){ alert('Invalid crew code'); });
   });
   crewleavebtn.addEventListener('click',function(){
-    if(!confirm('Leave this crew?')) return;
-    if(supa && identity){
-      supa.from('fasting_crew').delete().eq('code',identity.code).eq('name',identity.name).then(function(){})['catch'](function(){});
-    }
-    identity=null; crewMembers=[]; saveIdentity();
+    if(!confirm('Leave this crew?') || !authUser || !myCrew) return;
+    supa.from('crew_members').delete().eq('crew_id',myCrew.id).eq('user_id',authUser.id).then(function(){})['catch'](function(){});
+    myCrew=null; crewMembers=[];
     if(crewChannel && supa){ try{supa.removeChannel(crewChannel);}catch(e){} crewChannel=null; }
-    if(crewPollTimer){ clearInterval(crewPollTimer); crewPollTimer=null; }
     renderCrewView(); renderCrewPreview(); haptic(true);
   });
   crewcopybtn.addEventListener('click',function(){
-    if(!identity) return;
-    var text='Fast with me on STAY FASTING. Join my crew with code '+identity.code;
+    if(!myCrew) return;
+    var text='Fast with me on STAY FASTING. Join my crew with code '+myCrew.code;
     try{ if(navigator.share){ navigator.share({title:'STAY FASTING',text:text}).catch(function(){}); return; } }catch(e){}
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){ var o=crewcopybtn.textContent; crewcopybtn.textContent='Copied'; setTimeout(function(){crewcopybtn.textContent=o;},1400); });
@@ -895,28 +1864,47 @@
   });
 
   /* ============ NAV / STATE ============ */
-  function hideAll(){ homeEl.style.display='none'; logEl.style.display='none'; crewEl.style.display='none'; }
+  function hideAll(){ homeEl.style.display='none'; logEl.style.display='none'; crewEl.style.display='none'; learnEl.style.display='none'; profileEl.style.display='none'; }
+  function clearNavOn(){ navlog.classList.remove('on'); navcrew.classList.remove('on'); navlearn.classList.remove('on'); navme.classList.remove('on'); }
   function goHome(){
     state='home'; hideAll(); homeEl.style.display='';
-    navlog.classList.remove('on'); navcrew.classList.remove('on');
+    clearNavOn();
     window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
   }
   function toggleLog(){
     if(state!=='log'){
       hideAll(); renderLog(); logEl.style.display=''; state='log';
-      navlog.classList.add('on'); navcrew.classList.remove('on');
+      clearNavOn(); navlog.classList.add('on');
     }else{ goHome(); }
     window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
   }
   function toggleCrew(){
     if(state!=='crew'){
       hideAll(); renderCrewView(); crewEl.style.display=''; state='crew';
-      navcrew.classList.add('on'); navlog.classList.remove('on');
+      clearNavOn(); navcrew.classList.add('on');
+    }else{ goHome(); }
+    window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  }
+  function toggleLearn(){
+    if(state!=='learn'){
+      hideAll(); renderLearn(); learnEl.style.display=''; state='learn';
+      clearNavOn(); navlearn.classList.add('on');
+    }else{ goHome(); }
+    window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  }
+  function toggleProfile(){
+    if(state!=='profile'){
+      hideAll();
+      if(profile){ renderProfileSummary(); } else { fillProfileForm(); profilesummary.style.display='none'; profileform.style.display=''; }
+      profileEl.style.display=''; state='profile';
+      clearNavOn(); navme.classList.add('on');
     }else{ goHome(); }
     window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
   }
   navlog.addEventListener('click',function(){ haptic(); toggleLog(); });
   navcrew.addEventListener('click',function(){ haptic(); toggleCrew(); });
+  navlearn.addEventListener('click',function(){ haptic(); toggleLearn(); });
+  navme.addEventListener('click',function(){ haptic(); toggleProfile(); });
   document.getElementById('navhome').addEventListener('click',function(){ haptic(); goHome(); });
 
   document.querySelectorAll('.btn,.chip,.logbtn').forEach(function(btn){
@@ -959,14 +1947,22 @@
   }
   drawRaindrops();
 
-  /* ============ INIT ============ */
+  /* ============ INIT ============
+     Boots straight into guest/local mode so there's zero delay. initAuth() resolves
+     async in the background and, if there's a signed-in session, onSignedIn() swaps
+     the storage layer over to Supabase and re-renders whatever's on screen. */
   load();
+  loadProfile();
   renderPresetChips();
+  renderTypeChips();
+  renderHydro();
   if(current){ renderRunning(); } else { renderIdle(); }
   startFastLoop();
-  if(identity){ subscribeCrew(); }
   renderCrewPreview();
+  fillProfileForm();
+  if(current) scheduleNotifications();
   buildTicker();
+  initAuth();
   requestAnimationFrame(function(){ document.querySelectorAll('.panel').forEach(function(p){p.classList.add('in');}); });
 })();
 </script>
