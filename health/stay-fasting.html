@@ -1799,30 +1799,37 @@
       }).subscribe();
   }
   // One combined fetch: who's in the crew (+ profile), then who's actively fasting.
+  // crew_members.user_id and profiles.id both point at auth.users independently — there's
+  // no direct FK between crew_members and profiles, so PostgREST can't auto-embed one into
+  // the other. Fetch member ids, then profiles, then active fasts as three plain queries
+  // instead, and stitch them together client-side.
   function fetchCrewMembers(){
     if(!supa || !authUser || !myCrew){ crewMembers=[]; renderCrewPreview(); renderCrewView(); return; }
-    supa.from('crew_members').select('user_id, profiles(name,photo,age,weight,weight_unit,height_cm,goal_physical,goal_spiritual)')
-      .eq('crew_id',myCrew.id).neq('user_id',authUser.id)
+    supa.from('crew_members').select('user_id').eq('crew_id',myCrew.id).neq('user_id',authUser.id)
       .then(function(res){
-        var rows=(res && res.data)||[];
-        crewProfiles={};
-        rows.forEach(function(r){
-          var p=r.profiles||{};
-          crewProfiles[r.user_id]={name:p.name||'Member',photo:p.photo,age:p.age,weight:p.weight,
-            weightUnit:p.weight_unit,heightCm:p.height_cm,physical:p.goal_physical,spiritual:p.goal_spiritual};
-        });
-        var ids=rows.map(function(r){ return r.user_id; });
-        if(!ids.length){ crewMembers=[]; renderCrewPreview(); renderCrewView(); return; }
-        supa.from('fasts').select('*').in('user_id',ids).is('end_time',null).then(function(res2){
-          var activeByUser={};
-          ((res2 && res2.data)||[]).forEach(function(f){ activeByUser[f.user_id]=f; });
-          crewMembers=ids.map(function(id){
-            var f=activeByUser[id];
-            return {userId:id,name:crewProfiles[id].name,
-              start_time:f?f.start_time:null,target_ms:f?f.target_ms:null,fast_type:f?f.fast_type:null};
-          });
-          renderCrewPreview(); renderCrewView();
-        })['catch'](function(){});
+        var ids=((res && res.data)||[]).map(function(r){ return r.user_id; });
+        if(!ids.length){ crewMembers=[]; crewProfiles={}; renderCrewPreview(); renderCrewView(); return; }
+        supa.from('profiles').select('id,name,photo,age,weight,weight_unit,height_cm,goal_physical,goal_spiritual')
+          .in('id',ids)
+          .then(function(res2){
+            crewProfiles={};
+            ((res2 && res2.data)||[]).forEach(function(p){
+              crewProfiles[p.id]={name:p.name||'Member',photo:p.photo,age:p.age,weight:p.weight,
+                weightUnit:p.weight_unit,heightCm:p.height_cm,physical:p.goal_physical,spiritual:p.goal_spiritual};
+            });
+            // crewmate hasn't saved a profile yet — still show them, just unnamed
+            ids.forEach(function(id){ if(!crewProfiles[id]) crewProfiles[id]={name:'Member'}; });
+            supa.from('fasts').select('*').in('user_id',ids).is('end_time',null).then(function(res3){
+              var activeByUser={};
+              ((res3 && res3.data)||[]).forEach(function(f){ activeByUser[f.user_id]=f; });
+              crewMembers=ids.map(function(id){
+                var f=activeByUser[id];
+                return {userId:id,name:crewProfiles[id].name,
+                  start_time:f?f.start_time:null,target_ms:f?f.target_ms:null,fast_type:f?f.fast_type:null};
+              });
+              renderCrewPreview(); renderCrewView();
+            })['catch'](function(){});
+          })['catch'](function(){});
       })['catch'](function(){});
   }
 
