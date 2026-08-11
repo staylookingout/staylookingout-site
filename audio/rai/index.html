@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RAI — Voice Instrument</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand-left">
+      <a class="realm-logo-link" href="https://www.realmwrld.com/" target="_blank" rel="noopener noreferrer" aria-label="REALM (opens realmwrld.com)">
+        <img class="realm-logo" src="assets/realm_logo.svg" alt="REALM">
+      </a>
+      <p class="subtitle">Voice Instrument</p>
+    </div>
+    <button type="button" class="rai-wordmark" id="rai-reset" aria-label="Reset RAI">(r<span>AI</span>)</button>
+    <div class="brand-right">
+      <button id="midi-btn" class="midi-btn" type="button">
+        <span class="dot" id="midi-dot"></span>
+        <span id="midi-label">Connect MIDI</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Rounded frame around the video + keyboard together (not the octave/
+       knob controls below), border color-cycling the same way as the
+       REALM logo. -->
+  <div class="video-keyboard-frame">
+    <section class="stage" id="stage">
+      <video
+        class="portrait"
+        id="portrait"
+        autoplay
+        muted
+        loop
+        playsinline
+        poster="assets/realm-figure.jpg"
+        aria-label="RAI">
+        <source src="assets/animation.mp4" type="video/mp4">
+      </video>
+      <!-- Masks the video's loop seam: blooms to white over the last ~3s,
+           fades back out over the first ~0.6s of the next loop. -->
+      <div class="portrait-fade" id="portrait-fade" aria-hidden="true"></div>
+
+      <!-- Voicebox: breathing/glowing radial LED bloom, positioned under RAI's chin -->
+      <div class="voicebox" id="voicebox" aria-hidden="true">
+        <div class="voicebox-screen">
+          <canvas id="led-canvas" width="150" height="150"></canvas>
+        </div>
+        <div class="voicebox-readout" id="voicebox-readout">— </div>
+      </div>
+
+      <!-- XY Voice Pad, overlaid on the chest/circuit area -->
+      <div class="voice-pad" id="voice-pad" title="Drag here to sing">
+        <div class="voice-pad-cursor" id="voice-pad-cursor"></div>
+        <div class="voice-pad-hint">touch / click + drag to sing</div>
+      </div>
+    </section>
+
+    <section class="keyboard-band">
+      <div class="keyboard" id="keyboard"></div>
+    </section>
+  </div>
+
+  <section class="octave-band">
+    <div class="octave-shift">
+      <button id="oct-down" type="button">−</button>
+      <span id="oct-label">Octave 4</span>
+      <button id="oct-up" type="button">+</button>
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="knob-group">
+      <div class="knob" id="knob-glide" data-min="0" data-max="1" data-value="0.25" data-label="Glide"></div>
+      <label>Glide</label>
+    </div>
+    <div class="knob-group">
+      <div class="knob" id="knob-delay" data-min="0" data-max="1" data-value="0.3" data-label="Delay"></div>
+      <label>Delay</label>
+    </div>
+    <div class="knob-group">
+      <div class="knob" id="knob-voice" data-min="-1" data-max="1" data-value="0" data-label="Voice"></div>
+      <label>Voice</label>
+    </div>
+    <div class="knob-group">
+      <div class="knob" id="knob-spread" data-min="0.5" data-max="1.8" data-value="1" data-label="Spread"></div>
+      <label>Spread</label>
+    </div>
+  </section>
+
+  <p class="midi-note" id="midi-note"></p>
+
+  <!-- Subtle full-app glitch, timed to the video's loop cut so the reset
+       reads as one intentional transition across the whole screen. -->
+  <div class="app-glitch" id="app-glitch" aria-hidden="true"></div>
+  <canvas class="glitch-particles" id="glitch-particles" aria-hidden="true"></canvas>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

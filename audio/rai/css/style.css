@@ -1,0 +1,533 @@
+:root {
+  --bg: #05060a;
+  --panel: #14161c;
+  --panel-edge: #2a2d36;
+  --amber: #ffb347;
+  --red-led: #ff3b30;
+  --red-led-dim: #3a1512;
+  --cool-glow: #bfe6ff;
+  --pink: #ff6ec7;
+  --teal: #4fd6c8;
+  --text: #eef2f7;
+  --text-dim: #9aa3b2;
+  --knob-violet: #9b6cf6;
+  --knob-blue: #4aa3f7;
+  --knob-coral: #ff6f61;
+  --knob-yellow: #ffd166;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: radial-gradient(ellipse at 50% -10%, #171a24 0%, var(--bg) 55%, #020203 100%);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ---------- App shell ---------- */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ---------- Loop-cut glitch (whole app, brief, subtle) ---------- */
+/* Timed by JS to straddle the video's loop point (last ~0.45s before +
+   first ~0.3s after), so the white bloom's reset reads as one deliberate
+   glitch-cut across the whole screen rather than just the picture
+   flickering while the UI sits still. */
+.app.glitching {
+  animation: app-glitch-shake 0.4s steps(10) infinite;
+}
+@keyframes app-glitch-shake {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(-2px, 1px); }
+  20%  { transform: translate(2px, -1px); }
+  30%  { transform: translate(-1px, 0); }
+  40%  { transform: translate(1px, 1px); }
+  50%  { transform: translate(-2px, -1px); }
+  60%  { transform: translate(2px, 0); }
+  70%  { transform: translate(-1px, 1px); }
+  80%  { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+.app-glitch {
+  /* Scoped to the .app column itself (it's position:relative), not the
+     full browser viewport — on a wide window the app sits centered in a
+     narrower column, so a viewport-wide overlay would read as off-center. */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  transition: opacity 0.08s linear;
+}
+.app-glitch::before,
+.app-glitch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.08s linear, transform 0.08s linear;
+}
+.app-glitch::before { background: rgba(255, 20, 90, 0.12); }
+.app-glitch::after { background: rgba(20, 180, 255, 0.12); }
+
+.app.glitching .app-glitch { opacity: 0.4; }
+.app.glitching .app-glitch::before { opacity: 1; transform: translateX(-3px); }
+.app.glitching .app-glitch::after { opacity: 1; transform: translateX(3px); }
+
+/* Dissolve-pixel particles (drawn to canvas by JS) — sits above the
+   scanline/flash glitch layer. */
+.glitch-particles {
+  /* Same reasoning as .app-glitch above — scoped to the .app column. */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ---------- Topbar ---------- */
+/* Grid with two equal outer columns keeps the center column (rAI) truly
+   centered on the full screen width, not just the midpoint between the
+   logo and the MIDI button (which would drift if either changes size). */
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.brand-left {
+  line-height: 1.1;
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Slow color cycle — purple -> pink -> blue -> pink -> purple — via
+   hue-rotate on the img itself. Kept on a separate element from the
+   breathing glow (on the wrapping link below) so the two animations
+   don't fight over the same `filter` property. */
+.realm-logo {
+  height: 20px;
+  display: block;
+  animation: realm-hue-cycle 18s ease-in-out infinite;
+}
+@keyframes realm-hue-cycle {
+  0%   { filter: hue-rotate(-33deg); }  /* pink/magenta */
+  33%  { filter: hue-rotate(-83deg); }  /* purple */
+  66%  { filter: hue-rotate(-133deg); } /* blue */
+  100% { filter: hue-rotate(-33deg); }
+}
+
+.realm-logo-link {
+  display: block;
+  filter: drop-shadow(0 0 0 rgba(255, 60, 130, 0)) drop-shadow(0 0 0 rgba(255, 110, 199, 0));
+  transition: filter 2.4s ease;
+}
+/* Occasional, randomized soft glow pulse (JS-timed) — white, and dimmer
+   still than before; infrequent rather than a steady effect. */
+.realm-logo-link.breathe {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.2)) drop-shadow(0 0 7px rgba(255, 255, 255, 0.22));
+}
+.brand-left .subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.brand-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  justify-self: end;
+}
+
+/* rAI wordmark — the grid's center column, so it sits truly centered on
+   the full screen width (not just the midpoint between the logo and the
+   MIDI button). A light, brief glow pulse every 5s, distinct from the
+   REALM logo's slower randomized breathing. */
+.rai-wordmark {
+  grid-column: 2;
+  align-self: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--cool-glow);
+  text-shadow: 0 0 10px rgba(191, 230, 255, 0.7), 0 0 22px rgba(120, 200, 255, 0.35);
+  white-space: nowrap;
+  animation: rai-pulse 5s ease-in-out infinite;
+  /* Button reset — it's clickable now (triggers a full reset/glitch) */
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  /* No tap-highlight flash or focus box on click/touch — the text-shadow
+     bump on :hover/:active is the only feedback we want visible. */
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.rai-wordmark span { font-style: normal; font-weight: 800; }
+.rai-wordmark:hover { text-shadow: 0 0 14px rgba(191, 230, 255, 0.9), 0 0 28px rgba(120, 200, 255, 0.5); }
+.rai-wordmark:active { transform: scale(0.94); }
+/* Still visible for keyboard-only navigation, just not on mouse/touch. */
+.rai-wordmark:focus-visible { outline: 2px solid var(--cool-glow); outline-offset: 4px; }
+
+@keyframes rai-pulse {
+  0%, 82%, 100% {
+    text-shadow: 0 0 10px rgba(191, 230, 255, 0.7), 0 0 22px rgba(120, 200, 255, 0.35);
+  }
+  91% {
+    text-shadow: 0 0 13px rgba(191, 230, 255, 0.9), 0 0 28px rgba(120, 200, 255, 0.5);
+  }
+}
+
+.midi-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  color: var(--text);
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.midi-btn:hover { border-color: var(--teal); }
+.midi-btn .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #555;
+  box-shadow: 0 0 4px #000 inset;
+}
+.midi-btn.connected .dot {
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+}
+.midi-btn.unsupported .dot { background: var(--red-led); box-shadow: 0 0 8px var(--red-led); }
+
+/* ---------- Video + keyboard frame ---------- */
+/* Rounded border wrapping the video and keyboard together (controls below
+   stay outside it), color-cycling in sync with the REALM logo. Colors are
+   animated explicitly (not via filter/hue-rotate) since hue-rotate would
+   also recolor the video and keyboard content clipped inside it. */
+.video-keyboard-frame {
+  border-radius: 22px;
+  overflow: hidden;
+  border: 3px solid var(--pink);
+  animation: frame-border-cycle 18s ease-in-out infinite;
+}
+@keyframes frame-border-cycle {
+  0% {
+    border-color: var(--pink);
+    box-shadow: 0 0 14px 1px rgba(255, 110, 199, 0.45), 0 0 30px rgba(255, 110, 199, 0.22);
+  }
+  33% {
+    border-color: var(--knob-violet);
+    box-shadow: 0 0 14px 1px rgba(155, 108, 246, 0.45), 0 0 30px rgba(155, 108, 246, 0.22);
+  }
+  66% {
+    border-color: var(--knob-blue);
+    box-shadow: 0 0 14px 1px rgba(74, 163, 247, 0.45), 0 0 30px rgba(74, 163, 247, 0.22);
+  }
+  100% {
+    border-color: var(--pink);
+    box-shadow: 0 0 14px 1px rgba(255, 110, 199, 0.45), 0 0 30px rgba(255, 110, 199, 0.22);
+  }
+}
+
+/* ---------- Stage (full-bleed, edge to edge) ---------- */
+.stage {
+  position: relative;
+  width: 100%;
+  /* Locked to the source portrait's proportions so the voicebox/pad
+     overlays stay correctly positioned whether showing the static image
+     or the looping video. */
+  aspect-ratio: 2292 / 1856;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  background: #05060a;
+}
+
+.portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Loop-seam mask — driven by JS (opacity), not CSS animation, since it
+   must track the video's actual currentTime. */
+.portrait-fade {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Voicebox — transparent radial glow bloom, sits under RAI's chin */
+.voicebox {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+}
+.voicebox-screen {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  mix-blend-mode: screen;
+}
+.voicebox-readout {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255,255,255,0.85), 0 0 18px rgba(255,255,255,0.4);
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-width: 3.5em;
+  text-align: center;
+  margin-top: -8px;
+}
+
+/* XY Voice Pad overlay, on chest/circuit area */
+.voice-pad {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 58%;
+  bottom: 4%;
+  border-radius: 14px;
+  border: 1px solid rgba(191, 230, 255, 0.1);
+  background: transparent;
+  cursor: crosshair;
+  overflow: hidden;
+}
+/* Misty/smokey blue glow — just enough to separate the pad from the
+   portrait beneath, kept very faint and slowly drifting like fog. */
+.voice-pad::before,
+.voice-pad::after {
+  content: "";
+  position: absolute;
+  width: 75%;
+  height: 75%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 180, 255, 0.55), transparent 72%);
+  filter: blur(22px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+.voice-pad::before {
+  top: -15%;
+  left: -10%;
+  animation: mist-drift-a 16s ease-in-out infinite;
+}
+.voice-pad::after {
+  bottom: -18%;
+  right: -8%;
+  animation: mist-drift-b 20s ease-in-out infinite;
+}
+@keyframes mist-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(9%, 7%) scale(1.18); }
+}
+@keyframes mist-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-7%, -9%) scale(1.12); }
+}
+.voice-pad-cursor {
+  position: absolute;
+  width: 22px; height: 22px;
+  margin-left: -11px; margin-top: -11px;
+  border-radius: 50%;
+  border: 2px solid var(--cool-glow);
+  box-shadow: 0 0 16px var(--cool-glow), 0 0 4px #fff;
+  left: 50%; top: 50%;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.voice-pad.active .voice-pad-cursor { opacity: 1; }
+.voice-pad-hint {
+  position: absolute;
+  bottom: 6px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: rgba(238,242,247,0.35);
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 1;
+}
+.voice-pad.active .voice-pad-hint { display: none; }
+
+/* ---------- Controls (flat colorful knobs) ---------- */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1.25rem;
+  padding: 1.75rem 1rem 2rem;
+  background: #0a0b0e;
+}
+.knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* Slight arched/valley placement, matching the reference layout, instead
+   of a flat row: outer two knobs sit a little higher, inner two dip down. */
+.controls .knob-group:nth-child(1) { transform: translateY(-14px); }
+.controls .knob-group:nth-child(2) { transform: translateY(8px); }
+.controls .knob-group:nth-child(3) { transform: translateY(8px); }
+.controls .knob-group:nth-child(4) { transform: translateY(-14px); }
+.knob-group label {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.knob {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  position: relative;
+  cursor: ns-resize;
+  touch-action: none;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.55), inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -6px 10px rgba(0,0,0,0.2);
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.knob:hover,
+.knob:active { filter: brightness(1.08); }
+.knob::after {
+  /* A clock-hand style tick: anchored so it pivots exactly at the knob's
+     center (never swings outside the circle) and points straight up at
+     0deg, sweeping left/right with --angle. */
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 3px; height: 34%;
+  background: #14161c;
+  border-radius: 2px;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotate(var(--angle, 0deg));
+}
+#knob-glide { background: var(--knob-violet); }
+#knob-delay { background: var(--knob-blue); }
+#knob-voice { background: var(--knob-coral); }
+#knob-spread { background: var(--knob-yellow); }
+
+/* ---------- Keyboard & octave bands (full-bleed, seamless with stage) ---------- */
+.keyboard-band {
+  background: #0a0b0e;
+  padding: 0;
+}
+.octave-band {
+  background: #0a0b0e;
+  padding: 0.6rem 1rem 0.9rem;
+  border-bottom: 1px solid #16181d;
+}
+.octave-shift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.octave-shift button {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.octave-shift button:active { background: #202329; }
+
+.keyboard {
+  position: relative;
+  height: 150px;
+  display: flex;
+  background: #0a0b0e;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+.key {
+  position: relative;
+  flex: 1;
+  border-right: 1px solid #1c1e24;
+}
+.key.white {
+  background: linear-gradient(180deg, #eef2f7, #d7dbe2);
+  z-index: 1;
+}
+.key.white.active { background: linear-gradient(180deg, var(--teal), #2a9d92); }
+.key.black {
+  position: absolute;
+  top: 0;
+  width: 6.2%;
+  height: 62%;
+  background: linear-gradient(180deg, #24262d, #101116);
+  border: 1px solid #000;
+  border-radius: 0 0 4px 4px;
+  z-index: 2;
+}
+.key.black.active { background: linear-gradient(180deg, var(--pink), #a13d84); }
+
+.midi-note {
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 380px) {
+  .controls { gap: 0.9rem; padding: 1.25rem 0.5rem 1.5rem; }
+  .knob { width: 60px; height: 60px; }
+  .rai-wordmark { font-size: 1.2rem; }
+}
