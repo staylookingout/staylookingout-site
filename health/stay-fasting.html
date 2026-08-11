@@ -198,6 +198,29 @@
   .lb-stat{font-family:'Oswald';font-weight:600;font-size:12px;color:var(--mute);text-align:right}
   .lb-stat b{color:var(--yellow);font-family:'Anton';font-weight:400;font-size:14px}
 
+  /* why we're fasting: crewmates' goal_physical/goal_spiritual, already fetched */
+  .goal-row{border-top:1px solid var(--line);padding:12px 0}
+  .goal-row:first-child{border-top:none}
+  .goal-row .gn{font-family:'Anton';font-size:15px;margin-bottom:5px}
+  .goal-row .gt{font-family:'Oswald';font-weight:500;font-size:12.5px;color:var(--mute);line-height:1.5}
+  .goal-row .gt b{color:var(--white);font-weight:600}
+
+  /* crew feed: photo check-ins + voice notes, backed by crew_posts + storage */
+  .crew-feed-actions{display:flex;gap:10px}
+  .crew-feed-actions .btn{flex:1;margin-top:0}
+  .crew-feed-actions .btn.recording{background:var(--purple);color:#000;border-color:var(--purple)}
+  .feed-card{border-top:1px solid var(--line);padding:16px 0}
+  .feed-card:first-child{border-top:none}
+  .feed-card .fc-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .feed-card .fc-name{font-family:'Anton';font-size:14px}
+  .feed-card .fc-time{font-family:'Oswald';font-weight:600;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+  .feed-card img{width:100%;border-radius:6px;margin-top:10px;display:block;max-height:340px;object-fit:cover}
+  .feed-card audio{width:100%;margin-top:10px}
+  .feed-card .fc-del{background:none;border:0;color:var(--dim);font-family:'Oswald';font-weight:600;font-size:10px;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0;margin-top:8px;-webkit-tap-highlight-color:transparent}
+  .feed-card .fc-del:hover{color:#e5533d}
+  .feed-empty{font-family:'Oswald';font-weight:600;color:var(--mute);text-align:center;padding:20px 0;letter-spacing:.05em;font-size:12.5px}
+
   /* log view */
   .log-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;gap:16px}
   .log-h .t{font-family:'Anton';font-size:clamp(38px,9.5vw,58px);line-height:.9}
@@ -419,10 +442,28 @@
         </div>
         <button class="btn sm ghost crew-copy" id="crewcopybtn" type="button">COPY INVITE</button>
         <div class="crew-grid" id="crewgrid"></div>
+
+        <div class="crew-goals" id="crewgoals" style="display:none">
+          <div class="label" style="margin:24px 0 12px">Why We're Fasting</div>
+          <div id="crewgoalslist"></div>
+        </div>
+
         <div class="crew-leaderboard" id="crewleaderboard" style="display:none">
           <div class="label" style="margin:24px 0 12px">Leaderboard</div>
           <div id="crewleaderboardlist"></div>
         </div>
+
+        <div class="crew-feed-section">
+          <div class="label" style="margin:24px 0 12px">Crew Feed</div>
+          <div class="crew-feed-actions">
+            <button class="btn ghost sm" id="crewphotobtn" type="button">&#128247; CHECK IN</button>
+            <input type="file" id="crewphotofile" accept="image/*" capture="environment" style="display:none">
+            <button class="btn ghost sm" id="crewvoicebtn" type="button">&#127908; RECORD</button>
+          </div>
+          <div class="type-desc" id="crewfeedstatus" style="margin-top:8px"></div>
+          <div id="crewfeedlist" style="margin-top:14px"></div>
+        </div>
+
         <button class="btn ghost crew-leave" id="crewleavebtn" type="button">LEAVE CREW</button>
       </div>
 
@@ -784,6 +825,43 @@
 
      -- Cheers (emoji reactions + milestone pings) use Supabase Realtime Broadcast on the
      -- existing crew-<id> channel — nothing to create here, no new table, ephemeral only.
+
+     -- Crew feed (photo check-ins + voice notes) — unlike cheers, these need to persist,
+     -- so they get a real table + Storage bucket. The bucket is PUBLIC READ: anyone with
+     -- the exact file URL can view it without being signed in (simpler client code, no
+     -- signed-URL plumbing) — uploads are still locked to crew members only. Acceptable
+     -- for a small friends app; revisit if that tradeoff ever stops being fine.
+     insert into storage.buckets (id, name, public) values ('crew-media','crew-media', true)
+       on conflict (id) do nothing;
+
+     create policy "crew members can upload" on storage.objects
+       for insert to authenticated
+       with check (
+         bucket_id = 'crew-media'
+         and (storage.foldername(name))[1]::uuid in (select public.my_crew_ids())
+       );
+     create policy "owner can delete own uploads" on storage.objects
+       for delete to authenticated
+       using ( bucket_id = 'crew-media' and owner = auth.uid() );
+
+     create table public.crew_posts (
+       id uuid primary key default gen_random_uuid(),
+       crew_id uuid not null references public.crews(id) on delete cascade,
+       user_id uuid not null references auth.users(id) on delete cascade,
+       kind text not null check (kind in ('photo','voice')),
+       media_path text not null,
+       caption text,
+       created_at timestamptz default now()
+     );
+     alter table public.crew_posts enable row level security;
+     grant select, insert, delete on public.crew_posts to authenticated;
+     create policy "members read" on public.crew_posts for select to authenticated
+       using ( crew_id in (select public.my_crew_ids()) );
+     create policy "own insert" on public.crew_posts for insert to authenticated
+       with check ( user_id = auth.uid() and crew_id in (select public.my_crew_ids()) );
+     create policy "own delete" on public.crew_posts for delete to authenticated
+       using ( user_id = auth.uid() );
+     alter publication supabase_realtime add table public.crew_posts;
   */
 
   var PRESETS=[
@@ -1450,7 +1528,8 @@
   }
   function onSignedOut(){
     if(crewChannel && supa){ try{ supa.removeChannel(crewChannel); }catch(e){} crewChannel=null; }
-    myCrew=null; crewMembers=[]; crewProfiles={}; crewLeaderboard=[];
+    if(recording) stopRecording();
+    myCrew=null; crewMembers=[]; crewProfiles={}; crewLeaderboard=[]; crewPosts=[];
     load(); loadProfile();
     if(current){ renderRunning(); } else { renderIdle(); }
     renderTypeChips(); renderPresetChips();
@@ -1776,6 +1855,15 @@
   var crewgrid=document.getElementById('crewgrid');
   var crewleavebtn=document.getElementById('crewleavebtn');
   var crewcopybtn=document.getElementById('crewcopybtn');
+  var crewphotobtn=document.getElementById('crewphotobtn');
+  var crewphotofile=document.getElementById('crewphotofile');
+  var crewvoicebtn=document.getElementById('crewvoicebtn');
+  var crewfeedstatus=document.getElementById('crewfeedstatus');
+  var crewfeedlist=document.getElementById('crewfeedlist');
+  var crewPosts=[]; // rows from crew_posts, newest first
+  var STORAGE_BUCKET='crew-media';
+  var mediaRecorder=null, recChunks=[], recording=false, recordStopTimer=null;
+  var RECORD_MAX=60; // seconds
 
   function crewPct(row){
     if(!row.start_time || !row.target_ms) return 0;
@@ -1816,6 +1904,8 @@
     crewcodedisplay.textContent=myCrew.code;
     crewgrid.innerHTML='';
     renderLeaderboard();
+    renderCrewGoals();
+    renderCrewFeed();
     if(!crewMembers.length){
       crewgrid.innerHTML='<div class="crew-empty">Waiting for friends to join with code '+myCrew.code+'.</div>';
       return;
@@ -1853,12 +1943,16 @@
     if(!authUser || !myCrew) return;
     fetchCrewMembers();
     fetchLeaderboard();
+    fetchCrewFeed();
     crewChannel=supa.channel('crew-'+myCrew.id)
       .on('postgres_changes',{event:'*',schema:'public',table:'crew_members',filter:'crew_id=eq.'+myCrew.id},function(){
         fetchCrewMembers(); fetchLeaderboard();
       })
       .on('postgres_changes',{event:'*',schema:'public',table:'fasts'},function(){
         fetchCrewMembers(); fetchLeaderboard();
+      })
+      .on('postgres_changes',{event:'*',schema:'public',table:'crew_posts',filter:'crew_id=eq.'+myCrew.id},function(){
+        fetchCrewFeed();
       })
       // live-only cheers: emoji reactions + milestone crossings. Nothing here is
       // persisted — if you're not online to see it, it's just gone, same as a wave.
@@ -1879,6 +1973,116 @@
     crewChannel.send({type:'broadcast',event:'cheer',
       payload:{kind:'reaction', from:authUser.id, fromName:fromName, to:toUserId, emoji:emoji}});
     showToast('Sent '+emoji+' to '+toName);
+  }
+
+  /* ============ CREW FEED: photo check-ins + voice notes ============
+     Unlike cheers (ephemeral broadcast), these persist — backed by the crew_posts
+     table plus a public 'crew-media' Storage bucket. See schema comment above. */
+  function fetchCrewFeed(){
+    if(!supa || !authUser || !myCrew){ crewPosts=[]; renderCrewFeed(); return; }
+    supa.from('crew_posts').select('*').eq('crew_id',myCrew.id).order('created_at',{ascending:false}).limit(30)
+      .then(function(res){ crewPosts=(res && res.data)||[]; renderCrewFeed(); })['catch'](function(){});
+  }
+  function crewFeedName(userId){
+    if(authUser && userId===authUser.id) return (profile && profile.name) || 'You';
+    return (crewProfiles[userId] && crewProfiles[userId].name) || 'Member';
+  }
+  function renderCrewFeed(){
+    if(!crewPosts.length){ crewfeedlist.innerHTML='<div class="feed-empty">No check-ins yet — be the first.</div>'; return; }
+    crewfeedlist.innerHTML='';
+    crewPosts.forEach(function(post){
+      var url=supa.storage.from(STORAGE_BUCKET).getPublicUrl(post.media_path).data.publicUrl;
+      var mine=authUser && post.user_id===authUser.id;
+      var card=document.createElement('div'); card.className='feed-card';
+      card.innerHTML=
+        '<div class="fc-head"><span class="fc-name">'+escq(crewFeedName(post.user_id))+'</span>'+
+        '<span class="fc-time">'+escq(dayLabel(new Date(post.created_at)))+'</span></div>'+
+        (post.kind==='photo' ? '<img src="'+url+'" alt="check-in photo">' : '<audio controls src="'+url+'"></audio>')+
+        (post.caption ? '<div class="gt" style="margin-top:8px">'+escq(post.caption)+'</div>' : '')+
+        (mine ? '<button class="fc-del" type="button">DELETE</button>' : '');
+      if(mine){ card.querySelector('.fc-del').addEventListener('click',function(){ deleteCrewPost(post); }); }
+      crewfeedlist.appendChild(card);
+    });
+  }
+  function deleteCrewPost(post){
+    if(!confirm('Delete this check-in?')) return;
+    supa.storage.from(STORAGE_BUCKET).remove([post.media_path]).then(function(){})['catch'](function(){});
+    supa.from('crew_posts').delete().eq('id',post.id).then(function(){ fetchCrewFeed(); })['catch'](function(){});
+  }
+
+  /* ---- photo check-in ---- */
+  crewphotobtn.addEventListener('click',function(){ if(myCrew) crewphotofile.click(); });
+  crewphotofile.addEventListener('change',function(){
+    var file=crewphotofile.files[0]; crewphotofile.value='';
+    if(!file || !myCrew || !authUser) return;
+    crewfeedstatus.textContent='Uploading photo…';
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var img=new Image();
+      img.onload=function(){
+        var maxSide=900, scale=Math.min(1, maxSide/Math.max(img.width,img.height));
+        var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+        var c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        c.toBlob(function(blob){
+          var path=myCrew.id+'/'+authUser.id+'-'+Date.now()+'.jpg';
+          supa.storage.from(STORAGE_BUCKET).upload(path, blob, {contentType:'image/jpeg'}).then(function(res){
+            if(res && res.error){ crewfeedstatus.textContent='Upload failed — try again.'; return; }
+            supa.from('crew_posts').insert({crew_id:myCrew.id,user_id:authUser.id,kind:'photo',media_path:path})
+              .then(function(){ crewfeedstatus.textContent=''; haptic(true); fetchCrewFeed(); })
+              ['catch'](function(){ crewfeedstatus.textContent='Upload failed — try again.'; });
+          })['catch'](function(){ crewfeedstatus.textContent='Upload failed — try again.'; });
+        }, 'image/jpeg', 0.8);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ---- voice note ---- */
+  crewvoicebtn.addEventListener('click',function(){
+    if(!myCrew || !authUser) return;
+    if(recording){ stopRecording(); } else { startRecording(); }
+  });
+  function startRecording(){
+    if(!navigator.mediaDevices || !window.MediaRecorder){
+      crewfeedstatus.textContent='Voice notes aren’t supported in this browser.'; return;
+    }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      recChunks=[];
+      var mime=['audio/webm','audio/mp4','audio/ogg'].filter(function(t){
+        try{ return MediaRecorder.isTypeSupported(t); }catch(e){ return false; }
+      })[0] || '';
+      mediaRecorder = mime ? new MediaRecorder(stream,{mimeType:mime}) : new MediaRecorder(stream);
+      mediaRecorder.ondataavailable=function(e){ if(e.data && e.data.size) recChunks.push(e.data); };
+      mediaRecorder.onstop=function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        uploadVoiceNote(new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'}));
+      };
+      mediaRecorder.start();
+      recording=true;
+      crewvoicebtn.classList.add('recording'); crewvoicebtn.innerHTML='&#9209; STOP';
+      crewfeedstatus.textContent='Recording… (auto-stops at '+RECORD_MAX+'s)';
+      recordStopTimer=setTimeout(function(){ if(recording) stopRecording(); }, RECORD_MAX*1000);
+      haptic(true);
+    })['catch'](function(){ crewfeedstatus.textContent='Microphone permission denied.'; });
+  }
+  function stopRecording(){
+    if(recordStopTimer){ clearTimeout(recordStopTimer); recordStopTimer=null; }
+    if(mediaRecorder && recording){ mediaRecorder.stop(); }
+    recording=false;
+    crewvoicebtn.classList.remove('recording'); crewvoicebtn.innerHTML='&#127908; RECORD';
+  }
+  function uploadVoiceNote(blob){
+    crewfeedstatus.textContent='Uploading voice note…';
+    var t=blob.type||'', ext = t.indexOf('mp4')>=0 ? 'm4a' : t.indexOf('ogg')>=0 ? 'ogg' : 'webm';
+    var path=myCrew.id+'/'+authUser.id+'-'+Date.now()+'.'+ext;
+    supa.storage.from(STORAGE_BUCKET).upload(path, blob, {contentType:t||'audio/webm'}).then(function(res){
+      if(res && res.error){ crewfeedstatus.textContent='Upload failed — try again.'; return; }
+      supa.from('crew_posts').insert({crew_id:myCrew.id,user_id:authUser.id,kind:'voice',media_path:path})
+        .then(function(){ crewfeedstatus.textContent=''; haptic(true); fetchCrewFeed(); })
+        ['catch'](function(){ crewfeedstatus.textContent='Upload failed — try again.'; });
+    })['catch'](function(){ crewfeedstatus.textContent='Upload failed — try again.'; });
   }
   // One combined fetch: who's in the crew (+ profile), then who's actively fasting.
   // crew_members.user_id and profiles.id both point at auth.users independently — there's
@@ -1942,6 +2146,27 @@
     });
   }
 
+  // "Why we're fasting" — no new fetch needed, this just surfaces goal_physical/
+  // goal_spiritual already pulled into crewProfiles by fetchCrewMembers().
+  function renderCrewGoals(){
+    var box=document.getElementById('crewgoals'), list=document.getElementById('crewgoalslist');
+    var withGoals=crewMembers.filter(function(m){
+      var p=crewProfiles[m.userId];
+      return p && (p.physical || p.spiritual);
+    });
+    if(!withGoals.length){ box.style.display='none'; return; }
+    box.style.display='';
+    list.innerHTML='';
+    withGoals.forEach(function(m){
+      var p=crewProfiles[m.userId], bits=[];
+      if(p.physical) bits.push('<b>Physically:</b> '+escq(p.physical));
+      if(p.spiritual) bits.push('<b>Spiritually:</b> '+escq(p.spiritual));
+      var row=document.createElement('div'); row.className='goal-row';
+      row.innerHTML='<div class="gn">'+escq(m.name)+'</div><div class="gt">'+bits.join('<br>')+'</div>';
+      list.appendChild(row);
+    });
+  }
+
   crewcreatebtn.addEventListener('click',function(){
     if(!authUser || !supa) return;
     haptic(true);
@@ -1966,7 +2191,8 @@
   crewleavebtn.addEventListener('click',function(){
     if(!confirm('Leave this crew?') || !authUser || !myCrew) return;
     supa.from('crew_members').delete().eq('crew_id',myCrew.id).eq('user_id',authUser.id).then(function(){})['catch'](function(){});
-    myCrew=null; crewMembers=[]; crewLeaderboard=[];
+    if(recording) stopRecording();
+    myCrew=null; crewMembers=[]; crewLeaderboard=[]; crewPosts=[];
     if(crewChannel && supa){ try{supa.removeChannel(crewChannel);}catch(e){} crewChannel=null; }
     renderCrewView(); renderCrewPreview(); haptic(true);
   });
