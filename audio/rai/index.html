@@ -10,6 +10,14 @@
 
 <div class="app">
 
+  <!-- iOS Safari can silence Web Audio output under its "ambient" audio
+       session category (which the hardware silent switch mutes) when the
+       page's only other media (the hero video) is muted. An unmuted,
+       actively-playing audio element switches the page into the
+       "playback" category instead, so RAI's sound isn't affected by the
+       silent switch. Inaudible either way (near-silent), just present. -->
+  <audio id="ios-audio-unlock" src="assets/silence.mp3" loop playsinline style="display:none"></audio>
+
   <header class="topbar">
     <div class="brand-left">
       <a class="realm-logo-link" href="https://www.realmwrld.com/" target="_blank" rel="noopener noreferrer" aria-label="REALM (opens realmwrld.com)">

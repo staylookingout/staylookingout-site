@@ -108,9 +108,29 @@ html, body {
 .topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "left center right";
   align-items: start;
   gap: 0.5rem;
   padding: 1rem 1.25rem 0.75rem;
+}
+.brand-left { grid-area: left; }
+.rai-wordmark { grid-area: center; }
+.brand-right { grid-area: right; }
+
+/* Below this width, the logo + subtitle and the MIDI button start
+   crowding the center column enough to squash "(rAI)" against them.
+   Give it its own full-width row instead, still centered. */
+@media (max-width: 460px) {
+  .topbar {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "left right"
+      "center center";
+    row-gap: 0.6rem;
+  }
+  .rai-wordmark {
+    justify-self: center;
+  }
 }
 
 .brand-left {
@@ -169,7 +189,6 @@ html, body {
    MIDI button). A light, brief glow pulse every 5s, distinct from the
    REALM logo's slower randomized breathing. */
 .rai-wordmark {
-  grid-column: 2;
   align-self: center;
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
@@ -495,6 +514,26 @@ html, body {
   overflow: hidden;
   touch-action: none;
   user-select: none;
+}
+/* Drop-shadow gradient across the keys (per gradient.png reference) — a
+   soft dark fade at the top easing to nothing by mid-key, as if cast by
+   the frame above. Pure CSS rather than the reference image itself: an
+   image would need to stretch/tile awkwardly across variable keyboard
+   widths, where a gradient scales perfectly for free. Sits above both key
+   colors (z-index above the black keys' 2) and never blocks presses. */
+.keyboard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.22) 22%,
+    rgba(0, 0, 0, 0.06) 45%,
+    transparent 65%
+  );
 }
 .key {
   position: relative;

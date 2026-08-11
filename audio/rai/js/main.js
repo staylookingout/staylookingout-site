@@ -81,9 +81,26 @@ function ensureAudio() {
   if (started) return;
   started = true;
   ctx = new (window.AudioContext || window.webkitAudioContext)();
+  // iOS Safari in particular can leave a freshly-created context
+  // "suspended" even when constructed inside a user gesture — resume()
+  // explicitly rather than assuming it. Safe to call unconditionally; it
+  // no-ops if already running.
+  ctx.resume?.().catch(() => {});
   engine = new VoiceEngine(ctx);
   engine.connect(ctx.destination);
   engine.start();
+  // Nudges iOS into the "playback" audio session category (see the
+  // comment on #ios-audio-unlock in index.html) so the hardware silent
+  // switch doesn't mute RAI's output. Harmless no-op elsewhere.
+  const unlockEl = document.getElementById("ios-audio-unlock");
+  unlockEl?.play().catch(() => {});
+  // Some browsers (notably iOS Safari) suspend an AudioContext when the
+  // tab/app is backgrounded and don't always auto-resume it on return.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && ctx?.state === "suspended") {
+      ctx.resume?.().catch(() => {});
+    }
+  });
   // The knobs rendered their visuals at page load without touching the
   // (nonexistent) engine — now that it exists, push their current values
   // into it once.
@@ -255,13 +272,14 @@ function haptic(pattern) {
   }
 }
 
-// --- Dissolve-pixel particles ---
-// Small white/pink/purple pixels that burst outward from the stage's
-// center, then gravity pulls them down as they fade out quickly. Spawned
-// once right as the glitch window opens.
+// --- Glitch vector-line burst ---
+// White/pink/purple line streaks that shoot outward from the voicebox
+// (RAI's breathing pulse, under her chin), traveling in straight radial
+// lines until each one is fully off-screen. Spawned once right as the
+// glitch window opens.
 const particleCanvas = document.getElementById("glitch-particles");
 const pctx = particleCanvas?.getContext("2d");
-const stageEl = document.getElementById("stage");
+const voiceboxEl = document.getElementById("voicebox");
 const PARTICLE_COLORS = ["#ffffff", "#ff6ec7", "#9b6cf6"];
 let particles = [];
 
@@ -275,30 +293,34 @@ function resizeParticleCanvas() {
 window.addEventListener("resize", resizeParticleCanvas);
 
 function spawnGlitchParticles() {
-  if (!particleCanvas || !appEl || !stageEl) return;
+  if (!particleCanvas || !appEl || !voiceboxEl) return;
   resizeParticleCanvas(); // guard against any layout change since last resize
 
-  // Burst origin: the stage's (video's) center, expressed in canvas-local
-  // coordinates — this is what keeps the explosion centered regardless of
+  // Burst origin: the voicebox's center (RAI's breathing pulse, under her
+  // chin — lower than the stage's overall center), expressed in
+  // canvas-local coordinates so it stays correctly placed regardless of
   // how wide the actual browser window is.
   const appRect = appEl.getBoundingClientRect();
-  const stageRect = stageEl.getBoundingClientRect();
-  const originX = stageRect.left + stageRect.width / 2 - appRect.left;
-  const originY = stageRect.top + stageRect.height / 2 - appRect.top;
+  const voiceboxRect = voiceboxEl.getBoundingClientRect();
+  const originX = voiceboxRect.left + voiceboxRect.width / 2 - appRect.left;
+  const originY = voiceboxRect.top + voiceboxRect.height / 2 - appRect.top;
+  // Line lengths (below) can exceed the canvas, so use its diagonal as the
+  // "fully off-screen" removal threshold.
+  const maxDist = Math.hypot(particleCanvas.width, particleCanvas.height);
 
-  const count = 100;
+  const count = 70;
   for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 50 + Math.random() * 200;
     particles.push({
-      x: originX + (Math.random() - 0.5) * 12,
-      y: originY + (Math.random() - 0.5) * 12,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      size: 1.2 + Math.random() * 2.6,
+      originX,
+      originY,
+      angle: Math.random() * Math.PI * 2,
+      headDist: 0, // distance of the streak's leading tip from origin
+      speed: 500 + Math.random() * 900, // px/s the tip travels outward
+      length: 40 + Math.random() * 110, // streak length in px
+      width: 1.4 + Math.random() * 1.8,
       color: PARTICLE_COLORS[(Math.random() * PARTICLE_COLORS.length) | 0],
       age: 0,
-      maxAge: 0.22 + Math.random() * 0.26, // quick fade
+      maxDist,
     });
   }
 }
@@ -306,17 +328,26 @@ function spawnGlitchParticles() {
 function updateAndDrawParticles(dt) {
   if (!pctx) return;
   pctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-  particles = particles.filter((p) => p.age < p.maxAge);
+  particles = particles.filter((p) => p.headDist - p.length < p.maxDist);
   for (const p of particles) {
     p.age += dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 90 * dt; // gentle gravity, so they accelerate downward
-    const lifeT = p.age / p.maxAge;
-    const alpha = Math.max(0, 1 - lifeT);
+    p.headDist += p.speed * dt;
+    const tailDist = Math.max(0, p.headDist - p.length);
+    const dx = Math.cos(p.angle);
+    const dy = Math.sin(p.angle);
+
+    // Quick fade-in only — they stay essentially opaque until they exit
+    // the canvas, rather than timing out mid-screen.
+    const alpha = Math.min(1, p.age / 0.05);
+
     pctx.globalAlpha = alpha;
-    pctx.fillStyle = p.color;
-    pctx.fillRect(p.x, p.y, p.size, p.size);
+    pctx.strokeStyle = p.color;
+    pctx.lineWidth = p.width;
+    pctx.lineCap = "round";
+    pctx.beginPath();
+    pctx.moveTo(p.originX + dx * tailDist, p.originY + dy * tailDist);
+    pctx.lineTo(p.originX + dx * p.headDist, p.originY + dy * p.headDist);
+    pctx.stroke();
   }
   pctx.globalAlpha = 1;
 }
