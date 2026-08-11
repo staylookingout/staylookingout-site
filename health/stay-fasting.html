@@ -183,6 +183,21 @@
   .crew-empty{font-family:'Oswald';font-weight:600;color:var(--mute);text-align:center;padding:30px 0;letter-spacing:.06em}
   .crew-leave{margin-top:26px}
 
+  /* cheers: emoji reactions on a crewmate's tile, sent live via realtime broadcast */
+  .cheer-row{display:flex;justify-content:center;gap:6px;margin-top:10px}
+  .cheer-btn{background:none;border:1px solid var(--line2);border-radius:8px;font-size:15px;
+    padding:5px 7px;cursor:pointer;line-height:1;transition:border-color .12s,transform .1s;-webkit-tap-highlight-color:transparent}
+  .cheer-btn:hover{border-color:var(--purple)}
+  .cheer-btn:active{transform:scale(.88);border-color:var(--purple2);background:rgba(157,78,221,.15)}
+
+  /* leaderboard: read-only crew stats pulled via crew_leaderboard() */
+  .lb-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+  .lb-row:first-child{border-top:none}
+  .lb-rank{font-family:'Anton';color:var(--mute);font-size:13px;min-width:20px}
+  .lb-name{font-family:'Anton';font-size:16px;flex:1;text-align:left;margin-left:4px}
+  .lb-stat{font-family:'Oswald';font-weight:600;font-size:12px;color:var(--mute);text-align:right}
+  .lb-stat b{color:var(--yellow);font-family:'Anton';font-weight:400;font-size:14px}
+
   /* log view */
   .log-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;gap:16px}
   .log-h .t{font-family:'Anton';font-size:clamp(38px,9.5vw,58px);line-height:.9}
@@ -404,6 +419,10 @@
         </div>
         <button class="btn sm ghost crew-copy" id="crewcopybtn" type="button">COPY INVITE</button>
         <div class="crew-grid" id="crewgrid"></div>
+        <div class="crew-leaderboard" id="crewleaderboard" style="display:none">
+          <div class="label" style="margin:24px 0 12px">Leaderboard</div>
+          <div id="crewleaderboardlist"></div>
+        </div>
         <button class="btn ghost crew-leave" id="crewleavebtn" type="button">LEAVE CREW</button>
       </div>
 
@@ -739,6 +758,32 @@
 
      alter publication supabase_realtime add table public.crew_members;
      alter publication supabase_realtime add table public.fasts;
+
+     -- Leaderboard: crewmates can normally only see each other's ACTIVE fast (see the
+     -- "crewmates read active" policy above), not full history. This function returns
+     -- just the aggregated totals for the crew view, without opening up raw per-fast
+     -- row access to everyone's complete fasting history.
+     create or replace function public.crew_leaderboard(p_crew_id uuid)
+     returns table(user_id uuid, name text, total_fasts int, total_hours numeric, longest_hours numeric)
+     language sql security definer stable set search_path = public as $$
+       select
+         cm.user_id,
+         coalesce(p.name, 'Member') as name,
+         count(f.id)::int as total_fasts,
+         round(coalesce(sum(f.actual_ms),0)/3600000.0,1) as total_hours,
+         round(coalesce(max(f.actual_ms),0)/3600000.0,1) as longest_hours
+       from crew_members cm
+       left join profiles p on p.id = cm.user_id
+       left join fasts f on f.user_id = cm.user_id and f.end_time is not null
+       where cm.crew_id = p_crew_id
+         and exists (select 1 from crew_members me where me.crew_id = p_crew_id and me.user_id = auth.uid())
+       group by cm.user_id, p.name;
+     $$;
+     revoke all on function public.crew_leaderboard(uuid) from public;
+     grant execute on function public.crew_leaderboard(uuid) to authenticated;
+
+     -- Cheers (emoji reactions + milestone pings) use Supabase Realtime Broadcast on the
+     -- existing crew-<id> channel — nothing to create here, no new table, ephemeral only.
   */
 
   var PRESETS=[
@@ -926,6 +971,8 @@
   var myCrew=null;       // {id, code} — only meaningful when authUser is set
   var crewMembers=[];    // [{name,userId,start_time,target_ms,fast_type}]
   var crewProfiles={};   // userId -> profile row, for the crew profile-read modal
+  var crewLeaderboard=[]; // rows from crew_leaderboard()
+  var CHEER_EMOJI=['🔥','💪','🙏','❤️'];
   var presetIdx=0, customHours=null, customUnit='h';
   var fastType='water';
   var displayMode='ELAPSED'; // ELAPSED | REMAINING | ENDS
@@ -1054,7 +1101,14 @@
       if(passed && !crossed[h]){
         crossed[h]=true;
         var m=MILESTONES.filter(function(x){return x.h===h;})[0];
-        if(m){ showToast(m.msg); haptic(true); renderInsight(); }
+        if(m){
+          showToast(m.msg); haptic(true); renderInsight();
+          if(crewChannel && authUser){
+            crewChannel.send({type:'broadcast',event:'cheer',payload:{
+              kind:'milestone', from:authUser.id, fromName:(profile&&profile.name)||'Someone',
+              hours:h, msg:m.msg}});
+          }
+        }
       }
     });
   }
@@ -1396,7 +1450,7 @@
   }
   function onSignedOut(){
     if(crewChannel && supa){ try{ supa.removeChannel(crewChannel); }catch(e){} crewChannel=null; }
-    myCrew=null; crewMembers=[]; crewProfiles={};
+    myCrew=null; crewMembers=[]; crewProfiles={}; crewLeaderboard=[];
     load(); loadProfile();
     if(current){ renderRunning(); } else { renderIdle(); }
     renderTypeChips(); renderPresetChips();
@@ -1761,6 +1815,7 @@
     crewsetup.style.display='none'; crewactive.style.display='';
     crewcodedisplay.textContent=myCrew.code;
     crewgrid.innerHTML='';
+    renderLeaderboard();
     if(!crewMembers.length){
       crewgrid.innerHTML='<div class="crew-empty">Waiting for friends to join with code '+myCrew.code+'.</div>';
       return;
@@ -1770,6 +1825,13 @@
       t.innerHTML='<div class="ring" style="--p:'+crewPct(m)+'"><span>'+(m.start_time?Math.round(crewPct(m))+'%':'\u2014')+'</span></div>'+
         '<div class="nm">'+escq(m.name)+'</div><div class="st">'+escq(crewElapsedLabel(m))+'</div>';
       t.addEventListener('click',function(){ haptic(); openProfileModal(m.userId); });
+      var row=document.createElement('div'); row.className='cheer-row';
+      CHEER_EMOJI.forEach(function(em){
+        var b=document.createElement('button'); b.type='button'; b.className='cheer-btn'; b.textContent=em;
+        b.addEventListener('click',function(ev){ ev.stopPropagation(); sendCheer(m.userId, m.name, em); });
+        row.appendChild(b);
+      });
+      t.appendChild(row);
       crewgrid.appendChild(t);
     });
   }
@@ -1790,13 +1852,33 @@
     if(crewChannel && supa){ try{supa.removeChannel(crewChannel);}catch(e){} crewChannel=null; }
     if(!authUser || !myCrew) return;
     fetchCrewMembers();
+    fetchLeaderboard();
     crewChannel=supa.channel('crew-'+myCrew.id)
       .on('postgres_changes',{event:'*',schema:'public',table:'crew_members',filter:'crew_id=eq.'+myCrew.id},function(){
-        fetchCrewMembers();
+        fetchCrewMembers(); fetchLeaderboard();
       })
       .on('postgres_changes',{event:'*',schema:'public',table:'fasts'},function(){
-        fetchCrewMembers();
-      }).subscribe();
+        fetchCrewMembers(); fetchLeaderboard();
+      })
+      // live-only cheers: emoji reactions + milestone crossings. Nothing here is
+      // persisted — if you're not online to see it, it's just gone, same as a wave.
+      .on('broadcast',{event:'cheer'},function(msg){
+        var p=msg && msg.payload; if(!p || p.from===authUser.id) return;
+        if(p.kind==='reaction' && p.to===authUser.id){
+          showToast(p.fromName+' sent you '+p.emoji); haptic(true);
+        }else if(p.kind==='milestone'){
+          showToast(p.fromName+' hit '+p.hours+'h — '+p.msg);
+        }
+      })
+      .subscribe();
+  }
+  function sendCheer(toUserId, toName, emoji){
+    if(!crewChannel || !authUser) return;
+    haptic();
+    var fromName=(profile && profile.name) || 'Someone';
+    crewChannel.send({type:'broadcast',event:'cheer',
+      payload:{kind:'reaction', from:authUser.id, fromName:fromName, to:toUserId, emoji:emoji}});
+    showToast('Sent '+emoji+' to '+toName);
   }
   // One combined fetch: who's in the crew (+ profile), then who's actively fasting.
   // crew_members.user_id and profiles.id both point at auth.users independently — there's
@@ -1833,6 +1915,33 @@
       })['catch'](function(){});
   }
 
+  // Aggregated totals (total fasts, total hours, longest fast) per crew member, via
+  // crew_leaderboard() — a SECURITY DEFINER function, since seeing this needs summing
+  // everyone's completed fast history, which crewmates otherwise can't read (only an
+  // in-progress fast is visible to crewmates, by design).
+  function fetchLeaderboard(){
+    if(!supa || !authUser || !myCrew){ crewLeaderboard=[]; return; }
+    supa.rpc('crew_leaderboard',{p_crew_id:myCrew.id}).then(function(res){
+      crewLeaderboard=(res && res.data)||[];
+      renderLeaderboard();
+    })['catch'](function(){});
+  }
+  function renderLeaderboard(){
+    var box=document.getElementById('crewleaderboard'), list=document.getElementById('crewleaderboardlist');
+    if(!crewLeaderboard.length){ box.style.display='none'; return; }
+    box.style.display='';
+    var sorted=crewLeaderboard.slice().sort(function(a,b){ return (b.total_hours||0)-(a.total_hours||0); });
+    list.innerHTML='';
+    sorted.forEach(function(r,i){
+      var isMe=authUser && r.user_id===authUser.id;
+      var row=document.createElement('div'); row.className='lb-row';
+      row.innerHTML='<span class="lb-rank">'+(i+1)+'</span>'+
+        '<span class="lb-name">'+escq(r.name||'Member')+(isMe?' (you)':'')+'</span>'+
+        '<span class="lb-stat">'+(r.total_fasts||0)+' fasts<br><b>'+(r.total_hours||0)+'h</b> total · '+(r.longest_hours||0)+'h longest</span>';
+      list.appendChild(row);
+    });
+  }
+
   crewcreatebtn.addEventListener('click',function(){
     if(!authUser || !supa) return;
     haptic(true);
@@ -1857,7 +1966,7 @@
   crewleavebtn.addEventListener('click',function(){
     if(!confirm('Leave this crew?') || !authUser || !myCrew) return;
     supa.from('crew_members').delete().eq('crew_id',myCrew.id).eq('user_id',authUser.id).then(function(){})['catch'](function(){});
-    myCrew=null; crewMembers=[];
+    myCrew=null; crewMembers=[]; crewLeaderboard=[];
     if(crewChannel && supa){ try{supa.removeChannel(crewChannel);}catch(e){} crewChannel=null; }
     renderCrewView(); renderCrewPreview(); haptic(true);
   });
