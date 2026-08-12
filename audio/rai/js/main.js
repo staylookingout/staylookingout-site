@@ -78,35 +78,51 @@ scheduleLogoBreath();
  * separate global "first interaction" listener.
  */
 function ensureAudio() {
-  if (started) return;
-  started = true;
-  ctx = new (window.AudioContext || window.webkitAudioContext)();
-  // iOS Safari in particular can leave a freshly-created context
-  // "suspended" even when constructed inside a user gesture — resume()
-  // explicitly rather than assuming it. Safe to call unconditionally; it
-  // no-ops if already running.
-  ctx.resume?.().catch(() => {});
-  engine = new VoiceEngine(ctx);
-  engine.connect(ctx.destination);
-  engine.start();
-  // Nudges iOS into the "playback" audio session category (see the
-  // comment on #ios-audio-unlock in index.html) so the hardware silent
-  // switch doesn't mute RAI's output. Harmless no-op elsewhere.
-  const unlockEl = document.getElementById("ios-audio-unlock");
-  unlockEl?.play().catch(() => {});
-  // Some browsers (notably iOS Safari) suspend an AudioContext when the
-  // tab/app is backgrounded and don't always auto-resume it on return.
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && ctx?.state === "suspended") {
-      ctx.resume?.().catch(() => {});
-    }
-  });
-  // The knobs rendered their visuals at page load without touching the
-  // (nonexistent) engine — now that it exists, push their current values
-  // into it once.
-  Object.values(knobHandles).forEach((h) => h.setValue(h.getValue()));
-  if (location.search.includes("debug")) window.__rai = { engine, ctx, midi };
+  if (!started) {
+    started = true;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    engine = new VoiceEngine(ctx);
+    engine.connect(ctx.destination);
+    engine.start();
+    // Some browsers (notably iOS Safari) suspend an AudioContext when the
+    // tab/app is backgrounded and don't always auto-resume it on return.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && ctx?.state === "suspended") {
+        ctx.resume?.().catch(() => {});
+      }
+    });
+    // The knobs rendered their visuals at page load without touching the
+    // (nonexistent) engine — now that it exists, push their current
+    // values into it once.
+    Object.values(knobHandles).forEach((h) => h.setValue(h.getValue()));
+    if (location.search.includes("debug")) window.__rai = { engine, ctx, midi };
+  }
+
+  // Retry resume() on every call, not just the first — iOS Safari has a
+  // documented history of not reliably honoring resume() when it's called
+  // from a pointerdown/touchstart-driven gesture (it wants touchend/click).
+  // Our Voice Pad and keyboard both fire on pointerdown, so a user's very
+  // first tap could hit exactly that case; without a retry, `started`
+  // being true forever meant we'd never try again and stayed silently
+  // stuck "suspended" — cheap no-op once actually running.
+  if (ctx && ctx.state !== "running") {
+    ctx.resume?.().catch(() => {});
+    // Also re-nudges iOS into the "playback" audio session category (see
+    // the comment on #ios-audio-unlock in index.html) so the hardware
+    // silent switch doesn't mute RAI's output — in case the first play()
+    // attempt was similarly not honored, or iOS paused it.
+    const unlockEl = document.getElementById("ios-audio-unlock");
+    if (unlockEl?.paused) unlockEl.play().catch(() => {});
+  }
 }
+
+// Give resume() more chances to actually take on iOS: every subsequent
+// touchend/click across the app (not just the controls that call
+// ensureAudio() directly) retries it, cheaply, until ctx.state is
+// "running". Not `once` — see the comment inside ensureAudio() above.
+["touchend", "click", "pointerdown", "keydown"].forEach((evt) =>
+  window.addEventListener(evt, ensureAudio, { passive: true })
+);
 
 const knobHandles = {};
 // Mirrors each knob's data-value in index.html — the "factory" state the
