@@ -165,7 +165,9 @@
     { name:'record',    url:'https://staylookingout.com/audio/record.html',    desc:'anything playing', color:'#fe5f75' },
     { name:'playlist',  url:'https://staylookingout.com/audio/playlist.html',  desc:'play/filter songs' },
     { name:'chordpad',  url:'https://staylookingout.com/audio/chordpad.html',  desc:'harmonic explorer' },
-    { name:'groovelab', url:'https://staylookingout.com/audio/groovelab.html', desc:'rhythm patterns' }
+    { name:'groovelab', url:'https://staylookingout.com/audio/groovelab.html', desc:'rhythm patterns' },
+    { name:'rai',       url:'https://staylookingout.com/audio/rai/',           desc:'REALM\'s AI voice instrument' },
+    { name:'onepad',    url:'https://staylookingout.com/audio/onepad.html',    desc:'one-pad sampler & sequencer' }
   ];
 
   // Camera tools
@@ -446,9 +448,10 @@
       return p.name === cmd || (p.name === arg && (head === 'open' || head === 'cd' || head === 'go'));
     });
 
-    // If in home and page not found in directories, try all pages
+    // Not found in the current directory (or we're at home) — fall back to
+    // matching any page name from anywhere in the terminal, not just home.
     var directPage = null;
-    if (promptPath === '' && byName < 0) {
+    if (byName < 0) {
       directPage = findPageByName(cmd);
     }
 
