@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RRRT! — Official DJ & Producer Audio Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-primary: #00f5d4;
+      --neon-secondary: #ff007f;
+      --neon-accent: #fee440;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #060609;
+      color: #f3f4f6;
+      font-family: 'Chakra Petch', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Subtle dark studio grid background */
+    .bg-studio-grid {
+      background-size: 48px 48px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.12);
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #00f5d4;
+      box-shadow: 0 0 10px #00f5d4;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    /* Glassmorphism panels */
+    .dj-panel {
+      background: rgba(12, 13, 19, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Dynamic glitch/chromatic filter applied on heavy kicks */
+    #stageContainer {
+      will-change: transform, filter;
+      transform-origin: center center;
+    }
+
+    /* Scrollbar styling for modals */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090a0f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27273a;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col justify-between bg-studio-grid select-none">
+
+  <!-- AMBIENT BACKDROP CANVAS (Behind the Logo) -->
+  <canvas id="bgCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-55"></canvas>
+
+  <!-- TOP TELEMETRY & SOURCE BAR -->
+  <header id="topBar" class="relative z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6 transition-opacity duration-500">
+    <!-- Left Brand & Live Status -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 dj-panel px-3.5 py-2 rounded-xl border border-white/15">
+        <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399]"></span>
+        <span class="font-bold tracking-wider text-sm md:text-base text-white">RRRT<span class="text-cyan-400">!</span> ENGINE</span>
+        <span id="sourceBadge" class="font-mono-tech text-[11px] uppercase px-2 py-0.5 rounded bg-white/10 text-cyan-300">STANDBY</span>
+      </div>
+
+      <!-- Custom PNG Logo Loader Button -->
+      <label class="dj-panel hover:border-cyan-400/60 transition cursor-pointer px-3 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold text-zinc-200 hover:text-white" title="Upload your exact official RRRT logo.png for 1:1 pixel interior masking">
+        <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span id="logoModeLabel">Custom Logo PNG</span>
+        <input id="customLogoInput" type="file" accept="image/*" class="hidden" />
+      </label>
+
+      <button id="resetVectorLogoBtn" class="hidden dj-panel hover:border-amber-400/60 transition px-2.5 py-2 rounded-xl text-xs text-amber-300 font-semibold">
+        Reset Vector SVG
+      </button>
+    </div>
+
+    <!-- Center Real-Time Audio Telemetry -->
+    <div class="hidden xl:flex items-center gap-2 dj-panel px-4 py-1.5 rounded-xl font-mono-tech text-xs">
+      <div class="px-2.5 py-1 border-r border-white/10">
+        <span class="text-zinc-400 block text-[10px]">DOMINANT PITCH</span>
+        <span id="hudPitch" class="text-cyan-400 font-bold text-sm">-- Hz (--)</span>
+      </div>
+      <div class="px-2.5 py-1 border-r border-white/10">
+        <span class="text-zinc-400 block text-[10px]">EST. TEMPO</span>
+        <span id="hudBpm" class="text-pink-400 font-bold text-sm">128 BPM</span>
+      </div>
+      <div class="px-2.5 py-1 border-r border-white/10">
+        <span class="text-zinc-400 block text-[10px]">RMS LEVEL</span>
+        <span id="hudRms" class="text-amber-300 font-bold text-sm">-∞ dB</span>
+      </div>
+      <div class="px-2.5 py-1">
+        <span class="text-zinc-400 block text-[10px]">CENTROID</span>
+        <span id="hudCentroid" class="text-purple-300 font-bold text-sm">0 Hz</span>
+      </div>
+    </div>
+
+    <!-- Right Source Triggers & Fullscreen -->
+    <div class="flex items-center gap-2">
+      <!-- Upload Audio File -->
+      <label class="dj-panel hover:bg-white/10 hover:border-cyan-400/50 transition cursor-pointer px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs md:text-sm font-bold text-cyan-300 shadow-lg">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+        </svg>
+        <span>Upload Track</span>
+        <input id="audioFileInput" type="file" accept="audio/*" class="hidden" />
+      </label>
+
+      <!-- YouTube Modal Toggle -->
+      <button id="openYtBtn" class="dj-panel hover:bg-white/10 hover:border-red-500/60 transition px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs md:text-sm font-bold text-red-400">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        <span>YouTube Link</span>
+      </button>
+
+      <!-- Built-In RRRT! Demo Synth Drop -->
+      <button id="demoDropBtn" class="dj-panel bg-gradient-to-r from-pink-600/30 to-purple-600/30 hover:from-pink-500/50 hover:to-purple-500/50 border-pink-500/50 transition px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs md:text-sm font-bold text-pink-200">
+        <svg class="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+        </svg>
+        <span>Demo Bass Drop</span>
+      </button>
+
+      <!-- Hide UI / Performance Mode -->
+      <button id="zenModeBtn" class="dj-panel hover:border-white/40 transition p-2 rounded-xl text-zinc-300 hover:text-white" title="Toggle Clean Stage Mode (H)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </button>
+
+      <!-- Fullscreen -->
+      <button id="fullscreenBtn" class="dj-panel hover:border-white/40 transition p-2 rounded-xl text-zinc-300 hover:text-white" title="Fullscreen (F)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- YOUTUBE PLAYER & TAB AUDIO SYNC FLOATING DOCK -->
+  <div id="ytDock" class="hidden fixed top-20 right-4 md:right-6 z-40 w-[350px] sm:w-[410px] dj-panel rounded-2xl p-4 border border-red-500/30 shadow-2xl">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+        <h3 class="font-bold text-sm tracking-wide uppercase text-white">YouTube Stream & FFT Bridge</h3>
+      </div>
+      <button id="closeYtDockBtn" class="text-zinc-400 hover:text-white p-1">✕</button>
+    </div>
+
+    <!-- URL Input -->
+    <div class="flex gap-2 mb-3">
+      <input id="ytUrlInput" type="text" placeholder="Paste YouTube URL or Video ID..." 
+        class="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-400 font-mono-tech"
+        value="https://www.youtube.com/watch?v=jfKfPfyJRdk" />
+      <button id="loadYtBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shrink-0">
+        Load
+      </button>
+    </div>
+
+    <!-- Embedded YouTube Iframe Container -->
+    <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-white/10 mb-3">
+      <div id="ytPlayerPlaceholder" class=" inset-0 flex flex-col items-center justify-center text-center p-4 text-xs text-zinc-400">
+        <p>Paste any YouTube track or set link above and click <b>Load</b>.</p>
+      </div>
+      <div id="ytIframeMount" class="w-full h-full"></div>
+    </div>
+
+    <!-- Real-Time Audio Capture Bridge (Solves Cross-Origin Iframe FFT Restriction) -->
+    <div class="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-semibold text-cyan-300">100% True Frequency Sync:</span>
+        <span id="captureStateBadge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">Synth Sim Mode</span>
+      </div>
+      <p class="text-[11px] text-zinc-400 leading-relaxed">
+        To feed lossless real-time YouTube audio into the <b>RRRT!</b> logo shaders, click below and select <b>"This Tab"</b> (with <i>Share tab audio</i> enabled) or your Mic/Loopback:
+      </p>
+      <div class="flex gap-2 pt-1">
+        <button id="syncTabAudioBtn" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span>Sync Tab Audio (Live FFT)</span>
+        </button>
+        <button id="syncMicAudioBtn" class="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 font-bold text-xs py-2 px-3 rounded-xl transition" title="Use Microphone or Audio Interface Input">
+          Mic / Line-In
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CENTER STAGE: THE "RRRT!" INTERACTIVE LOGO VISUALIZER -->
+  <main class="relative z-10 flex-1 flex items-center justify-center w-full h-full overflow-hidden px-4">
+    <!-- Drag & Drop Overlay Hint -->
+    <div id="dropOverlay" class="pointer-events-none fixed inset-4 z-50 rounded-3xl border-4 border-dashed border-cyan-400 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center opacity-0 transition-opacity duration-200">
+      <p class="text-3xl font-extrabold text-cyan-300 tracking-wider uppercase">Drop Audio File or RRRT! Logo Image</p>
+      <p class="text-sm text-zinc-300 mt-2">Supports MP3, WAV, FLAC, OGG or Transparent/White-filled Logo PNG</p>
+    </div>
+
+    <!-- Reactive Stage Container (Scales, shakes, and glows with Sub-Bass & Transients) -->
+    <div id="stageContainer" class="relative w-full max-w-[1150px] aspect-[16/10] flex items-center justify-center">
+      <!-- Primary Visualizer Canvas (Renders the masked interior + 3D comic extrusion + black ink outline) -->
+      <canvas id="logoCanvas" class="w-full h-full block"></canvas>
+    </div>
+  </main>
+
+  <!-- BOTTOM DJ TRANSPORT CONTROLS & VISUALIZER SHADER DECK -->
+  <footer id="bottomDeck" class="relative z-30 px-3 pb-3 md:px-6 md:pb-5 transition-all duration-500">
+    <div class="max-w-7xl mx-auto dj-panel rounded-2xl p-3 md:p-4 border border-white/15">
+      
+      <!-- Top Row of Deck: Track Title, Seek Scrubber & Timecode -->
+      <div class="flex flex-col md:flex-row items-center gap-3 pb-3 mb-3 border-b border-white/10">
+        <!-- Play / Pause / Stop Buttons -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="playPauseBtn" class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-black flex items-center justify-center shadow-[0_0_20px_rgba(0,245,212,0.4)] transition transform active:scale-95" title="Play / Pause (Space)">
+            <svg id="playIcon" class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4.5 3.5v13l12-6.5-12-6.5z"/>
+            </svg>
+            <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 4h3v12H5V4zm7 0h3v12h-3V4z"/>
+            </svg>
+          </button>
+
+          <button id="stopBtn" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 flex items-center justify-center transition" title="Stop & Reset">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <rect x="4" y="4" width="12" height="12" rx="1"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Track Info & Interactive Seek Bar -->
+        <div class="flex-1 w-full flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="px-2 py-0.5 rounded bg-pink-500/20 border border-pink-500/40 text-pink-300 font-mono-tech text-[10px] font-bold">NOW PLAYING</span>
+              <span id="trackTitleDisplay" class="font-bold text-white truncate">RRRT! — Built-in Acid Breakbeat Demo (Press Play)</span>
+            </div>
+            <div class="font-mono-tech text-xs text-zinc-400 shrink-0">
+              <span id="currentTimeLabel" class="text-cyan-300">00:00</span> / <span id="durationLabel">00:00</span>
+            </div>
+          </div>
+
+          <!-- Scrubber Bar -->
+          <div class="relative flex items-center w-full">
+            <input id="seekSlider" type="range" min="0" max="100" step="0.1" value="0" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Per-Letter Frequency Activity Mini-Meters (R - R - R - T - !) -->
+        <div class="hidden lg:flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-xl border border-white/10 shrink-0" title="Live Per-Letter Frequency Split: Sub-Bass (R1), Low-Mid (R2), Mid (R3), High-Mid (T), Treble (!)">
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-3 h-7 bg-zinc-800 rounded-sm overflow-hidden flex items-end">
+              <div id="meterR1" class="w-full bg-pink-500 h-1 transition-all duration-75"></div>
+            </div>
+            <span class="font-mono-tech text-[10px] font-bold text-zinc-400">R</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-3 h-7 bg-zinc-800 rounded-sm overflow-hidden flex items-end">
+              <div id="meterR2" class="w-full bg-orange-400 h-1 transition-all duration-75"></div>
+            </div>
+            <span class="font-mono-tech text-[10px] font-bold text-zinc-400">R</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-3 h-7 bg-zinc-800 rounded-sm overflow-hidden flex items-end">
+              <div id="meterR3" class="w-full bg-yellow-300 h-1 transition-all duration-75"></div>
+            </div>
+            <span class="font-mono-tech text-[10px] font-bold text-zinc-400">R</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-3 h-7 bg-zinc-800 rounded-sm overflow-hidden flex items-end">
+              <div id="meterT" class="w-full bg-cyan-400 h-1 transition-all duration-75"></div>
+            </div>
+            <span class="font-mono-tech text-[10px] font-bold text-zinc-400">T</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-3 h-7 bg-zinc-800 rounded-sm overflow-hidden flex items-end">
+              <div id="meterExcl" class="w-full bg-purple-400 h-1 transition-all duration-75"></div>
+            </div>
+            <span class="font-mono-tech text-[10px] font-bold text-zinc-400">!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row of Deck: Visual Modes, Color Palette, Audio & DJ FX Controls -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        
+        <!-- Interior Visual Mode Selector (4 cols) -->
+        <div class="md:col-span-4 flex flex-col gap-1">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-zinc-400">Logo Interior Visual Mode</span>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button data-mode="hybrid" class="mode-btn bg-cyan-500/25 border border-cyan-400 text-cyan-200 rounded-lg py-1.5 px-2 text-xs font-bold transition">
+              All Hybrid
+            </button>
+            <button data-mode="plasma" class="mode-btn bg-white/5 border border-white/10 text-zinc-300 hover:text-white rounded-lg py-1.5 px-2 text-xs font-bold transition">
+              Plasma Wave
+            </button>
+            <button data-mode="split" class="mode-btn bg-white/5 border border-white/10 text-zinc-300 hover:text-white rounded-lg py-1.5 px-2 text-xs font-bold transition">
+              Letter Split
+            </button>
+            <button data-mode="vortex" class="mode-btn bg-white/5 border border-white/10 text-zinc-300 hover:text-white rounded-lg py-1.5 px-2 text-xs font-bold transition">
+              Laser Vortex
+            </button>
+          </div>
+        </div>
+
+        <!-- Color Palette & Pitch-Shift Selector (3 cols) -->
+        <div class="md:col-span-3 flex flex-col gap-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono-tech uppercase tracking-wider text-zinc-400">Color & Pitch Mapping</span>
+            <label class="flex items-center gap-1 text-[10px] text-cyan-300 cursor-pointer">
+              <input id="pitchColorToggle" type="checkbox" checked class="accent-cyan-400 rounded" />
+              <span>Pitch Shift Hue</span>
+            </label>
+          </div>
+          <select id="paletteSelect" class="bg-black/70 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-cyan-400">
+            <option value="cyber">Cyberpunk Rave (Cyan / Magenta / Yellow)</option>
+            <option value="acid">Acid 303 (Toxic Lime / UV Violet / Cyan)</option>
+            <option value="inferno">Bass Inferno (Crimson / Molten Gold / White)</option>
+            <option value="rainbow">Full Pitch Spectrum (Chromatic Note Wheel)</option>
+            <option value="mono">High-Voltage Strobe (Pure Stark Monochrome)</option>
+          </select>
+        </div>
+
+        <!-- Sliders: Gain/Volume, DJ Pitch/Speed, Reactivity, Sub-Bass Boost (5 cols) -->
+        <div class="md:col-span-5 grid grid-cols-2 sm:grid-cols-4 gap-3 items-center bg-black/40 p-2 rounded-xl border border-white/5">
+          <!-- Volume -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] font-mono-tech">
+              <span class="text-zinc-400">VOL</span>
+              <span id="volVal" class="text-white">90%</span>
+            </div>
+            <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.9" />
+          </div>
+
+          <!-- DJ Tempo / Pitch Fader -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] font-mono-tech">
+              <span class="text-zinc-400">PITCH/SPD</span>
+              <span id="rateVal" class="text-cyan-300">1.00x</span>
+            </div>
+            <input id="rateSlider" type="range" min="0.5" max="1.5" step="0.01" value="1.0" />
+          </div>
+
+          <!-- Visual Reactivity / Gain -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] font-mono-tech">
+              <span class="text-zinc-400">INTENSITY</span>
+              <span id="sensVal" class="text-pink-300">130%</span>
+            </div>
+            <input id="sensSlider" type="range" min="0.4" max="2.5" step="0.05" value="1.3" />
+          </div>
+
+          <!-- Sub-Bass EQ & White Rim Toggle -->
+          <div class="flex flex-col gap-1">
+            <button id="bassBoostBtn" class="w-full py-1 px-2 rounded bg-pink-500/20 border border-pink-500/50 text-pink-300 font-bold text-[10px] uppercase tracking-wider hover:bg-pink-500/30 transition">
+              Sub Boost: ON
+            </button>
+            <button id="invertOutlineBtn" class="w-full py-1 px-2 rounded bg-white/10 border border-white/20 text-zinc-200 font-bold text-[10px] uppercase tracking-wider hover:bg-white/20 transition" title="Adds a crisp neon outer rim so the black comic outline pops against dark stages">
+              Comic Rim: Neon
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- Hidden HTML5 Audio Element for Local Uploaded Files -->
+  <audio id="audioElement" crossorigin="anonymous"></audio>
+
+  <script>
+    /********************************************************************
+     * RRRT! OFFICIAL LOGO VECTOR GEOMETRY & PIXEL MASK ENGINE
+     * Faithfully recreates the uploaded tilted graffiti/comic "RRRT!"
+     * logo with overlapping letters, sharp bottom serifs, triangular
+     * R-counters, 3D bottom-right comic extrusion, and thick black ink.
+     ********************************************************************/
+    const LOGO_DESIGN_W = 1200;
+    const LOGO_DESIGN_H = 780;
+
+    // Each letter is defined in pre-skewed coordinates and transformed by
+    // an upward comic slant matrix: translate(60, 210) -> rotate(-16.5 deg) -> skewX(-10 deg)
+    const LETTER_DEFS = [
+      {
+        id: 'R1',
+        band: 'sub', // 20 - 120 Hz
+        outer: 'M 40 460 L 82 145 Q 205 120 265 150 Q 312 175 298 242 Q 285 298 218 320 L 268 485 L 185 450 L 152 332 L 116 342 L 96 525 Z',
+        hole:  'M 138 208 L 128 272 Q 192 268 204 232 Q 212 198 138 208 Z',
+        center: { x: 170, y: 310 }
+      },
+      {
+        id: 'R2',
+        band: 'lowMid', // 120 - 450 Hz
+        outer: 'M 252 445 L 294 135 Q 418 110 478 140 Q 525 165 510 232 Q 496 288 430 310 L 482 475 L 398 440 L 365 322 L 328 332 L 308 515 Z',
+        hole:  'M 350 198 L 340 262 Q 404 258 416 222 Q 424 188 350 198 Z',
+        center: { x: 382, y: 300 }
+      },
+      {
+        id: 'R3',
+        band: 'mid', // 450 - 1800 Hz
+        outer: 'M 464 435 L 506 125 Q 630 100 690 130 Q 737 155 722 222 Q 708 278 642 300 L 694 465 L 610 430 L 577 312 L 540 322 L 520 505 Z',
+        hole:  'M 562 188 L 552 252 Q 616 248 628 212 Q 636 178 562 188 Z',
+        center: { x: 594, y: 290 }
+      },
+      {
+        id: 'T',
+        band: 'highMid', // 1800 - 5500 Hz
+        outer: 'M 688 112 L 932 95 L 912 198 L 832 204 L 782 515 L 692 465 L 742 210 L 672 215 Z',
+        hole: null,
+        center: { x: 795, y: 275 }
+      },
+      {
+        id: 'EXCL_BAR',
+        band: 'treble', // 5500 - 16000 Hz
+        outer: 'M 958 75 L 1068 62 L 995 395 L 910 398 Z',
+        hole: null,
+        center: { x: 985, y: 240 }
+      },
+      {
+        id: 'EXCL_DOT',
+        band: 'treble',
+        outer: 'M 942 440 C 976 440 1002 466 1002 500 C 1002 534 976 560 942 560 C 908 560 882 534 882 500 C 882 466 908 440 942 440 Z',
+        hole: null,
+        center: { x: 942, y: 500 }
+      }
+    ];
+
+    // Offscreen mask canvases for both Vector SVG mode and Custom Uploaded PNG mode
+    const interiorCanvas = document.createElement('canvas');
+    interiorCanvas.width = LOGO_DESIGN_W;
+    interiorCanvas.height = LOGO_DESIGN_H;
+    const interiorCtx = interiorCanvas.getContext('2d');
+
+    // Custom PNG mask storage (if user uploads their own official RRRT logo.png)
+    let useCustomLogoPng = false;
+    const customMaskCanvas = document.createElement('canvas');
+    customMaskCanvas.width = LOGO_DESIGN_W;
+    customMaskCanvas.height = LOGO_DESIGN_H;
+    const customMaskCtx = customMaskCanvas.getContext('2d');
+
+    const customOutlineCanvas = document.createElement('canvas');
+    customOutlineCanvas.width = LOGO_DESIGN_W;
+    customOutlineCanvas.height = LOGO_DESIGN_H;
+    const customOutlineCtx = customOutlineCanvas.getContext('2d');
+
+    // Pre-build Path2D objects for fast 60fps canvas rendering
+    const letterPaths = LETTER_DEFS.map(def => {
+      const p = new Path2D(def.outer);
+      if (def.hole) {
+        p.addPath(new Path2D(def.hole));
+      }
+      return {
+        ...def,
+        path2D: p
+      };
+    });
+
+    // Apply the signature upward comic tilt transform to any 2D context
+    function applyLogoSlantTransform(ctx) {
+      ctx.translate(48, 235);
+      ctx.rotate(-16.5 * Math.PI / 180);
+      ctx.transform(1, 0, -0.14, 1, 0, 0); // subtle italic shear
+    }
+
+    /**
+     * Processes an uploaded PNG logo (like `official RRRT logo.png`)
+     * Extracts:
+     * 1) The bright/white interior pixels as an alpha mask (`customMaskCanvas`)
+     * 2) The dark/black comic outline & 3D shadow pixels (`customOutlineCanvas`)
+     */
+    function processUploadedLogoImage(img) {
+      customMaskCtx.clearRect(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+      customOutlineCtx.clearRect(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+
+      // Fit image inside LOGO_DESIGN_W x LOGO_DESIGN_H with padding
+      const pad = 60;
+      const availW = LOGO_DESIGN_W - pad * 2;
+      const availH = LOGO_DESIGN_H - pad * 2;
+      const scale = Math.min(availW / img.width, availH / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const offsetX = (LOGO_DESIGN_W - drawW) / 2;
+      const offsetY = (LOGO_DESIGN_H - drawH) / 2;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = LOGO_DESIGN_W;
+      tempCanvas.height = LOGO_DESIGN_H;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+      const imgData = tempCtx.getImageData(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+      const data = imgData.data;
+
+      const maskData = customMaskCtx.createImageData(LOGO_DESIGN_W, LOGO_DESIGN_H);
+      const outlineData = customOutlineCtx.createImageData(LOGO_DESIGN_W, LOGO_DESIGN_H);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        if (a > 25) {
+          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+          // White interior of the RRRT! letters -> becomes opaque mask for shaders
+          if (luma > 120) {
+            const strength = Math.min(255, ((luma - 120) / 135) * 255);
+            maskData.data[i] = 255;
+            maskData.data[i + 1] = 255;
+            maskData.data[i + 2] = 255;
+            maskData.data[i + 3] = (strength * a) / 255;
+          }
+          // Black comic outline & extrusion -> kept in outline overlay layer
+          if (luma < 170) {
+            const darkness = Math.min(255, ((170 - luma) / 170) * 255);
+            outlineData.data[i] = 10;
+            outlineData.data[i + 1] = 10;
+            outlineData.data[i + 2] = 14;
+            outlineData.data[i + 3] = (darkness * a) / 255;
+          }
+        }
+      }
+
+      customMaskCtx.putImageData(maskData, 0, 0);
+      customOutlineCtx.putImageData(outlineData, 0, 0);
+      useCustomLogoPng = true;
+      document.getElementById('logoModeLabel').textContent = 'Custom PNG Active ✓';
+      document.getElementById('resetVectorLogoBtn').classList.remove('hidden');
+    }
+
+    /********************************************************************
+     * WEB AUDIO API GRAPH, PITCH DETECTION & BUILT-IN DEMO SYNTHESIZER
+     ********************************************************************/
+    let audioCtx = null;
+    let analyser = null;
+    let gainNode = null;
+    let bassBoostFilter = null;
+
+    let mediaElementSource = null;
+    let liveStreamSource = null;
+    let activeStream = null;
+
+    // Audio source state: 'demo' | 'file' | 'tab' | 'youtubeSim'
+    let currentSourceMode = 'demo';
+    let isPlaying = false;
+    let bassBoostEnabled = true;
+    let comicRimMode = 'neon'; // 'neon' | 'white' | 'stealth'
+
+    // Demo procedural breakbeat/acid synth scheduler
+    let demoIntervalId = null;
+    let demoStep = 0;
+    let demoStartTime = 0;
+
+    // FFT buffers
+    let freqData = new Uint8Array(1024);
+    let timeData = new Uint8Array(1024);
+
+    // Musical Note Lookup for Dominant Pitch Display
+    const NOTE_STRINGS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    function initAudioEngine() {
+      if (audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return;
+      }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.78;
+
+      bassBoostFilter = audioCtx.createBiquadFilter();
+      bassBoostFilter.type = 'lowshelf';
+      bassBoostFilter.frequency.value = 110;
+      bassBoostFilter.gain.value = bassBoostEnabled ? 7.5 : 0;
+
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = parseFloat(document.getElementById('volumeSlider').value);
+
+      // Connect HTML5 <audio> element once
+      const audioEl = document.getElementById('audioElement');
+      mediaElementSource = audioCtx.createMediaElementSource(audioEl);
+      mediaElementSource.connect(bassBoostFilter);
+
+      bassBoostFilter.connect(analyser);
+      analyser.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      freqData = new Uint8Array(analyser.frequencyBinCount);
+      timeData = new Uint8Array(analyser.frequencyBinCount);
+    }
+
+    /**
+     * Procedural "RRRT!" Bass & Acid Breakbeat Generator
+     * Lets the user immediately experience heavy sub-bass kicks, acid 303 pitch glides,
+     * and crisp snare/hat transients inside the logo without needing an external file first.
+     */
+    function startDemoBeat() {
+      initAudioEngine();
+      stopAllAudioSources();
+
+      currentSourceMode = 'demo';
+      isPlaying = true;
+      demoStep = 0;
+      demoStartTime = audioCtx.currentTime;
+      updateTransportUI('RRRT! — Live Procedural Acid Bass & Breakbeat Drop', 'DEMO SYNTH');
+
+      const tempo = 132; // BPM
+      const sixteenthNoteTime = ((60 / tempo) / 4) * 1000;
+
+      const bassNotes = [55, 55, 110, 55, 65.41, 61.74, 55, 82.41, 55, 55, 110, 130.81, 73.42, 65.41, 55, 49];
+
+      demoIntervalId = setInterval(() => {
+        if (!isPlaying || currentSourceMode !== 'demo') return;
+        const rate = parseFloat(document.getElementById('rateSlider').value);
+        const now = audioCtx.currentTime;
+        const step = demoStep % 16;
+
+        // 1. Sub-Bass Punch Kick (Breakbeat pattern: steps 0, 6, 10)
+        if (step === 0 || step === 6 || step === 10) {
+          triggerSynthKick(now, rate);
+        }
+
+        // 2. Crisp Snare & Electric Clap (steps 4, 12, and ghost on 15)
+        if (step === 4 || step === 12 || (step === 15 && demoStep % 32 === 31)) {
+          triggerSynthSnare(now, step === 15 ? 0.35 : 0.85);
+        }
+
+        // 3. High-Hat Metallic Sizzle (every 2 steps + rapid 16th fill)
+        if (step % 2 === 0 || step === 13 || step === 14 || step === 15) {
+          triggerSynthHat(now, step % 4 === 2 ? 0.45 : 0.2);
+        }
+
+        // 4. "RRRT!" Growling Acid Bassline (Pitch-reactive filter sweep)
+        const baseFreq = bassNotes[step] * rate;
+        triggerAcidBass(now, baseFreq, step % 3 === 0);
+
+        demoStep++;
+      }, sixteenthNoteTime);
+    }
+
+    function triggerSynthKick(time, rate) {
+      const osc = audioCtx.createOscillator();
+      const kickGain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(145 * rate, time);
+      osc.frequency.exponentialRampToValueAtTime(36 * rate, time + 0.11);
+      osc.frequency.exponentialRampToValueAtTime(24, time + 0.32);
+
+      kickGain.gain.setValueAtTime(1.15, time);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.34);
+
+      osc.connect(kickGain);
+      kickGain.connect(bassBoostFilter);
+      osc.start(time);
+      osc.stop(time + 0.35);
+    }
+
+    function triggerSynthSnare(time, level) {
+      // Noise burst
+      const bufferSize = audioCtx.sampleRate * 0.18;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(900, time);
+
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(level, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.17);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(bassBoostFilter);
+      noise.start(time);
+
+      // Snare body snap
+      const snapOsc = audioCtx.createOscillator();
+      const snapGain = audioCtx.createGain();
+      snapOsc.type = 'triangle';
+      snapOsc.frequency.setValueAtTime(260, time);
+      snapOsc.frequency.exponentialRampToValueAtTime(110, time + 0.08);
+      snapGain.gain.setValueAtTime(level * 0.6, time);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
+
+      snapOsc.connect(snapGain);
+      snapGain.connect(bassBoostFilter);
+      snapOsc.start(time);
+      snapOsc.stop(time + 0.09);
+    }
+
+    function triggerSynthHat(time, level) {
+      const bufferSize = audioCtx.sampleRate * 0.06;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+      }
+      const whiteNoise = audioCtx.createBufferSource();
+      whiteNoise.buffer = buffer;
+
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.setValueAtTime(6500, time);
+
+      const hatGain = audioCtx.createGain();
+      hatGain.gain.setValueAtTime(level, time);
+      hatGain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
+
+      whiteNoise.connect(hp);
+      hp.connect(hatGain);
+      hatGain.connect(bassBoostFilter);
+      whiteNoise.start(time);
+    }
+
+    function triggerAcidBass(time, freq, accent) {
+      const osc = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const vca = audioCtx.createGain();
+
+      osc.type = accent ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(freq, time);
+      if (accent) {
+        // Signature "RRRT!" pitch rip upward
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, time + 0.09);
+        osc.frequency.exponentialRampToValueAtTime(freq, time + 0.16);
+      }
+
+      filter.type = 'lowpass';
+      filter.Q.value = accent ? 14 : 6;
+      filter.frequency.setValueAtTime(accent ? 280 : 180, time);
+      filter.frequency.exponentialRampToValueAtTime(accent ? 2800 : 950, time + 0.06);
+      filter.frequency.exponentialRampToValueAtTime(220, time + 0.19);
+
+      vca.gain.setValueAtTime(accent ? 0.45 : 0.28, time);
+      vca.gain.exponentialRampToValueAtTime(0.001, time + 0.20);
+
+      osc.connect(filter);
+      filter.connect(vca);
+      vca.connect(bassBoostFilter);
+
+      osc.start(time);
+      osc.stop(time + 0.21);
+    }
+
+    function stopAllAudioSources() {
+      if (demoIntervalId) {
+        clearInterval(demoIntervalId);
+        demoIntervalId = null;
+      }
+      const audioEl = document.getElementById('audioElement');
+      audioEl.pause();
+      isPlaying = false;
+      updatePlayPauseIcons();
+    }
+
+    /********************************************************************
+     * YOUTUBE EMBED & TAB / SYSTEM AUDIO REAL-TIME CAPTURE
+     ********************************************************************/
+    function extractYouTubeId(input) {
+      const trimmed = input.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+      const match = trimmed.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function loadYouTubeVideo(urlOrId) {
+      const videoId = extractYouTubeId(urlOrId);
+      const placeholder = document.getElementById('ytPlayerPlaceholder');
+      const mount = document.getElementById('ytIframeMount');
+
+      if (!videoId) {
+        placeholder.classList.remove('hidden');
+        placeholder.innerHTML = `<span class="text-red-400 font-bold">Invalid YouTube URL or Video ID.</span>`;
+        return;
+      }
+
+      placeholder.classList.add('hidden');
+      mount.innerHTML = `
+        <iframe
+          class="w-full h-full"
+          src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0"
+          title="YouTube Audio Source"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      `;
+
+      initAudioEngine();
+      stopAllAudioSources();
+
+      // If user hasn't linked tab audio yet, activate intelligent rhythmic synth simulation
+      // so the visualizer immediately dances while they watch/listen, or they can click "Sync Tab Audio"
+      if (currentSourceMode !== 'tab') {
+        currentSourceMode = 'youtubeSim';
+        isPlaying = true;
+        updateTransportUI(`YouTube Stream (${videoId})`, 'YT STREAM');
+      }
+    }
+
+    async function captureTabOrMicAudio(preferDisplayMedia = true) {
+      try {
+        initAudioEngine();
+        stopAllAudioSources();
+
+        if (activeStream) {
+          activeStream.getTracks().forEach(t => t.stop());
+        }
+
+        let stream;
+        if (preferDisplayMedia && navigator.mediaDevices.getDisplayMedia) {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+        } else {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+        }
+
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          // Stop video track if user forgot to check "Share tab audio"
+          stream.getTracks().forEach(t => t.stop());
+          document.getElementById('captureStateBadge').textContent = 'Check "Share Tab Audio"!';
+          document.getElementById('captureStateBadge').className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded bg-red-500/30 text-red-300';
+          return;
+        }
+
+        activeStream = stream;
+        if (liveStreamSource) {
+          try { liveStreamSource.disconnect(); } catch (e) {}
+        }
+
+        liveStreamSource = audioCtx.createMediaStreamSource(stream);
+        // Connect straight to analyser (NOT destination, to prevent feedback loop!)
+        liveStreamSource.connect(analyser);
+
+        currentSourceMode = 'tab';
+        isPlaying = true;
+        document.getElementById('captureStateBadge').textContent = 'LIVE FFT LOCKED ✓';
+        document.getElementById('captureStateBadge').className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-300 font-bold';
+        updateTransportUI('Live Tab / System Audio Stream (Real-time FFT)', 'LIVE INPUT');
+      } catch (err) {
+        console.warn('Audio capture cancelled or unavailable:', err);
+      }
+    }
+
+    /********************************************************************
+     * VISUALIZER SHADERS, PARTICLES, LIGHTNING & AUDIO ANALYSIS LOOP
+     ********************************************************************/
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    const logoCanvas = document.getElementById('logoCanvas');
+    const logoCtx = logoCanvas.getContext('2d');
+    const stageContainer = document.getElementById('stageContainer');
+
+    let visualMode = 'hybrid'; // 'hybrid' | 'plasma' | 'split' | 'vortex'
+    let colorPalette = 'cyber';
+    let pitchShiftHueEnabled = true;
+
+    // Color Palettes (HSL base hues)
+    const PALETTES = {
+      cyber:   { h1: 175, h2: 325, h3: 52,  sat: 100 },
+      acid:    { h1: 95,  h2: 275, h3: 185, sat: 100 },
+      inferno: { h1: 8,   h2: 38,  h3: 55,  sat: 100 },
+      rainbow: { h1: 0,   h2: 120, h3: 240, sat: 95  },
+      mono:    { h1: 200, h2: 200, h3: 200, sat: 0   }
+    };
+
+    // Reactive smoothed telemetry state
+    const audioMetrics = {
+      sub: 0,       // 20-120 Hz -> R1 + Logo Scale Punch
+      lowMid: 0,    // 120-450 Hz -> R2
+      mid: 0,       // 450-1800 Hz -> R3
+      highMid: 0,   // 1800-5500 Hz -> T
+      treble: 0,    // 5500-16000 Hz -> ! + Electric Arcs
+      rms: 0,
+      peakFreq: 0,
+      centroid: 0,
+      pitchHueOffset: 0,
+      beatPulse: 0,
+      lastBeatTime: 0,
+      estimatedBpm: 132
+    };
+
+    // Interior Particle System
+    const particles = Array.from({ length: 110 }, () => ({
+      x: Math.random() * LOGO_DESIGN_W,
+      y: Math.random() * LOGO_DESIGN_H,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -Math.random() * 4 - 1,
+      size: Math.random() * 6 + 2,
+      hueOffset: Math.random() * 90,
+      alpha: Math.random() * 0.8 + 0.2
+    }));
+
+    // Shockwave rings inside the logo
+    const shockwaves = [];
+
+    function resizeCanvases() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      logoCanvas.width = LOGO_DESIGN_W;
+      logoCanvas.height = LOGO_DESIGN_H;
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    /**
+     * Extracts real-time frequency bands, dominant pitch, spectral centroid, and beat triggers
+     */
+    function analyzeAudioFrame(timestamp) {
+      const sensitivity = parseFloat(document.getElementById('sensSlider').value);
+
+      if (analyser && isPlaying && currentSourceMode !== 'youtubeSim') {
+        analyser.getByteFrequencyData(freqData);
+        analyser.getByteTimeDomainData(timeData);
+      } else if (isPlaying && currentSourceMode === 'youtubeSim') {
+        // Fallback procedural rhythmic FFT when playing YouTube without tab capture
+        const t = timestamp * 0.001;
+        const beat = Math.pow(Math.max(0, Math.sin(t * Math.PI * (128 / 60))), 6);
+        for (let i = 0; i < freqData.length; i++) {
+          const norm = i / freqData.length;
+          const wave = Math.sin(norm * 18 - t * 6) * 0.5 + 0.5;
+          freqData[i] = Math.min(255, (beat * (1 - norm) * 210 + wave * 110) * sensitivity);
+        }
+        for (let i = 0; i < timeData.length; i++) {
+          timeData[i] = 128 + Math.sin(i * 0.15 + t * 25) * 45 * beat;
+        }
+      } else {
+        // Idle ambient breathing pulse so the logo looks alive even before pressing play
+        const t = timestamp * 0.0015;
+        for (let i = 0; i < freqData.length; i++) {
+          freqData[i] = Math.max(0, Math.sin(i * 0.04 + t) * 18 + 14);
+        }
+        for (let i = 0; i < timeData.length; i++) {
+          timeData[i] = 128 + Math.sin(i * 0.05 + t * 2) * 6;
+        }
+      }
+
+      const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
+      const binCount = freqData.length;
+      const nyquist = sampleRate / 2;
+
+      function getBandAverage(minHz, maxHz) {
+        const startBin = Math.max(0, Math.floor((minHz / nyquist) * binCount));
+        const endBin = Math.min(binCount - 1, Math.ceil((maxHz / nyquist) * binCount));
+        let sum = 0;
+        let count = 0;
+        for (let i = startBin; i <= endBin; i++) {
+          sum += freqData[i];
+          count++;
+        }
+        return count > 0 ? (sum / count / 255) * sensitivity : 0;
+      }
+
+      const rawSub     = Math.min(1.6, getBandAverage(20, 125));
+      const rawLowMid  = Math.min(1.6, getBandAverage(125, 450));
+      const rawMid     = Math.min(1.6, getBandAverage(450, 1800));
+      const rawHighMid = Math.min(1.6, getBandAverage(1800, 5500));
+      const rawTreble  = Math.min(1.6, getBandAverage(5500, 15000));
+
+      // Smooth attack / release
+      audioMetrics.sub     = audioMetrics.sub * 0.72 + rawSub * 0.28;
+      audioMetrics.lowMid  = audioMetrics.lowMid * 0.75 + rawLowMid * 0.25;
+      audioMetrics.mid     = audioMetrics.mid * 0.75 + rawMid * 0.25;
+      audioMetrics.highMid = audioMetrics.highMid * 0.75 + rawHighMid * 0.25;
+      audioMetrics.treble  = audioMetrics.treble * 0.70 + rawTreble * 0.30;
+
+      // Dominant Pitch & Spectral Centroid
+      let maxMag = 0;
+      let maxBin = 0;
+      let weightedSum = 0;
+      let magSum = 0;
+
+      for (let i = 2; i < binCount / 2; i++) {
+        const val = freqData[i];
+        const freq = (i * nyquist) / binCount;
+        weightedSum += freq * val;
+        magSum += val;
+        if (val > maxMag) {
+          maxMag = val;
+          maxBin = i;
+        }
+      }
+
+      audioMetrics.peakFreq = (maxBin * nyquist) / binCount;
+      audioMetrics.centroid = magSum > 0 ? weightedSum / magSum : 0;
+
+      // Map pitch to color hue rotation
+      if (pitchShiftHueEnabled && maxMag > 25) {
+        const targetHue = (Math.log2(Math.max(40, audioMetrics.peakFreq)) * 55) % 360;
+        audioMetrics.pitchHueOffset += (targetHue - audioMetrics.pitchHueOffset) * 0.12;
+      } else if (!pitchShiftHueEnabled) {
+        audioMetrics.pitchHueOffset *= 0.9;
+      }
+
+      // Beat / Kick Transient Detection -> spawns shockwaves inside RRRT!
+      if (rawSub > 0.72 && audioMetrics.beatPulse < 0.45 && timestamp - audioMetrics.lastBeatTime > 210) {
+        audioMetrics.beatPulse = 1.0;
+        const delta = timestamp - audioMetrics.lastBeatTime;
+        if (delta > 280 && delta < 1200) {
+          const instantBpm = Math.round(60000 / delta);
+          audioMetrics.estimatedBpm = Math.round(audioMetrics.estimatedBpm * 0.85 + instantBpm * 0.15);
+        }
+        audioMetrics.lastBeatTime = timestamp;
+
+        // Spawn shockwave in a random letter center
+        const randomLetter = LETTER_DEFS[Math.floor(Math.random() * LETTER_DEFS.length)];
+        shockwaves.push({
+          x: randomLetter.center.x,
+          y: randomLetter.center.y,
+          radius: 15,
+          maxRadius: 340,
+          alpha: 0.95,
+          hue: (PALETTES[colorPalette].h1 + audioMetrics.pitchHueOffset) % 360
+        });
+      }
+      audioMetrics.beatPulse *= 0.88;
+
+      // RMS calculation
+      let sumSquares = 0;
+      for (let i = 0; i < timeData.length; i++) {
+        const normalized = (timeData[i] - 128) / 128;
+        sumSquares += normalized * normalized;
+      }
+      audioMetrics.rms = Math.sqrt(sumSquares / timeData.length);
+    }
+
+    /**
+     * Converts frequency in Hz to nearest Musical Note (e.g., 110Hz -> A2)
+     */
+    function freqToMusicalNote(freq) {
+      if (freq < 20) return '--';
+      const noteNum = 12 * (Math.log(freq / 440) / Math.log(2));
+      const midi = Math.round(noteNum) + 69;
+      const noteName = NOTE_STRINGS[midi % 12];
+      const octave = Math.floor(midi / 12) - 1;
+      return `${noteName}${octave}`;
+    }
+
+    /**
+     * Draws the dynamic shaders INSIDE `interiorCtx` before masking it to the RRRT! letters
+     */
+    function renderLogoInteriorEffects(timestamp) {
+      const t = timestamp * 0.001;
+      const pal = PALETTES[colorPalette];
+      const hueShift = audioMetrics.pitchHueOffset;
+
+      const h1 = (pal.h1 + hueShift) % 360;
+      const h2 = (pal.h2 + hueShift) % 360;
+      const h3 = (pal.h3 + hueShift) % 360;
+      const sat = pal.sat;
+
+      interiorCtx.save();
+      interiorCtx.clearRect(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+
+      // 1. BASE ENERGETIC DARK CORE GRADIENT
+      const baseGrad = interiorCtx.createLinearGradient(0, LOGO_DESIGN_H, LOGO_DESIGN_W, 0);
+      const baseLight = 10 + audioMetrics.sub * 28;
+      baseGrad.addColorStop(0, `hsl(${h1}, ${sat}%, ${baseLight}%)`);
+      baseGrad.addColorStop(0.5, `hsl(${h2}, ${sat}%, ${baseLight * 0.8}%)`);
+      baseGrad.addColorStop(1, `hsl(${h3}, ${sat}%, ${baseLight + audioMetrics.treble * 25}%)`);
+      interiorCtx.fillStyle = baseGrad;
+      interiorCtx.fillRect(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+
+      // 2. MODE: LIQUID PLASMA & MULTI-BAND FREQUENCY WAVES
+      if (visualMode === 'hybrid' || visualMode === 'plasma') {
+        interiorCtx.save();
+        interiorCtx.globalCompositeOperation = 'screen';
+
+        // Slanted surging plasma blobs
+        for (let i = 0; i < 6; i++) {
+          const bx = (LOGO_DESIGN_W * (i / 5)) + Math.sin(t * 2.2 + i) * 140;
+          const by = (LOGO_DESIGN_H * 0.5) + Math.cos(t * 1.7 + i * 1.4) * (160 + audioMetrics.mid * 120);
+          const radius = 180 + audioMetrics.sub * 220 + (i % 2) * 60;
+          const blobHue = (h1 + i * 38) % 360;
+
+          const radGrad = interiorCtx.createRadialGradient(bx, by, 10, bx, by, radius);
+          radGrad.addColorStop(0, `hsla(${blobHue}, ${sat}%, 68%, ${0.45 + audioMetrics.mid * 0.35})`);
+          radGrad.addColorStop(0.5, `hsla(${(blobHue + 40) % 360}, ${sat}%, 50%, 0.22)`);
+          radGrad.addColorStop(1, `hsla(${blobHue}, ${sat}%, 20%, 0)`);
+
+          interiorCtx.fillStyle = radGrad;
+          interiorCtx.beginPath();
+          interiorCtx.arc(bx, by, radius, 0, Math.PI * 2);
+          interiorCtx.fill();
+        }
+
+        // Layered Oscilloscope & FFT Ribbon Waves aligned with the -16.5 deg logo tilt
+        interiorCtx.save();
+        applyLogoSlantTransform(interiorCtx);
+        for (let layer = 0; layer < 3; layer++) {
+          interiorCtx.beginPath();
+          const layerHue = [h1, h2, h3][layer];
+          const baseY = 390 - layer * 65;
+
+          interiorCtx.moveTo(0, 600);
+          const sliceWidth = 1120 / 64;
+          for (let i = 0; i <= 64; i++) {
+            const binIdx = Math.min(freqData.length - 1, Math.floor(i * 2.5 + layer * 8));
+            const mag = (freqData[binIdx] / 255) * (180 + audioMetrics.sub * 110);
+            const waveOffset = Math.sin(i * 0.25 - t * (5 + layer * 2)) * 22;
+            const x = i * sliceWidth;
+            const y = baseY - mag + waveOffset;
+            if (i === 0) interiorCtx.lineTo(x, y);
+            else interiorCtx.lineTo(x, y);
+          }
+          interiorCtx.lineTo(1120, 600);
+          interiorCtx.closePath();
+
+          interiorCtx.fillStyle = `hsla(${layerHue}, ${sat}%, 58%, ${0.28 + layer * 0.08})`;
+          interiorCtx.fill();
+
+          interiorCtx.lineWidth = 4 + audioMetrics.sub * 4;
+          interiorCtx.strokeStyle = `hsla(${layerHue}, ${sat}%, 82%, 0.9)`;
+          interiorCtx.stroke();
+        }
+        interiorCtx.restore();
+        interiorCtx.restore();
+      }
+
+      // 3. MODE: PER-LETTER DEDICATED FREQUENCY SPLIT (R1=Sub, R2=LowMid, R3=Mid, T=HighMid, !=Treble)
+      if (visualMode === 'hybrid' || visualMode === 'split') {
+        interiorCtx.save();
+        applyLogoSlantTransform(interiorCtx);
+
+        const letterBands = [
+          { xMin: 35,  xMax: 295, val: audioMetrics.sub,     hue: h2, label: 'SUB' },
+          { xMin: 250, xMax: 515, val: audioMetrics.lowMid,  hue: (h1 + 30) % 360, label: 'LOW' },
+          { xMin: 465, xMax: 725, val: audioMetrics.mid,     hue: h3, label: 'MID' },
+          { xMin: 675, xMax: 935, val: audioMetrics.highMid, hue: h1, label: 'HIGH' },
+          { xMin: 880, xMax: 1080,val: audioMetrics.treble,  hue: (h2 + 50) % 360, label: 'PEAK' }
+        ];
+
+        letterBands.forEach((b, idx) => {
+          const fillHeight = Math.min(480, b.val * 380 + 35);
+          const yTop = 535 - fillHeight;
+
+          // Segmented equalizer LED bars inside each letter column
+          const numBars = 14;
+          const barSpacing = 480 / numBars;
+          for (let s = 0; s < numBars; s++) {
+            const segY = 525 - s * barSpacing;
+            if (segY >= yTop) {
+              const segIntensity = 50 + (s / numBars) * 35;
+              interiorCtx.fillStyle = `hsla(${b.hue}, ${sat}%, ${segIntensity}%, ${visualMode === 'split' ? 0.88 : 0.48})`;
+              interiorCtx.fillRect(b.xMin, segY - barSpacing * 0.72, b.xMax - b.xMin, barSpacing * 0.72);
+            }
+          }
+
+          // Bright glowing peak cap line inside each letter
+          interiorCtx.fillStyle = `hsla(${b.hue}, ${sat}%, 92%, 0.95)`;
+          interiorCtx.shadowColor = `hsl(${b.hue}, ${sat}%, 65%)`;
+          interiorCtx.shadowBlur = 18;
+          interiorCtx.fillRect(b.xMin, yTop - 6, b.xMax - b.xMin, 8);
+          interiorCtx.shadowBlur = 0;
+        });
+
+        interiorCtx.restore();
+      }
+
+      // 4. MODE: HARMONIC PARTICLE VORTEX & NEON LASER GRID
+      if (visualMode === 'hybrid' || visualMode === 'vortex') {
+        interiorCtx.save();
+        interiorCtx.globalCompositeOperation = 'lighter';
+
+        // Reactive perspective scanlines pulsing with pitch & mid-range
+        const gridSpacing = 28;
+        const offset = (t * (90 + audioMetrics.sub * 220)) % gridSpacing;
+        interiorCtx.lineWidth = 1.5 + audioMetrics.highMid * 2.5;
+        interiorCtx.strokeStyle = `hsla(${h1}, ${sat}%, 65%, ${0.22 + audioMetrics.mid * 0.35})`;
+
+        for (let y = offset; y < LOGO_DESIGN_H; y += gridSpacing) {
+          interiorCtx.beginPath();
+          interiorCtx.moveTo(0, y);
+          interiorCtx.lineTo(LOGO_DESIGN_W, y - 120);
+          interiorCtx.stroke();
+        }
+
+        // High-velocity particles surging upward through the letters
+        particles.forEach(p => {
+          const speedBoost = 1 + audioMetrics.sub * 4.5 + audioMetrics.treble * 3;
+          p.x += p.vx * speedBoost + Math.sin(t * 3 + p.y * 0.02) * 1.8;
+          p.y += p.vy * speedBoost;
+
+          if (p.y < -20) {
+            p.y = LOGO_DESIGN_H + 20;
+            p.x = Math.random() * LOGO_DESIGN_W;
+          }
+          if (p.x < 0) p.x = LOGO_DESIGN_W;
+          if (p.x > LOGO_DESIGN_W) p.x = 0;
+
+          const pRadius = p.size * (0.8 + audioMetrics.sub * 1.4);
+          const pHue = (h1 + p.hueOffset) % 360;
+
+          interiorCtx.fillStyle = `hsla(${pHue}, ${sat}%, 75%, ${p.alpha})`;
+          interiorCtx.beginPath();
+          interiorCtx.arc(p.x, p.y, pRadius, 0, Math.PI * 2);
+          interiorCtx.fill();
+        });
+
+        interiorCtx.restore();
+      }
+
+      // 5. BEAT SHOCKWAVES & OSCILLOSCOPE LIGHTNING ARCS
+      interiorCtx.save();
+      applyLogoSlantTransform(interiorCtx);
+      interiorCtx.globalCompositeOperation = 'lighter';
+
+      // Expanding geometric beat shockwaves
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += 14 + audioMetrics.sub * 18;
+        sw.alpha *= 0.91;
+
+        interiorCtx.strokeStyle = `hsla(${sw.hue}, ${sat}%, 80%, ${sw.alpha})`;
+        interiorCtx.lineWidth = 6 * sw.alpha + 2;
+        interiorCtx.beginPath();
+        interiorCtx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        interiorCtx.stroke();
+
+        if (sw.alpha < 0.04 || sw.radius > sw.maxRadius) {
+          shockwaves.splice(i, 1);
+        }
+      }
+
+      // Live Time-Domain Waveform Bolt shooting across all 4 letters + !
+      interiorCtx.beginPath();
+      const waveLen = 1040;
+      for (let i = 0; i < 128; i++) {
+        const x = 45 + (i / 127) * waveLen;
+        const sample = (timeData[i * 4] - 128) / 128;
+        const y = 300 + sample * (175 + audioMetrics.sub * 120);
+        if (i === 0) interiorCtx.moveTo(x, y);
+        else interiorCtx.lineTo(x, y);
+      }
+      interiorCtx.strokeStyle = `hsla(${h3}, ${sat}%, 95%, ${0.65 + audioMetrics.rms * 0.8})`;
+      interiorCtx.lineWidth = 3.5 + audioMetrics.rms * 8;
+      interiorCtx.shadowColor = `hsl(${h1}, ${sat}%, 70%)`;
+      interiorCtx.shadowBlur = 20;
+      interiorCtx.stroke();
+
+      // High-Frequency Electric Spark Bolts inside the Exclamation Point (!) on Snares/Hats
+      if (audioMetrics.treble > 0.35 || audioMetrics.beatPulse > 0.5) {
+        interiorCtx.beginPath();
+        let lx = 1015;
+        let ly = 80;
+        interiorCtx.moveTo(lx, ly);
+        for (let step = 0; step < 9; step++) {
+          lx += (Math.random() - 0.58) * 55;
+          ly += 48;
+          interiorCtx.lineTo(lx, ly);
+        }
+        interiorCtx.strokeStyle = '#ffffff';
+        interiorCtx.lineWidth = 3 + audioMetrics.treble * 5;
+        interiorCtx.shadowColor = `hsl(${h2}, 100%, 75%)`;
+        interiorCtx.shadowBlur = 25;
+        interiorCtx.stroke();
+      }
+
+      interiorCtx.restore();
+      interiorCtx.restore();
+    }
+
+    /**
+     * Composites the masked interior shaders with the authentic RRRT! 3D comic shadow
+     * and crisp black ink outlines onto the main `logoCanvas`.
+     */
+    function renderCompositeLogo(timestamp) {
+      const pal = PALETTES[colorPalette];
+      const h1 = (pal.h1 + audioMetrics.pitchHueOffset) % 360;
+      const h2 = (pal.h2 + audioMetrics.pitchHueOffset) % 360;
+
+      // 1. Render all reactive shaders into `interiorCanvas`
+      renderLogoInteriorEffects(timestamp);
+
+      // 2. Mask `interiorCanvas` using destination-in so ONLY the hollow white interior of RRRT! lights up
+      interiorCtx.save();
+      interiorCtx.globalCompositeOperation = 'destination-in';
+
+      if (useCustomLogoPng) {
+        interiorCtx.drawImage(customMaskCanvas, 0, 0);
+      } else {
+        applyLogoSlantTransform(interiorCtx);
+        interiorCtx.fillStyle = '#ffffff';
+        letterPaths.forEach(lp => {
+          interiorCtx.fill(lp.path2D, 'evenodd');
+        });
+      }
+      interiorCtx.restore();
+
+      // 3. Clear main display canvas and render 3D extrusion + outlines + lit interior
+      logoCtx.clearRect(0, 0, LOGO_DESIGN_W, LOGO_DESIGN_H);
+
+      if (useCustomLogoPng) {
+        // Custom PNG Mode: Outer reactive neon halo + Masked Interior + Original PNG Black Ink Outline
+        logoCtx.save();
+        if (comicRimMode === 'neon') {
+          logoCtx.shadowColor = `hsl(${h1}, ${pal.sat}%, 60%)`;
+          logoCtx.shadowBlur = 25 + audioMetrics.sub * 45;
+        } else if (comicRimMode === 'white') {
+          logoCtx.shadowColor = 'rgba(255,255,255,0.9)';
+          logoCtx.shadowBlur = 18;
+        }
+        logoCtx.drawImage(customOutlineCanvas, 0, 0);
+        logoCtx.restore();
+
+        // Draw lit interior
+        logoCtx.drawImage(interiorCanvas, 0, 0);
+
+        // Draw crisp black outline on top
+        logoCtx.drawImage(customOutlineCanvas, 0, 0);
+      } else {
+        // Vector SVG Mode: Matches the exact uploaded RRRT! comic logo geometry
+        logoCtx.save();
+        applyLogoSlantTransform(logoCtx);
+
+        // A) Outer Neon Halo / Comic Rim (so the black comic outline & 3D extrusion pop against dark stages)
+        if (comicRimMode !== 'stealth') {
+          logoCtx.save();
+          logoCtx.lineJoin = 'miter';
+          logoCtx.miterLimit = 6;
+          logoCtx.lineWidth = 42 + audioMetrics.sub * 14;
+          logoCtx.strokeStyle = comicRimMode === 'neon'
+            ? `hsla(${h1}, ${pal.sat}%, 60%, ${0.45 + audioMetrics.sub * 0.45})`
+            : 'rgba(255, 255, 255, 0.85)';
+          logoCtx.shadowColor = comicRimMode === 'neon'
+            ? `hsl(${h2}, ${pal.sat}%, 60%)`
+            : '#ffffff';
+          logoCtx.shadowBlur = 35 + audioMetrics.sub * 45;
+
+          letterPaths.forEach(lp => {
+            logoCtx.stroke(lp.path2D);
+          });
+          logoCtx.restore();
+        }
+
+        // B) Thick 3D Black Comic Extrusion Shadow (Bottom-Right Offset just like the uploaded PNG)
+        const extrudeSteps = 18;
+        logoCtx.fillStyle = '#050508';
+        logoCtx.strokeStyle = '#050508';
+        logoCtx.lineJoin = 'miter';
+        logoCtx.miterLimit = 8;
+        logoCtx.lineWidth = 28;
+
+        for (let d = extrudeSteps; d >= 1; d -= 2) {
+          logoCtx.save();
+          logoCtx.translate(d * 0.95, d * 1.15);
+          letterPaths.forEach(lp => {
+            logoCtx.stroke(lp.path2D);
+            logoCtx.fill(lp.path2D, 'evenodd');
+          });
+          logoCtx.restore();
+        }
+
+        // C) Base Thick Black Outline Layer
+        logoCtx.lineWidth = 30;
+        logoCtx.strokeStyle = '#07070b';
+        letterPaths.forEach(lp => {
+          logoCtx.stroke(lp.path2D);
+        });
+        logoCtx.restore();
+
+        // D) Composite the Glowing Audio-Reactive Interior Canvas
+        logoCtx.drawImage(interiorCanvas, 0, 0);
+
+        // E) Crisp Inner-Edge Black Ink Cleanup Stroke
+        logoCtx.save();
+        applyLogoSlantTransform(logoCtx);
+        logoCtx.lineJoin = 'miter';
+        logoCtx.miterLimit = 8;
+        logoCtx.lineWidth = 14;
+        logoCtx.strokeStyle = '#060609';
+        letterPaths.forEach(lp => {
+          logoCtx.stroke(lp.path2D);
+        });
+        logoCtx.restore();
+      }
+
+      // 4. Physical Logo Container Sub-Bass Thump & Kick Tilt
+      const scaleX = 1 + audioMetrics.sub * 0.085 + audioMetrics.beatPulse * 0.035;
+      const scaleY = 1 + audioMetrics.sub * 0.095 + audioMetrics.beatPulse * 0.04;
+      const rotJitter = (audioMetrics.treble > 0.65) ? (Math.random() - 0.5) * 1.4 : 0;
+      stageContainer.style.transform = `scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)}) rotate(${rotJitter.toFixed(2)}deg)`;
+    }
+
+    /**
+     * Renders the subtle ambient stage glow behind the logo
+     */
+    function renderStageBackdrop(timestamp) {
+      const w = bgCanvas.width;
+      const h = bgCanvas.height;
+      const pal = PALETTES[colorPalette];
+      const h1 = (pal.h1 + audioMetrics.pitchHueOffset) % 360;
+      const h2 = (pal.h2 + audioMetrics.pitchHueOffset) % 360;
+
+      bgCtx.clearRect(0, 0, w, h);
+
+      // Radial stage spotlight pulsing with sub-bass
+      const radius = Math.max(w, h) * (0.35 + audioMetrics.sub * 0.25);
+      const grad = bgCtx.createRadialGradient(w * 0.5, h * 0.48, 20, w * 0.5, h * 0.48, radius);
+      grad.addColorStop(0, `hsla(${h1}, ${pal.sat}%, 45%, ${0.14 + audioMetrics.sub * 0.22})`);
+      grad.addColorStop(0.5, `hsla(${h2}, ${pal.sat}%, 30%, ${0.06 + audioMetrics.mid * 0.12})`);
+      grad.addColorStop(1, 'rgba(6, 6, 9, 0)');
+
+      bgCtx.fillStyle = grad;
+      bgCtx.fillRect(0, 0, w, h);
+    }
+
+    /**
+     * Updates top HUD telemetry & bottom per-letter mini LED meters
+     */
+    function updateTelemetryHUD() {
+      // Per-letter mini meters (R - R - R - T - !)
+      document.getElementById('meterR1').style.height = `${Math.min(100, audioMetrics.sub * 85 + 8)}%`;
+      document.getElementById('meterR2').style.height = `${Math.min(100, audioMetrics.lowMid * 85 + 8)}%`;
+      document.getElementById('meterR3').style.height = `${Math.min(100, audioMetrics.mid * 85 + 8)}%`;
+      document.getElementById('meterT').style.height  = `${Math.min(100, audioMetrics.highMid * 85 + 8)}%`;
+      document.getElementById('meterExcl').style.height = `${Math.min(100, audioMetrics.treble * 85 + 8)}%`;
+
+      // Top telemetry badges
+      const note = freqToMusicalNote(audioMetrics.peakFreq);
+      document.getElementById('hudPitch').textContent = audioMetrics.peakFreq > 20
+        ? `${Math.round(audioMetrics.peakFreq)} Hz (${note})`
+        : '-- Hz (--)';
+      document.getElementById('hudBpm').textContent = `${audioMetrics.estimatedBpm} BPM`;
+
+      const db = audioMetrics.rms > 0.0001
+        ? Math.max(-60, Math.round(20 * Math.log10(audioMetrics.rms)))
+        : -60;
+      document.getElementById('hudRms').textContent = `${db} dB`;
+      document.getElementById('hudCentroid').textContent = `${Math.round(audioMetrics.centroid)} Hz`;
+
+      // Update timecode if playing a local file or demo synth
+      const audioEl = document.getElementById('audioElement');
+      if (currentSourceMode === 'file' && !isNaN(audioEl.duration) && audioEl.duration > 0) {
+        document.getElementById('currentTimeLabel').textContent = formatTime(audioEl.currentTime);
+        document.getElementById('durationLabel').textContent = formatTime(audioEl.duration);
+        const pct = (audioEl.currentTime / audioEl.duration) * 100;
+        document.getElementById('seekSlider').value = pct;
+      } else if (currentSourceMode === 'demo' && isPlaying && audioCtx) {
+        const elapsed = audioCtx.currentTime - demoStartTime;
+        document.getElementById('currentTimeLabel').textContent = formatTime(elapsed);
+        document.getElementById('durationLabel').textContent = 'LIVE LOOP';
+        document.getElementById('seekSlider').value = (elapsed % 16) / 16 * 100;
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Master 60FPS Animation Loop
+    function masterLoop(timestamp) {
+      analyzeAudioFrame(timestamp);
+      renderStageBackdrop(timestamp);
+      renderCompositeLogo(timestamp);
+      updateTelemetryHUD();
+      requestAnimationFrame(masterLoop);
+    }
+
+    /********************************************************************
+     * UI EVENT LISTENERS & INTERACTIVE CONTROLS
+     ********************************************************************/
+    function updatePlayPauseIcons() {
+      const playIcon = document.getElementById('playIcon');
+      const pauseIcon = document.getElementById('pauseIcon');
+      if (isPlaying) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+      } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+      }
+    }
+
+    function updateTransportUI(title, badgeText) {
+      document.getElementById('trackTitleDisplay').textContent = title;
+      document.getElementById('sourceBadge').textContent = badgeText;
+      updatePlayPauseIcons();
+    }
+
+    // Play / Pause Button
+    document.getElementById('playPauseBtn').addEventListener('click', () => {
+      initAudioEngine();
+      const audioEl = document.getElementById('audioElement');
+
+      if (currentSourceMode === 'file') {
+        if (audioEl.paused) {
+          audioEl.play();
+          isPlaying = true;
+        } else {
+          audioEl.pause();
+          isPlaying = false;
+        }
+        updatePlayPauseIcons();
+      } else if (currentSourceMode === 'demo') {
+        if (isPlaying) {
+          stopAllAudioSources();
+        } else {
+          startDemoBeat();
+        }
+      } else {
+        isPlaying = !isPlaying;
+        updatePlayPauseIcons();
+      }
+    });
+
+    // Stop Button
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      stopAllAudioSources();
+      const audioEl = document.getElementById('audioElement');
+      if (currentSourceMode === 'file') {
+        audioEl.currentTime = 0;
+      }
+      document.getElementById('seekSlider').value = 0;
+      document.getElementById('currentTimeLabel').textContent = '00:00';
+    });
+
+    // Demo Bass Drop Button
+    document.getElementById('demoDropBtn').addEventListener('click', () => {
+      startDemoBeat();
+    });
+
+    // Local Audio File Upload
+    function handleAudioFile(file) {
+      if (!file) return;
+      initAudioEngine();
+      stopAllAudioSources();
+
+      const url = URL.createObjectURL(file);
+      const audioEl = document.getElementById('audioElement');
+      audioEl.src = url;
+      audioEl.playbackRate = parseFloat(document.getElementById('rateSlider').value);
+      audioEl.play();
+
+      currentSourceMode = 'file';
+      isPlaying = true;
+      updateTransportUI(`RRRT! Visualizer — ${file.name}`, 'LOCAL TRACK');
+    }
+
+    document.getElementById('audioFileInput').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleAudioFile(e.target.files[0]);
+      }
+    });
+
+    // Custom Logo PNG File Upload
+    function handleCustomLogoFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => processUploadedLogoImage(img);
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('customLogoInput').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleCustomLogoFile(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('resetVectorLogoBtn').addEventListener('click', () => {
+      useCustomLogoPng = false;
+      document.getElementById('logoModeLabel').textContent = 'Custom Logo PNG';
+      document.getElementById('resetVectorLogoBtn').classList.add('hidden');
+    });
+
+    // Drag & Drop Anywhere on Window (Audio File OR Custom Logo PNG)
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      document.getElementById('dropOverlay').classList.remove('opacity-0');
+    });
+    window.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget === null) {
+        document.getElementById('dropOverlay').classList.add('opacity-0');
+      }
+    });
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      document.getElementById('dropOverlay').classList.add('opacity-0');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      if (file.type.startsWith('image/')) {
+        handleCustomLogoFile(file);
+      } else if (file.type.startsWith('audio/') || /\.(mp3|wav|flac|ogg|m4a)$/i.test(file.name)) {
+        handleAudioFile(file);
+      }
+    });
+
+    // Seek Bar Scrubber
+    document.getElementById('seekSlider').addEventListener('input', (e) => {
+      const audioEl = document.getElementById('audioElement');
+      if (currentSourceMode === 'file' && audioEl.duration) {
+        audioEl.currentTime = (parseFloat(e.target.value) / 100) * audioEl.duration;
+      }
+    });
+
+    // Volume Slider
+    document.getElementById('volumeSlider').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('volVal').textContent = `${Math.round(val * 100)}%`;
+      if (gainNode) gainNode.gain.value = val;
+    });
+
+    // Pitch / Tempo Rate Slider
+    document.getElementById('rateSlider').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('rateVal').textContent = `${val.toFixed(2)}x`;
+      const audioEl = document.getElementById('audioElement');
+      audioEl.preservesPitch = false; // Authentic DJ turntable pitch+tempo shift
+      audioEl.playbackRate = val;
+    });
+
+    // Visual Reactivity Slider
+    document.getElementById('sensSlider').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('sensVal').textContent = `${Math.round(val * 100)}%`;
+    });
+
+    // Sub-Bass Boost EQ Toggle
+    document.getElementById('bassBoostBtn').addEventListener('click', (e) => {
+      bassBoostEnabled = !bassBoostEnabled;
+      if (bassBoostFilter) {
+        bassBoostFilter.gain.value = bassBoostEnabled ? 7.5 : 0;
+      }
+      e.target.textContent = `Sub Boost: ${bassBoostEnabled ? 'ON' : 'OFF'}`;
+      e.target.className = bassBoostEnabled
+        ? 'w-full py-1 px-2 rounded bg-pink-500/20 border border-pink-500/50 text-pink-300 font-bold text-[10px] uppercase tracking-wider transition'
+        : 'w-full py-1 px-2 rounded bg-white/5 border border-white/10 text-zinc-400 font-bold text-[10px] uppercase tracking-wider transition';
+    });
+
+    // Comic Rim Mode Toggle (Neon / White Sticker / Stealth)
+    document.getElementById('invertOutlineBtn').addEventListener('click', (e) => {
+      const modes = ['neon', 'white', 'stealth'];
+      const labels = { neon: 'Comic Rim: Neon', white: 'Comic Rim: White', stealth: 'Comic Rim: Dark' };
+      comicRimMode = modes[(modes.indexOf(comicRimMode) + 1) % modes.length];
+      e.target.textContent = labels[comicRimMode];
+    });
+
+    // Visual Mode Buttons
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        visualMode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => {
+          b.className = 'mode-btn bg-white/5 border border-white/10 text-zinc-300 hover:text-white rounded-lg py-1.5 px-2 text-xs font-bold transition';
+        });
+        btn.className = 'mode-btn bg-cyan-500/25 border border-cyan-400 text-cyan-200 rounded-lg py-1.5 px-2 text-xs font-bold transition';
+      });
+    });
+
+    // Palette & Pitch-Hue Controls
+    document.getElementById('paletteSelect').addEventListener('change', (e) => {
+      colorPalette = e.target.value;
+    });
+    document.getElementById('pitchColorToggle').addEventListener('change', (e) => {
+      pitchShiftHueEnabled = e.target.checked;
+    });
+
+    // YouTube Floating Dock Controls
+    const ytDock = document.getElementById('ytDock');
+    document.getElementById('openYtBtn').addEventListener('click', () => {
+      ytDock.classList.toggle('hidden');
+    });
+    document.getElementById('closeYtDockBtn').addEventListener('click', () => {
+      ytDock.classList.add('hidden');
+    });
+    document.getElementById('loadYtBtn').addEventListener('click', () => {
+      const url = document.getElementById('ytUrlInput').value;
+      loadYouTubeVideo(url);
+    });
+    document.getElementById('syncTabAudioBtn').addEventListener('click', () => {
+      captureTabOrMicAudio(true);
+    });
+    document.getElementById('syncMicAudioBtn').addEventListener('click', () => {
+      captureTabOrMicAudio(false);
+    });
+
+    // Clean Stage / Hide UI Mode & Fullscreen
+    let uiHidden = false;
+    function toggleZenMode() {
+      uiHidden = !uiHidden;
+      document.getElementById('topBar').style.opacity = uiHidden ? '0' : '1';
+      document.getElementById('topBar').style.pointerEvents = uiHidden ? 'none' : 'auto';
+      document.getElementById('bottomDeck').style.opacity = uiHidden ? '0' : '1';
+      document.getElementById('bottomDeck').style.pointerEvents = uiHidden ? 'none' : 'auto';
+    }
+    document.getElementById('zenModeBtn').addEventListener('click', toggleZenMode);
+
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Keyboard Shortcuts (Space = Play/Pause, H = Hide HUD, F = Fullscreen)
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        document.getElementById('playPauseBtn').click();
+      } else if (e.key.toLowerCase() === 'h') {
+        toggleZenMode();
+      } else if (e.key.toLowerCase() === 'f') {
+        document.getElementById('fullscreenBtn').click();
+      }
+    });
+
+    // Double-click stage to restore HUD if hidden
+    window.addEventListener('dblclick', () => {
+      if (uiHidden) toggleZenMode();
+    });
+
+    // Start Animation Loop on Load
+    window.onload = () => {
+      requestAnimationFrame(masterLoop);
+    };
+  </script>
+</body>
+</html>
